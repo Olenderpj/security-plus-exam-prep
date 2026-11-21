@@ -1,0 +1,33 @@
+# Security+ SY0-701 Exam Prep
+
+A minimal Vue 3 study app for the CompTIA Security+ (SY0-701) exam.
+
+- **Practice by section** — choose Domain 1–5 (or all), 10 / 20 / all questions, instant feedback with explanations.
+- **Practice exams** — 90, 45, or 25 questions weighted by the official domain percentages; timed (1 min/question) or untimed; flag-for-review navigator; estimated 100–900 scaled score.
+- **Flashcards** — by section or all, 10 / 20 / all cards, reshuffled every deck; review missed cards. Keyboard: Space flips, ← / → mark.
+- **Progress** — overall accuracy, accuracy per domain, best exam score, recent sessions. Stored in Supabase when signed in, otherwise in the browser.
+
+Question bank lives in `src/data/questions/d1.js` … `d5.js`; flashcards in `src/data/flashcards.js`. Run `npm run check:data` after editing.
+
+## Local development
+
+```bash
+npm install
+cp .env.example .env   # optional: add Supabase keys to enable login
+npm run dev
+```
+
+## Supabase setup (login + progress)
+
+1. Create a project at supabase.com.
+2. In **SQL Editor**, run `supabase/schema.sql`.
+3. In **Authentication → URL Configuration**, set the Site URL to your Vercel URL.
+4. Copy **Project URL** and **anon public key** from **Project Settings → API**.
+
+Without these keys the app still works; progress is just saved in the browser and the Sign in link is hidden.
+
+## Deploy to Vercel
+
+1. Import this repo at vercel.com/new (framework preset: Vite).
+2. Add environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+3. Deploy. `vercel.json` handles SPA routing.
