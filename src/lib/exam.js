@@ -30,11 +30,14 @@ function freshFirst(pool, seen) {
 export const matchesKind = (q, kind) =>
   kind === 'all' || (kind === 'pbq' ? isPBQ(q) || Boolean(q.exhibit) : !isPBQ(q) && !q.exhibit)
 
-export const practicePool = (domain, kind = 'all') =>
-  QUESTIONS.filter((q) => (!domain || q.domain === Number(domain)) && matchesKind(q, kind))
+// onlyIds: restrict to a set of question IDs (e.g. previously missed questions)
+export const practicePool = (domain, kind = 'all', onlyIds = null) =>
+  QUESTIONS.filter(
+    (q) => (!domain || q.domain === Number(domain)) && matchesKind(q, kind) && (!onlyIds || onlyIds.has(q.id))
+  )
 
-export function practiceSet(domain, count, kind = 'all') {
-  const pool = practicePool(domain, kind)
+export function practiceSet(domain, count, kind = 'all', onlyIds = null) {
+  const pool = practicePool(domain, kind, onlyIds)
   const picked = count === 'all' ? pool : freshFirst(pool, readSeen()).slice(0, Number(count))
   markSeen(picked)
   return shuffle(picked).map(shuffleQuestion)
@@ -42,9 +45,15 @@ export function practiceSet(domain, count, kind = 'all') {
 
 // Builds an exam weighted by the official domain percentages. Like the real
 // exam, performance-based questions are presented first.
-export function examSet(total = EXAM.questions) {
-  total = Math.min(total, QUESTIONS.length)
+export function examSet(total = EXAM.questions, onlyIds = null) {
   const seen = readSeen()
+  if (onlyIds) {
+    // Retest exam from a given set (e.g. missed questions): PBQs first, then the rest.
+    const picked = freshFirst(QUESTIONS.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
+    markSeen(picked)
+    return [...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion)
+  }
+  total = Math.min(total, QUESTIONS.length)
   const pbqs = freshFirst(QUESTIONS.filter(isPBQ), seen).slice(0, Math.max(1, Math.round(total / 18)))
 
   const targets = DOMAINS.map((d) => ({ id: d.id, n: Math.round((d.weight / 100) * total) }))

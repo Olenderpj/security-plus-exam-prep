@@ -20,7 +20,7 @@ import { supabaseEnabled } from './lib/supabase.js'
     </div>
   </header>
   <main class="container">
-    <RouterView />
+    <RouterView :key="$route.fullPath" />
   </main>
 </template>
 

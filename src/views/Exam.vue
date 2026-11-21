@@ -1,11 +1,17 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { QUESTIONS } from '../data/questions/index.js'
 import { EXAM } from '../data/domains.js'
 import { examSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
+import { missed, recordResults } from '../lib/missed.js'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
 
+const route = useRoute()
+const source = ref(route.query.missed ? 'missed' : 'all') // all | missed
+const missedTotal = computed(() => QUESTIONS.filter((q) => missed.value.has(q.id)).length)
 const timed = ref(true)
 const length = ref(EXAM.questions)
 const stage = ref('setup')
@@ -23,7 +29,9 @@ const LENGTHS = [
   { n: 45, min: 45, label: 'Half · 45 questions' },
   { n: 25, min: 25, label: 'Quick · 25 questions' }
 ]
-const minutes = computed(() => LENGTHS.find((l) => l.n === length.value).min)
+// 1 minute per question, like the real exam.
+const plannedCount = computed(() => (source.value === 'missed' ? Math.min(length.value, missedTotal.value) : length.value))
+const minutes = computed(() => (stage.value === 'run' ? questions.value.length : plannedCount.value))
 const current = computed(() => questions.value[idx.value])
 const sel = computed({
   get: () => answers.value[idx.value] || [],
@@ -37,7 +45,7 @@ const clock = computed(() => {
 })
 
 function start() {
-  questions.value = examSet(length.value)
+  questions.value = examSet(length.value, source.value === 'missed' ? new Set(missed.value) : null)
   answers.value = []
   flags.value = new Set()
   idx.value = 0
@@ -69,6 +77,7 @@ async function finish() {
   clearInterval(timer)
   seconds.value = Math.round((Date.now() - startedAt.value) / 1000)
   stage.value = 'done'
+  recordResults(questions.value, answers.value)
   await saveAttempt({
     mode: 'exam',
     domain: null,
@@ -99,6 +108,18 @@ onBeforeUnmount(() => clearInterval(timer))
     </p>
     <div class="card stack">
       <div>
+        <div class="label">Questions</div>
+        <div class="row">
+          <button class="chip" :class="{ on: source === 'all' }" @click="source = 'all'">Full question bank</button>
+          <button class="chip" :class="{ on: source === 'missed' }" @click="source = 'missed'">Missed questions · {{ missedTotal }}</button>
+        </div>
+        <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
+          {{ missedTotal
+            ? `An exam built from questions you've missed${missedTotal < length ? ` (${missedTotal} available)` : ''}. Correct answers come off the list.`
+            : 'No missed questions yet. Wrong or unanswered exam and practice questions collect here.' }}
+        </p>
+      </div>
+      <div>
         <div class="label">Length</div>
         <div class="row">
           <button v-for="l in LENGTHS" :key="l.n" class="chip" :class="{ on: length === l.n }" @click="length = l.n">{{ l.label }}</button>
@@ -111,7 +132,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <button class="chip" :class="{ on: !timed }" @click="timed = false">Untimed</button>
         </div>
       </div>
-      <div><button class="btn primary" @click="start">Begin exam</button></div>
+      <div><button class="btn primary" :disabled="source === 'missed' && !missedTotal" @click="start">Begin exam</button></div>
     </div>
   </div>
 

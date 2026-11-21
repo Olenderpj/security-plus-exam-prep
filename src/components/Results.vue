@@ -51,11 +51,15 @@ const fmt = (s) => `${Math.floor(s / 60)}m ${s % 60}s`
           <div class="bar"><span :style="{ width: (100 * byDomain[d.id].correct) / byDomain[d.id].total + '%' }" /></div>
         </div>
       </div>
+      <p v-if="correct < questions.length" class="muted small" style="margin: 0">
+        {{ questions.length - correct }} question{{ questions.length - correct === 1 ? '' : 's' }} added to your missed list.
+      </p>
       <p v-if="exam" class="muted small" style="margin: 0">
         Scaled score is an estimate (CompTIA does not publish its scaling). Aim for 85%+ consistently before exam day.
       </p>
       <div class="row">
         <button class="btn primary" @click="$emit('restart')">Start another</button>
+        <RouterLink v-if="correct < questions.length" class="btn" to="/practice?missed=1">Retest missed</RouterLink>
         <RouterLink class="btn" to="/progress">View progress</RouterLink>
       </div>
     </div>
