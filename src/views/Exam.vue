@@ -1,4 +1,5 @@
 <script setup>
+import { useFocusMode } from '../lib/focus.js'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
@@ -15,6 +16,7 @@ const missedTotal = computed(() => QUESTIONS.filter((q) => missed.value.has(q.id
 const timed = ref(true)
 const length = ref(EXAM.questions)
 const stage = ref('setup')
+useFocusMode(stage)
 const questions = ref([])
 const answers = ref([])
 const flags = ref(new Set())

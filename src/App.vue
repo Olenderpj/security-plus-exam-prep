@@ -1,13 +1,9 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import SearchBar from './components/SearchBar.vue'
+import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
 import { supabaseEnabled } from './lib/supabase.js'
-
-// The search box is hidden while practicing or taking an exam.
-const route = useRoute()
-const showSearch = computed(() => !['/practice', '/exam'].includes(route.path))
 
 // Account menu: opens from the username, closes on outside click or Escape.
 const menuOpen = ref(false)
@@ -57,7 +53,7 @@ onBeforeUnmount(() => {
     </div>
   </header>
   <main class="container">
-    <SearchBar v-if="showSearch" />
+    <SearchBar v-if="!focusMode" />
     <RouterView :key="$route.fullPath" />
   </main>
 </template>

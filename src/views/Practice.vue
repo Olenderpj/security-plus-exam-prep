@@ -1,4 +1,5 @@
 <script setup>
+import { useFocusMode } from '../lib/focus.js'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
@@ -24,6 +25,7 @@ const KINDS = [
   { id: 'pbq', label: 'Performance-based & exhibits' }
 ]
 const stage = ref('setup')
+useFocusMode(stage)
 const questions = ref([])
 const answers = ref([])
 const idx = ref(0)
