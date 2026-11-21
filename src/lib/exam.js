@@ -21,6 +21,27 @@ function markSeen(questions) {
   } catch {}
 }
 
+// Picks a wording for each question, avoiding the one shown last time.
+const WORDING_KEY = 'secplus.wording'
+function applyWordings(questions) {
+  let last = {}
+  try {
+    last = JSON.parse(localStorage.getItem(WORDING_KEY)) || {}
+  } catch {}
+  const out = questions.map((q) => {
+    const n = q.wordings?.length || 1
+    if (n < 2) return q
+    const options = [...Array(n).keys()].filter((i) => i !== last[q.id])
+    const pick = options[Math.floor(Math.random() * options.length)]
+    last[q.id] = pick
+    return { ...q, question: q.wordings[pick], wording: pick }
+  })
+  try {
+    localStorage.setItem(WORDING_KEY, JSON.stringify(last))
+  } catch {}
+  return out
+}
+
 // Random order, but least-recently-seen questions come first.
 function freshFirst(pool, seen) {
   return shuffle(pool).sort((a, b) => (seen[a.id] || 0) - (seen[b.id] || 0))
@@ -45,7 +66,7 @@ export function practiceSet(domain, count, kind = 'all', onlyIds = null, objecti
   const pool = practicePool(domain, kind, onlyIds, objective)
   const picked = count === 'all' ? pool : freshFirst(pool, readSeen()).slice(0, Number(count))
   markSeen(picked)
-  return shuffle(picked).map(shuffleQuestion)
+  return applyWordings(shuffle(picked).map(shuffleQuestion))
 }
 
 // Builds an exam weighted by the official domain percentages. Like the real
@@ -56,7 +77,7 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
     // Retest exam from a given set (e.g. missed questions): PBQs first, then the rest.
     const picked = freshFirst(QUESTIONS.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
     markSeen(picked)
-    return [...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion)
+    return applyWordings([...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion))
   }
   total = Math.min(total, QUESTIONS.length)
   const pbqs = freshFirst(QUESTIONS.filter(isPBQ), seen).slice(0, Math.max(1, Math.round(total / 18)))
@@ -85,7 +106,7 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
 
   const picked = [...shuffle(pbqs), ...shuffle(rest)]
   markSeen(picked)
-  return picked.map(shuffleQuestion)
+  return applyWordings(picked.map(shuffleQuestion))
 }
 
 const eq = (a, b) => a.length === b.length && a.every((x, i) => x === b[i])

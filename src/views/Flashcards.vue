@@ -13,7 +13,12 @@ const ALL = [...FLASHCARDS, ...ACRONYMS]
 const deckType = ref('concepts') // concepts | acronyms | marked
 const domain = ref(null)
 const count = ref(10)
-const reverse = ref(false) // acronyms: show meaning first
+const side = ref('front') // which side to show first: front | back | mixed
+const SIDES = [
+  { id: 'front', label: 'Front' },
+  { id: 'back', label: 'Back' },
+  { id: 'mixed', label: 'Mixed' }
+]
 const stage = ref('setup')
 const deck = ref([])
 const idx = ref(0)
@@ -35,12 +40,19 @@ const pool = computed(() => {
 })
 const card = computed(() => deck.value[idx.value])
 const isAcronym = (c) => c.id.startsWith('a')
-const frontText = (c) => (isAcronym(c) && reverse.value ? c.back : c.front)
-const backText = (c) => (isAcronym(c) && reverse.value ? c.front : c.back)
+// Each card in a deck carries `flip` (true = show its back side first).
+const frontText = (c) => (c.flip ? c.back : c.front)
+const backText = (c) => (c.flip ? c.front : c.back)
+const sideLabel = (c, showingAnswer) =>
+  (c.flip !== showingAnswer) ? (isAcronym(c) ? 'Meaning' : 'Definition') : isAcronym(c) ? 'Acronym' : 'Term'
 const cardLabel = (c) => (isAcronym(c) ? 'Acronym' : `${c.domain}.0 ${domainById(c.domain).name}`)
 
 function begin(cards) {
-  deck.value = shuffle(cards)
+  // "Mixed" re-rolls the side for every card, every time a deck starts.
+  deck.value = shuffle(cards).map((c) => ({
+    ...c,
+    flip: side.value === 'back' || (side.value === 'mixed' && Math.random() < 0.5)
+  }))
   idx.value = 0
   flipped.value = false
   known.value = 0
@@ -99,12 +111,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </div>
       </div>
       <DomainPicker v-if="deckType === 'concepts'" v-model="domain" :counts="counts" />
-      <div v-if="deckType === 'acronyms'">
-        <div class="label">Show first</div>
+      <div>
+        <div class="label">Start with</div>
         <div class="row">
-          <button class="chip" :class="{ on: !reverse }" @click="reverse = false">Acronym</button>
-          <button class="chip" :class="{ on: reverse }" @click="reverse = true">Meaning</button>
+          <button v-for="o in SIDES" :key="o.id" class="chip" :class="{ on: side === o.id }" @click="side = o.id">{{ o.label }}</button>
         </div>
+        <p class="muted small" style="margin: .5rem 0 0">
+          {{ side === 'front' ? 'See the term or acronym, recall the meaning.'
+            : side === 'back' ? 'See the definition, recall the term or acronym.'
+            : 'Each card randomly shows its front or back — different every deck.' }}
+        </p>
       </div>
       <p v-if="deckType === 'marked' && !markedCards.length" class="muted small" style="margin: 0">
         No cards marked yet. While studying, tap "Mark for review" (or press M) on any card.
@@ -121,7 +137,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </div>
     <div class="bar"><span :style="{ width: (idx / deck.length) * 100 + '%' }" /></div>
     <button class="card flash" @click="flipped = !flipped">
-      <span class="muted small">{{ cardLabel(card) }} · {{ flipped ? 'Answer' : 'Prompt' }}</span>
+      <span class="muted small">{{ isAcronym(card) ? sideLabel(card, flipped) : `${cardLabel(card)} · ${sideLabel(card, flipped)}` }}</span>
       <span v-if="!flipped" class="front">{{ frontText(card) }}</span>
       <span v-else class="back">
         <strong>{{ backText(card) }}</strong>
