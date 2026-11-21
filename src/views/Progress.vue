@@ -40,7 +40,11 @@ const domainStats = computed(() =>
 const label = (a) =>
   a.mode === 'exam'
     ? `Exam${a.timed ? ' · timed' : ''}`
-    : `${a.mode === 'practice' ? 'Practice' : 'Flashcards'} · ${a.domain ? `Domain ${a.domain}` : 'All'}`
+    : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'acronyms'
+      ? 'Flashcards · Acronyms'
+      : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'marked'
+        ? 'Flashcards · Marked'
+        : `${a.mode === 'practice' ? 'Practice' : 'Flashcards'} · ${a.domain ? `Domain ${a.domain}` : 'All'}`
 const date = (s) => new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 
 async function reset() {
