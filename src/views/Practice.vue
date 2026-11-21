@@ -1,5 +1,7 @@
 <script setup>
 import { useFocusMode } from '../lib/focus.js'
+import { recordSession } from '../lib/adaptive.js'
+import LevelBadge from '../components/LevelBadge.vue'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
@@ -26,6 +28,7 @@ const KINDS = [
 ]
 const stage = ref('setup')
 useFocusMode(stage)
+const adaptive = ref(null)
 const questions = ref([])
 const answers = ref([])
 const idx = ref(0)
@@ -52,6 +55,7 @@ function start() {
   const ids = onlyIds.value ? new Set(onlyIds.value) : null
   questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objective.value)
   answers.value = []
+  adaptive.value = null
   idx.value = 0
   revealed.value = false
   startedAt.value = Date.now()
@@ -70,6 +74,7 @@ async function next() {
     return
   }
   seconds.value = Math.round((Date.now() - startedAt.value) / 1000)
+  adaptive.value = recordSession(questions.value, answers.value)
   stage.value = 'done'
   await saveAttempt({
     mode: 'practice',
@@ -86,6 +91,7 @@ async function next() {
 <template>
   <div v-if="stage === 'setup'" class="stack">
     <h1>Practice by section</h1>
+    <LevelBadge />
     <p class="muted">Instant feedback after each question. Questions and answer order are randomized every time.</p>
     <div class="card stack">
       <div v-if="objective" class="row between objective">
@@ -132,7 +138,7 @@ async function next() {
     </div>
   </div>
 
-  <Results v-else :questions="questions" :answers="answers" :seconds="seconds" @restart="stage = 'setup'" />
+  <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" @restart="stage = 'setup'" />
 </template>
 
 <style scoped>

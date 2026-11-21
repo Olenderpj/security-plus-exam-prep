@@ -1,6 +1,8 @@
 import { QUESTIONS, isPBQ } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleQuestion } from './random.js'
+import { difficultyOf } from './difficulty.js'
+import { targetFor } from './level.js'
 
 // Remembers when each question was last served (in this browser) so new
 // sessions favour questions you haven't seen recently.
@@ -47,6 +49,22 @@ function freshFirst(pool, seen) {
   return shuffle(pool).sort((a, b) => (seen[a.id] || 0) - (seen[b.id] || 0))
 }
 
+// Adaptive pick: questions near the difficulty the user should be seeing in their own sub-section
+// are favoured (Gaussian weight), then ones not seen recently. Weighted sampling without replacement.
+function pickAdaptive(pool, n, mode, seen) {
+  const now = Date.now()
+  return pool
+    .map((q) => {
+      const gap = difficultyOf(q) - targetFor(q, mode)
+      const age = seen[q.id] ? Math.min(14, (now - seen[q.id]) / 864e5) : 14
+      const w = Math.max(1e-6, Math.exp(-(gap * gap) / (2 * 1.5 * 1.5)) * (0.4 + (0.6 * age) / 14))
+      return { q, k: Math.random() ** (1 / w) }
+    })
+    .sort((a, b) => b.k - a.k)
+    .slice(0, n)
+    .map((x) => x.q)
+}
+
 // kind: 'all' | 'mc' | 'pbq' (performance-based + exhibit questions)
 export const matchesKind = (q, kind) =>
   kind === 'all' || (kind === 'pbq' ? isPBQ(q) || Boolean(q.exhibit) : !isPBQ(q) && !q.exhibit)
@@ -64,7 +82,8 @@ export const practicePool = (domain, kind = 'all', onlyIds = null, objective = n
 
 export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null) {
   const pool = practicePool(domain, kind, onlyIds, objective)
-  const picked = count === 'all' ? pool : freshFirst(pool, readSeen()).slice(0, Number(count))
+  // Retesting a chosen set (missed questions) uses exactly that set; otherwise difficulty adapts.
+  const picked = count === 'all' ? pool : onlyIds ? freshFirst(pool, readSeen()).slice(0, Number(count)) : pickAdaptive(pool, Number(count), 'practice', readSeen())
   markSeen(picked)
   return applyWordings(shuffle(picked).map(shuffleQuestion))
 }
@@ -80,7 +99,7 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
     return applyWordings([...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion))
   }
   total = Math.min(total, QUESTIONS.length)
-  const pbqs = freshFirst(QUESTIONS.filter(isPBQ), seen).slice(0, Math.max(1, Math.round(total / 18)))
+  const pbqs = pickAdaptive(QUESTIONS.filter(isPBQ), Math.max(1, Math.round(total / 18)), 'exam', seen)
 
   const targets = DOMAINS.map((d) => ({ id: d.id, n: Math.round((d.weight / 100) * total) }))
   let diff = total - targets.reduce((s, t) => s + t.n, 0)
@@ -97,12 +116,12 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
   const used = new Set(pbqs.map((q) => q.id))
   const rest = []
   for (const t of targets) {
-    const pool = freshFirst(QUESTIONS.filter((q) => q.domain === t.id && !isPBQ(q)), seen).slice(0, t.n)
+    const pool = pickAdaptive(QUESTIONS.filter((q) => q.domain === t.id && !isPBQ(q)), t.n, 'exam', seen)
     pool.forEach((q) => used.add(q.id))
     rest.push(...pool)
   }
   const short = total - pbqs.length - rest.length
-  if (short > 0) rest.push(...freshFirst(QUESTIONS.filter((q) => !used.has(q.id) && !isPBQ(q)), seen).slice(0, short))
+  if (short > 0) rest.push(...pickAdaptive(QUESTIONS.filter((q) => !used.has(q.id) && !isPBQ(q)), short, 'exam', seen))
 
   const picked = [...shuffle(pbqs), ...shuffle(rest)]
   markSeen(picked)
@@ -133,8 +152,25 @@ export function partsCorrect(q, ans = []) {
   return { got: isCorrect(q, ans) ? 1 : 0, of: 1 }
 }
 
-// Approximation of CompTIA's 100–900 scale. The real scaling is not published.
+// Points for one question: 1 for a correct answer; performance-based questions earn partial credit
+// for the fraction of parts correct.
+export function points(q, ans = []) {
+  const p = partsCorrect(q, ans)
+  return p.of ? p.got / p.of : 0
+}
+
+// Approximation of CompTIA's 100–900 scale (linear, 750 to pass). CompTIA does not publish its exact
+// scaling, so this is the closest standard model rather than the official formula.
 export const scaled = (correct, total) => Math.round(100 + (800 * correct) / Math.max(total, 1))
+
+// Session score: points (with partial credit), percentage, and the scaled score.
+export function score(questions, answers) {
+  const total = questions.length
+  const pts = questions.reduce((s, q, i) => s + points(q, answers[i] || []), 0)
+  const pct = total ? (100 * pts) / total : 0
+  const sc = scaled(pts, total)
+  return { points: pts, total, pct, scaled: sc, pass: sc >= EXAM.passScaled }
+}
 
 // Per-domain results keyed by domain id, plus per-objective results under
 // "objectives" (e.g. { "1": {...}, "objectives": { "1.4": {...} } }).

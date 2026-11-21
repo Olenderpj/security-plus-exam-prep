@@ -35,7 +35,7 @@ for (const q of QUESTIONS) {
   }
 }
 const withVariants = QUESTIONS.filter((q) => q.wordings.length > 1).length
-console.log('questions with alternate wordings:', withVariants, 'of', QUESTIONS.filter((q) => q.type === 'mc' && !q.id.startsWith('p')).length, 'standard MC')
+console.log('questions with alternate wordings:', withVariants, 'of', QUESTIONS.filter((q) => q.type === 'mc' && !/^[ph]-/.test(q.id)).length, 'standard MC')
 
 const by = {}
 QUESTIONS.forEach((q) => { const k = `${q.domain}:${q.type}`; by[k] = (by[k] || 0) + 1 })

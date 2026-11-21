@@ -9,6 +9,7 @@ import d3b from './d3-more.js'
 import d4b from './d4-more.js'
 import d5b from './d5-more.js'
 import pbq from './pbq.js'
+import hard from './hard.js'
 import v1 from './variants-d1.js'
 import v2 from './variants-d2.js'
 import v3 from './variants-d3.js'
@@ -23,7 +24,7 @@ export const VARIANTS = { ...v1, ...v2, ...v3, ...v4, ...v5 }
 //   match: items[{label, choices, answer}]   (answer = chosen choice index per item)
 //   order: items[], correct[]                (answer = item indexes in chosen order)
 function normalize(q, domain, id) {
-  const base = { id, domain, objective: q.o, question: q.q, explanation: q.e, exhibit: q.x || null }
+  const base = { id, domain, objective: q.o, question: q.q, explanation: q.e, exhibit: q.x || null, lvl: q.lv ?? null }
   if (q.t === 'match') {
     const items = q.items.map(([label, ans, own]) => {
       const choices = own || q.choices
@@ -48,7 +49,8 @@ export const QUESTIONS = [
   ...tag([...d3, ...d3b], 3),
   ...tag([...d4, ...d4b], 4),
   ...tag([...d5, ...d5b], 5),
-  ...pbq.map((q, i) => withWordings(normalize(q, q.d, `p-${i}`)))
+  ...pbq.map((q, i) => withWordings(normalize(q, q.d, `p-${i}`))),
+  ...hard.map((q, i) => withWordings(normalize(q, q.d, `h-${i}`)))
 ]
 
 // Performance-based = anything that isn't plain multiple choice.

@@ -1,5 +1,7 @@
 <script setup>
 import { useFocusMode } from '../lib/focus.js'
+import { recordSession } from '../lib/adaptive.js'
+import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
@@ -17,6 +19,7 @@ const timed = ref(true)
 const length = ref(EXAM.questions)
 const stage = ref('setup')
 useFocusMode(stage)
+const adaptive = ref(null)
 const questions = ref([])
 const answers = ref([])
 const flags = ref(new Set())
@@ -49,6 +52,7 @@ const clock = computed(() => {
 function start() {
   questions.value = examSet(length.value, source.value === 'missed' ? new Set(missed.value) : null)
   answers.value = []
+  adaptive.value = null
   flags.value = new Set()
   idx.value = 0
   startedAt.value = Date.now()
@@ -80,6 +84,7 @@ async function finish() {
   seconds.value = Math.round((Date.now() - startedAt.value) / 1000)
   stage.value = 'done'
   recordResults(questions.value, answers.value)
+  adaptive.value = recordSession(questions.value, answers.value)
   await saveAttempt({
     mode: 'exam',
     domain: null,
@@ -104,6 +109,7 @@ onBeforeUnmount(() => clearInterval(timer))
 <template>
   <div v-if="stage === 'setup'" class="stack">
     <h1>Practice exam</h1>
+    <LevelBadge />
     <p class="muted">
       Questions are drawn from every domain using the official SY0-701 weightings. No feedback until you submit —
       just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back. Flag questions to revisit before submitting.
@@ -176,7 +182,7 @@ onBeforeUnmount(() => clearInterval(timer))
     <div><button class="btn ghost small" @click="quit">Quit exam</button></div>
   </div>
 
-  <Results v-else :questions="questions" :answers="answers" :seconds="seconds" exam @restart="stage = 'setup'" />
+  <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" exam @restart="stage = 'setup'" />
 </template>
 
 <style scoped>
