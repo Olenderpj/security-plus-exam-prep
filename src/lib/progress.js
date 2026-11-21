@@ -1,4 +1,5 @@
 // Saves results to Supabase when signed in, otherwise to this browser.
+import { watch } from 'vue'
 import { supabase } from './supabase.js'
 import { user } from './auth.js'
 
@@ -18,6 +19,27 @@ function writeLocal(rows) {
   } catch {}
 }
 
+// When someone signs in, sessions they completed on this device while signed
+// out are moved into their account so they show up on every device.
+let migrating = null
+async function migrateLocalAttempts() {
+  const rows = readLocal()
+  if (!rows.length) return
+  const { error } = await supabase.from('attempts').insert(
+    rows.map(({ id, user_id, ...r }) => r) // let the database assign id and owner
+  )
+  if (error) return console.error('Could not move local progress to account', error)
+  writeLocal([])
+}
+// immediate: also covers loading the app when already signed in.
+watch(
+  user,
+  (u, prev) => {
+    if (u && supabase && u.id !== prev?.id) migrating = migrateLocalAttempts().finally(() => (migrating = null))
+  },
+  { immediate: true }
+)
+
 export async function saveAttempt(attempt) {
   const row = { ...attempt, created_at: new Date().toISOString() }
   if (user.value && supabase) {
@@ -29,6 +51,7 @@ export async function saveAttempt(attempt) {
 }
 
 export async function loadAttempts() {
+  if (migrating) await migrating
   if (user.value && supabase) {
     const { data, error } = await supabase
       .from('attempts')

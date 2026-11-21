@@ -19,7 +19,10 @@ async function submit() {
   const { data, error: err } = mode.value === 'in' ? await signIn(email.value, password.value) : await signUp(email.value, password.value)
   busy.value = false
   if (err) return (error.value = err.message)
-  if (mode.value === 'up' && !data.session) return (info.value = 'Check your email to confirm your account, then sign in.')
+  if (mode.value === 'up' && !data.session) {
+    mode.value = 'in'
+    return (info.value = 'Account created. Check your email for a confirmation link, then sign in here.')
+  }
   router.push('/progress')
 }
 </script>
@@ -27,6 +30,10 @@ async function submit() {
 <template>
   <div class="stack narrow">
     <h1>{{ mode === 'in' ? 'Sign in' : 'Create account' }}</h1>
+    <p v-if="supabaseEnabled" class="muted small">
+      An account keeps your scores, missed questions, and marked flashcards in sync on every device.
+      Anything you've done on this device so far is added to your account when you sign in.
+    </p>
     <p v-if="!supabaseEnabled" class="muted">Accounts are not configured for this deployment. Progress is saved in this browser.</p>
     <form v-else class="card stack" @submit.prevent="submit">
       <div>
@@ -40,7 +47,7 @@ async function submit() {
       <p v-if="error" class="bad small" style="margin: 0">{{ error }}</p>
       <p v-if="info" class="good small" style="margin: 0">{{ info }}</p>
       <div class="row between">
-        <button class="btn primary" :disabled="busy">{{ mode === 'in' ? 'Sign in' : 'Create account' }}</button>
+        <button class="btn primary" :disabled="busy || !email || password.length < 6">{{ mode === 'in' ? 'Sign in' : 'Create account' }}</button>
         <a href="#" class="small muted" @click.prevent="mode = mode === 'in' ? 'up' : 'in'">
           {{ mode === 'in' ? 'Need an account?' : 'Have an account? Sign in' }}
         </a>

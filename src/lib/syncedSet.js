@@ -22,12 +22,15 @@ export function syncedSet(localKey, metadataKey) {
     (u) => {
       if (u?.id === lastUserId && lastUserId !== undefined) return
       lastUserId = u?.id ?? null
-      set.value = new Set([...readLocal(), ...(u?.user_metadata?.[metadataKey] || [])])
+      const fromAccount = u?.user_metadata?.[metadataKey] || []
+      set.value = new Set([...readLocal(), ...fromAccount])
+      // Push anything collected on this device before signing in up to the account.
+      if (u && set.value.size > fromAccount.length) persist()
     },
     { immediate: true }
   )
 
-  let timer = null
+  var timer = null
   function persist() {
     const ids = [...set.value]
     try {

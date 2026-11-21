@@ -17,4 +17,14 @@ if (supabaseEnabled) {
 export const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password })
 export const signUp = (email, password) =>
   supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
-export const signOut = () => supabase.auth.signOut()
+// Signing out removes this device's copies of account data, so the next person
+// using a shared computer starts fresh. Everything stays in the account.
+export async function signOut() {
+  await supabase.auth.signOut()
+  for (const key of ['secplus.missed', 'secplus.marked']) {
+    try {
+      localStorage.removeItem(key)
+    } catch {}
+  }
+  window.location.assign('/')
+}
