@@ -97,7 +97,6 @@ async function reset() {
     <p v-if="supabaseEnabled && !user" class="muted small">
       Progress is saved in this browser only. <RouterLink to="/login">Sign in</RouterLink> to sync it to your account.
     </p>
-    <p v-else-if="user" class="muted small">Signed in as {{ user.email }}</p>
 
     <p v-if="loading" class="muted">Loading…</p>
     <template v-else>

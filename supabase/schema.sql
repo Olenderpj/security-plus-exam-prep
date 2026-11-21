@@ -26,3 +26,21 @@ create policy "Users insert own attempts" on public.attempts
 
 create policy "Users delete own attempts" on public.attempts
   for delete using (auth.uid() = user_id);
+
+-- Study notes: one row per user; content is {"sections": [{"id", "title", "body"}, ...]}.
+create table if not exists public.notes (
+  user_id uuid primary key references auth.users (id) on delete cascade default auth.uid(),
+  content jsonb not null default '{"sections": []}',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.notes enable row level security;
+
+create policy "Users read own notes" on public.notes
+  for select using (auth.uid() = user_id);
+
+create policy "Users insert own notes" on public.notes
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users update own notes" on public.notes
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);

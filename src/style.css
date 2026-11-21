@@ -125,7 +125,7 @@ p { margin: 0 0 1rem; }
 .bad { color: var(--bad); }
 .warn { color: var(--warn); }
 
-input[type=email], input[type=password] {
+input[type=email], input[type=password], input[type=text] {
   width: 100%;
   padding: .6rem .75rem;
   border: 1px solid var(--border);

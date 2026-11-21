@@ -1,6 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { user, signOut } from './lib/auth.js'
+import { user, signOut, displayName } from './lib/auth.js'
 import { supabaseEnabled } from './lib/supabase.js'
 
 // Account menu: opens from the username, closes on outside click or Escape.
@@ -26,6 +26,8 @@ onBeforeUnmount(() => {
         <RouterLink to="/practice">Practice</RouterLink>
         <RouterLink to="/exam">Exam</RouterLink>
         <RouterLink to="/flashcards">Flashcards</RouterLink>
+        <RouterLink to="/notes">Notes</RouterLink>
+        <RouterLink to="/search">Search</RouterLink>
         <RouterLink to="/progress">Progress</RouterLink>
         <template v-if="supabaseEnabled">
           <div v-if="user" ref="menuEl" class="account">
@@ -35,11 +37,12 @@ onBeforeUnmount(() => {
               aria-haspopup="menu"
               @click="menuOpen = !menuOpen"
             >
-              <span class="name">{{ user.email.split('@')[0] }}</span>
+              <span class="name">{{ displayName(user) }}</span>
               <span class="caret" :class="{ open: menuOpen }">▾</span>
             </button>
             <div v-if="menuOpen" class="menu" role="menu">
               <div class="menu-email muted small">{{ user.email }}</div>
+              <RouterLink role="menuitem" to="/settings" class="menu-item" @click="menuOpen = false">Settings</RouterLink>
               <button role="menuitem" class="menu-item" @click="signOut">Sign out</button>
             </div>
           </div>
@@ -79,4 +82,5 @@ nav a.router-link-active, nav a:hover { color: var(--text); }
   padding: .45rem .6rem; font: inherit; font-size: .92rem; color: var(--text); cursor: pointer;
 }
 .menu-item:hover { background: var(--soft); }
+nav a.menu-item { color: var(--text); padding: .45rem .6rem; }
 </style>

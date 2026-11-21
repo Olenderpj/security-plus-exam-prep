@@ -6,6 +6,8 @@ import { supabaseEnabled } from '../lib/supabase.js'
 
 const router = useRouter()
 const mode = ref('in')
+const firstName = ref('')
+const lastName = ref('')
 const email = ref('')
 const password = ref('')
 const busy = ref(false)
@@ -16,7 +18,7 @@ async function submit() {
   busy.value = true
   error.value = ''
   info.value = ''
-  const { data, error: err } = mode.value === 'in' ? await signIn(email.value, password.value) : await signUp(email.value, password.value)
+  const { data, error: err } = mode.value === 'in' ? await signIn(email.value, password.value) : await signUp(email.value, password.value, firstName.value, lastName.value)
   busy.value = false
   if (err) return (error.value = err.message)
   if (mode.value === 'up' && !data.session) {
@@ -36,6 +38,16 @@ async function submit() {
     </p>
     <p v-if="!supabaseEnabled" class="muted">Accounts are not configured for this deployment. Progress is saved in this browser.</p>
     <form v-else class="card stack" @submit.prevent="submit">
+      <template v-if="mode === 'up'">
+        <div>
+          <div class="label">First name</div>
+          <input v-model="firstName" type="text" required autocomplete="given-name" />
+        </div>
+        <div>
+          <div class="label">Last name <span class="muted">(optional)</span></div>
+          <input v-model="lastName" type="text" autocomplete="family-name" />
+        </div>
+      </template>
       <div>
         <div class="label">Email</div>
         <input v-model="email" type="email" required autocomplete="email" />
@@ -47,7 +59,7 @@ async function submit() {
       <p v-if="error" class="bad small" style="margin: 0">{{ error }}</p>
       <p v-if="info" class="good small" style="margin: 0">{{ info }}</p>
       <div class="row between">
-        <button class="btn primary" :disabled="busy || !email || password.length < 6">{{ mode === 'in' ? 'Sign in' : 'Create account' }}</button>
+        <button class="btn primary" :disabled="busy || !email || password.length < 6 || (mode === 'up' && !firstName.trim())">{{ mode === 'in' ? 'Sign in' : 'Create account' }}</button>
         <a href="#" class="small muted" @click.prevent="mode = mode === 'in' ? 'up' : 'in'">
           {{ mode === 'in' ? 'Need an account?' : 'Have an account? Sign in' }}
         </a>
