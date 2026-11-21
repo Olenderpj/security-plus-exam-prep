@@ -2,6 +2,7 @@
 import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
+import { clearAttempts } from '../lib/progress.js'
 import { domainStats, estimate, labelFor, MIN_FOR_ESTIMATE, reset, state, stats } from '../lib/level.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
@@ -44,6 +45,14 @@ const sections = computed(() =>
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
 
+// ── reset progress ──
+const progressCleared = ref(false)
+async function resetProgress() {
+  if (!window.confirm('Delete all saved progress (scores and session history)? This cannot be undone.')) return
+  await clearAttempts()
+  progressCleared.value = true
+}
+
 function resetDifficulty() {
   if (window.confirm('Reset your difficulty level for every section? Your scores and missed questions are not affected.')) reset()
 }
@@ -76,6 +85,18 @@ function resetDifficulty() {
     <p v-else-if="supabaseEnabled" class="muted small">
       <RouterLink to="/login">Sign in</RouterLink> to set your name and sync your difficulty levels across devices.
     </p>
+
+    <section class="card stack">
+      <div class="label">Your data</div>
+      <p class="muted small" style="margin: 0">
+        Deletes your saved scores and session history, including the history charts on the Progress page. Your missed-questions list,
+        notes and difficulty levels are not affected.
+      </p>
+      <div class="row">
+        <button class="btn" @click="resetProgress">Reset progress</button>
+        <span v-if="progressCleared" class="good small" role="status">Progress reset.</span>
+      </div>
+    </section>
 
     <section class="stack">
       <div class="row between">

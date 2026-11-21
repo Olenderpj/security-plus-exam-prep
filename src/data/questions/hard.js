@@ -30,7 +30,7 @@ export default [
       'Encrypt the backup with AES and encrypt the AES key with the partner\'s RSA public key',
       'Encrypt the entire backup with the partner\'s RSA public key',
       'Encrypt the backup with AES and send the AES key in a separate email',
-      'Hash the backup with SHA-256 and send the hash over TLS'
+      'Hash the backup with SHA-256 and send the hash and the file over TLS'
     ],
     c: 0,
     e: 'This is hybrid encryption: fast symmetric encryption for the bulk data and asymmetric encryption to protect (wrap) the symmetric key. Asymmetric algorithms are too slow for large data, and sending the key in the clear defeats the protection.'
@@ -54,7 +54,7 @@ export default [
   {
     d: 2, o: '2.3', lv: 8.5,
     q: 'A web application accepts XML uploads. A penetration tester submits a document whose DOCTYPE defines an external entity pointing to file:///etc/passwd, and the contents of that file appear in the application\'s response. Which vulnerability does this demonstrate?',
-    a: ['Cross-site request forgery', 'XML external entity (XXE) injection', 'Server-side request forgery', 'Insecure deserialization'],
+    a: ['Cross-site request forgery (CSRF)', 'XML external entity (XXE) injection', 'Server-side request forgery (SSRF)', 'Insecure deserialization of XML objects'],
     c: 1,
     e: 'Resolving an external entity in a DTD to read a local file is the signature of XXE. SSRF makes the server issue requests (usually HTTP to internal hosts) on the attacker\'s behalf, and the other options do not involve entity expansion.'
   },
@@ -69,10 +69,10 @@ export default [
     d: 2, o: '2.4', lv: 8,
     q: 'An EDR platform alerts that winword.exe spawned powershell.exe, which then injected code into explorer.exe and opened an outbound connection to an unknown host. A scan finds no malicious executable on disk. Which of the following is the MOST likely explanation?',
     a: [
-      'A rootkit has replaced a kernel driver',
-      'A logic bomb has been triggered by a scheduled date',
-      'Fileless malware is running in memory using living-off-the-land tools',
-      'Ransomware has encrypted the user\'s documents'
+      'A rootkit has replaced a kernel driver to hide its processes',
+      'A logic bomb has been triggered by a scheduled date and time',
+      'Fileless malware is running in memory using built-in tools',
+      'Ransomware has begun encrypting the user documents on the workstation'
     ],
     c: 2,
     e: 'Office spawning PowerShell, in-memory injection and no on-disk payload indicate fileless malware abusing built-in tools. Nothing in the alert points to a rootkit driver, a date-based logic bomb or encryption activity.'
@@ -95,9 +95,9 @@ export default [
     q: 'Review the web server log. Which of the following controls would be the MOST effective at eliminating the underlying vulnerability being exploited?',
     a: [
       'Deploying a web application firewall in front of the site',
-      'Encoding all output returned to the browser',
+      'Encoding all output returned to the browser by the application',
       'Using parameterized queries (prepared statements) in the application',
-      'Rate-limiting requests from each source address'
+      'Rate-limiting requests from each source address at the load balancer'
     ],
     c: 2,
     e: 'The requests inject SQL (OR \'1\'=\'1\', UNION SELECT) through the id parameter. Parameterized queries fix the root cause. A WAF is a compensating control that can be bypassed, output encoding addresses XSS, and rate limiting only slows an attacker.'
@@ -121,10 +121,10 @@ export default [
     d: 3, o: '3.1', lv: 7,
     q: 'A DevOps team adopts immutable infrastructure for its web tier. Which of the following is the PRIMARY security benefit of this approach?',
     a: [
-      'It encrypts data at rest on every instance automatically',
+      'It encrypts data at rest on every instance automatically using keys managed by the provider',
       'It allows administrators to log in and hot-fix production servers faster',
-      'It eliminates the need to scan images for vulnerabilities',
-      'It removes configuration drift because instances are replaced from a known-good image instead of being modified in place'
+      'It eliminates the need to scan images for vulnerabilities because instances are never changed',
+      'It prevents configuration drift because instances are replaced from a known-good image, not modified in place'
     ],
     c: 3,
     e: 'Immutable infrastructure replaces instances from a known-good image rather than patching or editing them in place, which prevents drift and unauthorized changes. It does not by itself provide encryption, and images still need vulnerability scanning.'
@@ -188,9 +188,9 @@ export default [
     q: 'Which conclusion is BEST supported by this Windows security log excerpt?',
     a: [
       'A pass-the-hash attack moved laterally from jsmith to the administrator account',
-      'A password-guessing attack against several accounts succeeded for jsmith, followed by a remote desktop session',
-      'A user forgot a password and later logged in at the local console',
-      'A Kerberoasting attack extracted service account tickets'
+      'Password guessing against several accounts succeeded for jsmith, followed by a remote desktop session',
+      'A user forgot a password, tried several accounts, then logged in at the local console',
+      'A Kerberoasting attack extracted service tickets and cracked the svc-sql password offline'
     ],
     c: 1,
     e: 'Event 4625 is a failed logon and 4624 a successful one. Failures across several accounts from one external IP, then a success for jsmith, then LogonType 10 (RemoteInteractive, i.e., RDP) indicate a successful guessing attack and remote access. Nothing shows hash reuse, a console logon (type 2) or ticket requests.'
@@ -214,7 +214,7 @@ export default [
       'Just-in-time access through a privileged access management (PAM) solution',
       'Adding the developers to the Domain Admins group permanently',
       'Role-based access control with a "Release Manager" role',
-      'Single sign-on with multifactor authentication'
+      'Single sign-on with multifactor authentication for all developer accounts'
     ],
     c: 0,
     e: 'PAM with just-in-time elevation provides approval workflows, time-limited credentials and session recording. Permanent membership violates least privilege, RBAC alone does not expire or record access, and SSO/MFA authenticate users but do not govern privileged sessions.'
@@ -242,10 +242,10 @@ export default [
     d: 4, o: '4.5', lv: 8.5,
     q: 'Attackers are sending phishing emails whose visible From address is ceo@example.com. The messages pass SPF because they are sent from a domain the attacker controls. Which of the following would help the organization detect and block this spoofing of its visible From domain?',
     a: [
-      'Adding a stricter -all mechanism to the SPF record',
-      'Enabling DKIM signing on outbound mail only',
-      'Publishing a DMARC policy that requires SPF or DKIM alignment with the From domain',
-      'Enforcing TLS on all inbound SMTP connections'
+      'Adding a stricter -all mechanism to the SPF record of the organization domain',
+      'Enabling DKIM signing on all outbound mail from the organization domain',
+      'Publishing a DMARC policy requiring SPF or DKIM alignment with the From domain',
+      'Enforcing TLS on all inbound SMTP connections from external mail servers'
     ],
     c: 2,
     e: 'SPF validates the envelope sender, not the visible From header, so it can pass for an attacker\'s own domain. DMARC requires the authenticated domain (SPF or DKIM) to align with the From header and lets the domain owner request quarantine or reject.'
@@ -288,14 +288,14 @@ export default [
   {
     d: 5, o: '5.4', lv: 7,
     q: 'Under GDPR, a data controller discovers a breach of EU residents\' personal data that is likely to result in a risk to individuals. Within what timeframe must the controller notify the supervisory authority, where feasible?',
-    a: ['Within 24 hours', 'Within 72 hours of becoming aware', 'Within 30 days', 'Within 90 days'],
+    a: ['Within 24 hours of the breach occurring', 'Within 72 hours of becoming aware', 'Within 30 days of becoming aware', 'Within 90 days of becoming aware'],
     c: 1,
     e: 'GDPR requires notification to the supervisory authority without undue delay and, where feasible, within 72 hours of becoming aware of the breach.'
   },
   {
     d: 5, o: '5.5', lv: 6.5,
     q: 'A penetration tester is given a valid low-privilege user account and a network diagram, but no source code or administrative credentials. Which type of engagement is this?',
-    a: ['Unknown environment', 'Known environment', 'Purple team exercise', 'Partially known environment'],
+    a: ['Unknown environment (black box)', 'Known environment (white box)', 'Purple team exercise', 'Partially known environment (gray box)'],
     c: 3,
     e: 'A partially known environment (gray box) gives the tester some information such as limited credentials or documentation. Unknown (black box) provides none and known (white box) provides full details.'
   }

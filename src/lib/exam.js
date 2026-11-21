@@ -61,8 +61,11 @@ function pickAdaptive(pool, n, mode, seen) {
       return { q, k: Math.random() ** (1 / w) }
     })
     .sort((a, b) => b.k - a.k)
-    .slice(0, n)
-    .map((x) => x.q)
+    .reduce((out, { q }) => {
+      // At most one rung of a difficulty ladder per session.
+      if (out.length < n && !(q.family && out.some((x) => x.family === q.family))) out.push(q)
+      return out
+    }, [])
 }
 
 // kind: 'all' | 'mc' | 'pbq' (performance-based + exhibit questions)
@@ -88,8 +91,23 @@ export function practiceSet(domain, count, kind = 'all', onlyIds = null, objecti
   return applyWordings(shuffle(picked).map(shuffleQuestion))
 }
 
-// Builds an exam weighted by the official domain percentages. Like the real
-// exam, performance-based questions are presented first.
+// Questions per domain for an exam of `total` questions, weighted by the official SY0-701 domain
+// percentages (12 / 22 / 18 / 28 / 20). Largest-remainder rounding makes the counts add up exactly
+// and keeps every length (90, 45, 25, ...) as close to the official ratio as whole questions allow.
+export function domainTargets(total) {
+  const rows = DOMAINS.map((d) => {
+    const exact = (d.weight / 100) * total
+    return { id: d.id, weight: d.weight, n: Math.floor(exact), rem: exact - Math.floor(exact) }
+  })
+  const left = total - rows.reduce((s, r) => s + r.n, 0)
+  ;[...rows].sort((a, b) => b.rem - a.rem || b.weight - a.weight).slice(0, left).forEach((r) => r.n++)
+  return rows.map(({ id, n }) => ({ id, n }))
+}
+
+// Builds an exam weighted by the official domain percentages. Like the real exam, performance-based
+// questions are presented first, and they count toward their domain's share. Difficulty adapts to
+// the learner, but never at the expense of the domain ratio: a short domain is topped up from the
+// same domain, and only borrows from another domain if that domain has too few questions.
 export function examSet(total = EXAM.questions, onlyIds = null) {
   const seen = readSeen()
   if (onlyIds) {
@@ -99,31 +117,39 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
     return applyWordings([...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion))
   }
   total = Math.min(total, QUESTIONS.length)
-  const pbqs = pickAdaptive(QUESTIONS.filter(isPBQ), Math.max(1, Math.round(total / 18)), 'exam', seen)
+  const left = Object.fromEntries(domainTargets(total).map((t) => [t.id, t.n]))
 
-  const targets = DOMAINS.map((d) => ({ id: d.id, n: Math.round((d.weight / 100) * total) }))
-  let diff = total - targets.reduce((s, t) => s + t.n, 0)
-  targets.sort((a, b) => b.n - a.n)
-  for (let i = 0; diff !== 0; i = (i + 1) % targets.length) {
-    targets[i].n += Math.sign(diff)
-    diff -= Math.sign(diff)
+  // Performance-based questions first (about 1 in 18), each using a slot in its own domain.
+  const pbqWanted = Math.max(1, Math.round(total / 18))
+  const allPbqs = QUESTIONS.filter(isPBQ)
+  const pbqs = []
+  for (const q of pickAdaptive(allPbqs, allPbqs.length, 'exam', seen)) {
+    if (pbqs.length >= pbqWanted) break
+    if (left[q.domain] > 0) {
+      pbqs.push(q)
+      left[q.domain]--
+    }
   }
-  pbqs.forEach((q) => {
-    const t = targets.find((t) => t.id === q.domain)
-    t.n = Math.max(0, t.n - 1)
-  })
 
   const used = new Set(pbqs.map((q) => q.id))
   const rest = []
-  for (const t of targets) {
-    const pool = pickAdaptive(QUESTIONS.filter((q) => q.domain === t.id && !isPBQ(q)), t.n, 'exam', seen)
-    pool.forEach((q) => used.add(q.id))
-    rest.push(...pool)
+  for (const [id, n] of Object.entries(left)) {
+    const domainPool = QUESTIONS.filter((q) => q.domain === Number(id))
+    const mc = pickAdaptive(domainPool.filter((q) => !isPBQ(q)), n, 'exam', seen)
+    mc.forEach((q) => used.add(q.id))
+    rest.push(...mc)
+    // Same-domain top-up (extra PBQs) before ever borrowing from another domain.
+    const short = n - mc.length
+    if (short > 0) {
+      const extra = pickAdaptive(domainPool.filter((q) => !used.has(q.id)), short, 'exam', seen)
+      extra.forEach((q) => used.add(q.id))
+      rest.push(...extra)
+    }
   }
-  const short = total - pbqs.length - rest.length
-  if (short > 0) rest.push(...pickAdaptive(QUESTIONS.filter((q) => !used.has(q.id) && !isPBQ(q)), short, 'exam', seen))
+  const missing = total - pbqs.length - rest.length
+  if (missing > 0) rest.push(...pickAdaptive(QUESTIONS.filter((q) => !used.has(q.id) && !isPBQ(q)), missing, 'exam', seen))
 
-  const picked = [...shuffle(pbqs), ...shuffle(rest)]
+  const picked = [...shuffle(pbqs), ...shuffle(rest.filter(isPBQ)), ...shuffle(rest.filter((q) => !isPBQ(q)))]
   markSeen(picked)
   return applyWordings(picked.map(shuffleQuestion))
 }

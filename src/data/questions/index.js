@@ -10,6 +10,7 @@ import d4b from './d4-more.js'
 import d5b from './d5-more.js'
 import pbq from './pbq.js'
 import hard from './hard.js'
+import ladders from './ladders.js'
 import v1 from './variants-d1.js'
 import v2 from './variants-d2.js'
 import v3 from './variants-d3.js'
@@ -50,7 +51,15 @@ export const QUESTIONS = [
   ...tag([...d4, ...d4b], 4),
   ...tag([...d5, ...d5b], 5),
   ...pbq.map((q, i) => withWordings(normalize(q, q.d, `p-${i}`))),
-  ...hard.map((q, i) => withWordings(normalize(q, q.d, `h-${i}`)))
+  ...hard.map((q, i) => withWordings(normalize(q, q.d, `h-${i}`))),
+  // Ladders: the same concept at several difficulty rungs; `family` keeps a session to one rung per ladder.
+  ...ladders.flatMap((ladder, li) =>
+    ladder.rungs.map((r, ri) => ({
+      ...withWordings(normalize({ ...r, o: r.o ?? ladder.o }, ladder.d, `l-${li}-${ri}`)),
+      family: `l${li}`,
+      topic: ladder.topic
+    }))
+  )
 ]
 
 // Performance-based = anything that isn't plain multiple choice.

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
-import { loadAttempts, clearAttempts } from '../lib/progress.js'
+import { loadAttempts } from '../lib/progress.js'
 import { scaled } from '../lib/exam.js'
 import { user, authReady } from '../lib/auth.js'
 import { supabaseEnabled } from '../lib/supabase.js'
@@ -84,11 +84,6 @@ function confirmClearMissed() {
   if (window.confirm('Clear your missed-questions list?')) clearMissed()
 }
 
-async function reset() {
-  if (!window.confirm('Delete all saved progress?')) return
-  await clearAttempts()
-  await load()
-}
 </script>
 
 <template>
@@ -176,7 +171,6 @@ async function reset() {
         </div>
       </div>
 
-      <div v-if="attempts.length"><button class="btn ghost small" @click="reset">Reset progress</button></div>
     </template>
   </div>
 </template>

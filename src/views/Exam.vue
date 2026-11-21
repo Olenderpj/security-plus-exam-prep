@@ -5,7 +5,7 @@ import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
-import { EXAM } from '../data/domains.js'
+import { DOMAINS, EXAM } from '../data/domains.js'
 import { examSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
 import { missed, recordResults } from '../lib/missed.js'
@@ -110,6 +110,9 @@ onBeforeUnmount(() => clearInterval(timer))
   <div v-if="stage === 'setup'" class="stack">
     <h1>Practice exam</h1>
     <LevelBadge />
+    <p class="muted small" style="margin: 0">
+      Questions are weighted like the real exam: {{ DOMAINS.map((d) => `${d.id}.0 ${d.weight}%`).join(' · ') }}.
+    </p>
     <p class="muted">
       Questions are drawn from every domain using the official SY0-701 weightings. No feedback until you submit —
       just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back. Flag questions to revisit before submitting.
