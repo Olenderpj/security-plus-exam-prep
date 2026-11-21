@@ -87,6 +87,13 @@ function tool(s, kind) {
   if (r) apply(s, el, r)
 }
 
+// Leaving the browser tab or window also fires blur on the textarea, but the element is still the
+// document's active element then; only close the editor when focus really moved elsewhere.
+function onBlur(e) {
+  if (document.activeElement === e.target) return
+  editing.value = null
+}
+
 const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 </script>
 
@@ -157,7 +164,7 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
         placeholder="Type notes — start a line with * for a bullet"
         @input="onInput($event, s)"
         @keydown="onKeydown($event, s)"
-        @blur="editing = null"
+        @blur="onBlur"
       ></textarea>
       <div v-else class="view" tabindex="0" role="button" aria-label="Edit notes" @click="startEditing(s)" @keydown.enter.self="startEditing(s)">
         <p v-if="!s.body.trim()" class="muted empty">Click to add notes</p>
