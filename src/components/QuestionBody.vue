@@ -6,7 +6,9 @@ import { isCorrect, partsCorrect } from '../lib/exam.js'
 const props = defineProps({
   question: { type: Object, required: true },
   selected: { type: Array, required: true },
-  reveal: { type: Boolean, default: false }
+  reveal: { type: Boolean, default: false },
+  // Read-only view of a question with its answers shown (no right/wrong verdict).
+  review: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:selected'])
 
@@ -121,9 +123,12 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
     </div>
 
     <div v-if="reveal" class="explain">
-      <strong :class="correct ? 'good' : 'bad'">{{ correct ? 'Correct' : 'Incorrect' }}</strong>
-      <template v-if="q.type === 'mc'"> — Answer: {{ q.correct.map((i) => letters[i]).join(', ') }}.</template>
-      <template v-else> — {{ parts.got }} of {{ parts.of }} parts correct.</template>
+      <strong v-if="review">{{ q.type === 'mc' ? `Answer: ${q.correct.map((i) => letters[i]).join(', ')}.` : 'Correct answers shown above.' }}</strong>
+      <template v-else>
+        <strong :class="correct ? 'good' : 'bad'">{{ correct ? 'Correct' : 'Incorrect' }}</strong>
+        <template v-if="q.type === 'mc'"> — Answer: {{ q.correct.map((i) => letters[i]).join(', ') }}.</template>
+        <template v-else> — {{ parts.got }} of {{ parts.of }} parts correct.</template>
+      </template>
       {{ q.explanation }}
     </div>
   </div>

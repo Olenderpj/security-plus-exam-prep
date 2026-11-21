@@ -1,14 +1,14 @@
 <script setup>
 // Search box shown at the top of pages. Opens a command-palette style popup that searches
-// every question, flashcard, acronym, and note. "/" or Ctrl/⌘+K opens it from anywhere.
+// every question, flashcard, acronym, and note; each result opens its own page.
+// "/" or Ctrl/⌘+K opens it from anywhere.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { objectiveName } from '../data/domains.js'
-import { answerLines, search } from '../lib/search.js'
+import { search } from '../lib/search.js'
 import Hl from './Hl.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const STEP = 8
 const RECENT_KEY = 'secplus.recentSearches'
@@ -57,11 +57,6 @@ function close() {
   document.body.style.overflow = ''
 }
 
-function openNote() {
-  remember()
-  router.push('/notes')
-}
-
 const typing = (el) => el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)
 function onKey(e) {
   if (open.value) return e.key === 'Escape' && close()
@@ -77,6 +72,7 @@ onBeforeUnmount(() => {
 })
 
 watch(query, () => (shown.value = { questions: STEP, cards: STEP, acronyms: STEP }))
+// Opening a result navigates; the popup closes itself (and remembers the search).
 watch(() => route.fullPath, close)
 </script>
 
@@ -90,88 +86,94 @@ watch(() => route.fullPath, close)
   <Teleport to="body">
     <div v-if="open" class="overlay" @mousedown.self="close">
       <div class="panel" role="dialog" aria-modal="true" aria-label="Search">
-        <div class="bar">
-          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"/></svg>
-          <input
-            ref="input"
-            v-model="query"
-            type="text"
-            placeholder="Looking for..."
-            aria-label="Search"
-            autocomplete="off"
-            spellcheck="false"
-            @keydown.enter="remember"
-          />
-          <button class="esc" type="button" @click="close">Esc</button>
+        <div class="sp-head">
+          <label class="sp-field">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"/></svg>
+            <input
+              ref="input"
+              v-model="query"
+              type="text"
+              placeholder="Search questions, flashcards, acronyms, notes"
+              aria-label="Search"
+              autocomplete="off"
+              spellcheck="false"
+              @keydown.enter="remember"
+            />
+          </label>
+          <button class="sp-esc" type="button" aria-label="Close search" @click="close">Esc</button>
         </div>
 
         <div class="results">
           <template v-if="!terms.length">
             <div v-if="recent.length" class="group">
               <div class="gh">
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 0-18m-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8z"/></svg>
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 0-18m-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8z"/></svg>
                 Recent
               </div>
-              <div v-for="r in recent" :key="r" class="row" role="button" tabindex="0" @click="query = r" @keydown.enter="query = r">
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm4 18H6V4h7v5h5zM8 12h8v2H8zm0 4h8v2H8z"/></svg>
+              <div v-for="r in recent" :key="r" class="recent" role="button" tabindex="0" @click="query = r" @keydown.enter="query = r">
                 <span class="grow">{{ r }}</span>
                 <button class="icon" type="button" :aria-label="`Remove ${r} from recent searches`" @click.stop="forget(r)">
-                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></svg>
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></svg>
                 </button>
               </div>
             </div>
-            <p v-else class="muted hintline">Search every question, flashcard, acronym, and your notes.</p>
+            <p v-else class="muted hintline">Type to search every question, flashcard, acronym, and your notes.</p>
           </template>
           <p v-else-if="!total" class="muted hintline">No results for “{{ query.trim() }}”.</p>
 
           <template v-else>
             <div v-if="results.notes.length" class="group">
               <div class="gh">Notes · {{ results.notes.length }}</div>
-              <a v-for="n in results.notes" :key="n.id" class="item link" href="/notes" @click.prevent="openNote">
-                <strong><Hl :text="n.title || 'Untitled'" :terms="terms" /></strong>
-                <div v-for="(line, i) in n.lines" :key="i" class="small muted"><Hl :text="line" :terms="terms" /></div>
-              </a>
+              <RouterLink v-for="n in results.notes" :key="n.id" to="/notes" class="item">
+                <div class="main">
+                  <strong><Hl :text="n.title || 'Untitled'" :terms="terms" /></strong>
+                  <div v-for="(line, i) in n.lines" :key="i" class="small muted"><Hl :text="line" :terms="terms" /></div>
+                </div>
+                <span class="go" aria-hidden="true">›</span>
+              </RouterLink>
             </div>
 
             <div v-if="results.acronyms.length" class="group">
               <div class="gh">Acronyms · {{ results.acronyms.length }}</div>
-              <div v-for="a in results.acronyms.slice(0, shown.acronyms)" :key="a.id" class="item">
-                <div><strong><Hl :text="a.front" :terms="terms" /></strong> <span class="muted">— <Hl :text="a.back" :terms="terms" /></span></div>
-                <div class="small muted"><Hl :text="a.note" :terms="terms" /></div>
-              </div>
+              <RouterLink v-for="a in results.acronyms.slice(0, shown.acronyms)" :key="a.id" :to="`/card/${a.id}`" class="item">
+                <div class="main">
+                  <div><strong><Hl :text="a.front" :terms="terms" /></strong> <span class="muted">— <Hl :text="a.back" :terms="terms" /></span></div>
+                  <div class="small muted"><Hl :text="a.note" :terms="terms" /></div>
+                </div>
+                <span class="go" aria-hidden="true">›</span>
+              </RouterLink>
               <button v-if="results.acronyms.length > shown.acronyms" class="more" type="button" @click="shown.acronyms += STEP">Show more acronyms</button>
             </div>
 
             <div v-if="results.cards.length" class="group">
               <div class="gh">Flashcards · {{ results.cards.length }}</div>
-              <div v-for="c in results.cards.slice(0, shown.cards)" :key="c.id" class="item">
-                <strong><Hl :text="c.front" :terms="terms" /></strong>
-                <div class="small"><Hl :text="c.back" :terms="terms" /></div>
-              </div>
+              <RouterLink v-for="c in results.cards.slice(0, shown.cards)" :key="c.id" :to="`/card/${c.id}`" class="item">
+                <div class="main">
+                  <strong><Hl :text="c.front" :terms="terms" /></strong>
+                  <div class="small muted clamp"><Hl :text="c.back" :terms="terms" /></div>
+                </div>
+                <span class="go" aria-hidden="true">›</span>
+              </RouterLink>
               <button v-if="results.cards.length > shown.cards" class="more" type="button" @click="shown.cards += STEP">Show more flashcards</button>
             </div>
 
             <div v-if="results.questions.length" class="group">
               <div class="gh">Questions · {{ results.questions.length }}</div>
-              <div v-for="q in results.questions.slice(0, shown.questions)" :key="q.id" class="item">
-                <div class="small muted">Domain {{ q.domain }} · {{ q.objective }} {{ objectiveName(q.objective) }}</div>
-                <div><Hl :text="q.question" :terms="terms" /></div>
-                <details>
-                  <summary class="small muted">Show answer</summary>
-                  <ul class="answer">
-                    <li v-for="line in answerLines(q)" :key="line" class="good">{{ line }}</li>
-                  </ul>
-                  <div class="small"><Hl :text="q.explanation" :terms="terms" /></div>
-                </details>
-              </div>
+              <RouterLink v-for="q in results.questions.slice(0, shown.questions)" :key="q.id" :to="`/question/${q.id}`" class="item">
+                <div class="main">
+                  <div class="small muted">Domain {{ q.domain }} · {{ q.objective }} {{ objectiveName(q.objective) }}</div>
+                  <div class="clamp"><Hl :text="q.question" :terms="terms" /></div>
+                </div>
+                <span class="go" aria-hidden="true">›</span>
+              </RouterLink>
               <button v-if="results.questions.length > shown.questions" class="more" type="button" @click="shown.questions += STEP">Show more questions</button>
             </div>
           </template>
         </div>
 
         <div class="foot small muted">
-          <span>Questions · flashcards · acronyms · notes</span>
-          <span><kbd>/</kbd> to search · <kbd>Esc</kbd> to close</span>
+          <span>Select a result to open it</span>
+          <span><kbd>/</kbd> search · <kbd>Esc</kbd> close</span>
         </div>
       </div>
     </div>
@@ -179,6 +181,7 @@ watch(() => route.fullPath, close)
 </template>
 
 <style scoped>
+/* Note: avoid the class names .bar and .row; style.css defines those globally. */
 .trigger {
   display: flex; align-items: center; gap: .6rem; width: 100%; margin: 0 0 1.25rem; padding: .55rem .85rem;
   font: inherit; font-size: .95rem; color: var(--muted); text-align: left; cursor: pointer;
@@ -193,34 +196,52 @@ kbd {
 
 .overlay {
   position: fixed; inset: 0; z-index: 100; display: flex; justify-content: center; align-items: flex-start;
-  padding: 10vh 1rem 1rem; background: rgba(0, 0, 0, .55);
+  padding: 8vh 1rem 1rem; background: rgba(0, 0, 0, .6); backdrop-filter: blur(2px);
 }
 .panel {
-  width: 100%; max-width: 680px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
-  color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+  width: 100%; max-width: 680px; max-height: 84vh; display: flex; flex-direction: column; overflow: hidden;
+  color: var(--text); background: var(--surface); border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 14px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
 }
-.bar { display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; border-bottom: 2px solid var(--accent); color: var(--muted); }
-.bar input {
-  flex: 1; min-width: 0; font: inherit; font-size: 1.15rem; color: var(--text); background: none; border: 0; outline: 0; padding: .2rem 0;
+
+.sp-head { display: flex; align-items: center; gap: .6rem; padding: .9rem .9rem .75rem; }
+.sp-field {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: .6rem; padding: .6rem .8rem; cursor: text;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
 }
-.bar input::placeholder { color: var(--muted); }
-.esc {
-  font: inherit; font-size: .8rem; color: var(--muted); cursor: pointer; padding: .3rem .7rem;
-  background: var(--soft); border: 1px solid var(--border); border-radius: 6px;
+.sp-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.sp-field svg { flex: none; }
+.sp-field input {
+  flex: 1; min-width: 0; width: auto; margin: 0; padding: 0; font: inherit; font-size: 1.05rem; color: var(--text);
+  background: none; border: 0; border-radius: 0; box-shadow: none; outline: 0;
 }
-.results { flex: 1; overflow-y: auto; padding: .75rem; }
-.hintline { margin: .75rem .5rem; }
-.group { background: var(--soft); border: 1px solid var(--border); border-radius: 10px; padding: .5rem; display: grid; gap: .15rem; }
-.group + .group { margin-top: .75rem; }
-.gh { display: flex; align-items: center; gap: .5rem; padding: .25rem .5rem .4rem; font-weight: 600; }
-.row, .item { display: flex; align-items: center; gap: .75rem; padding: .5rem; border-radius: 8px; }
-.row { cursor: pointer; color: var(--text); }
-.row:hover, .row:focus-visible, .link:hover { background: var(--surface); outline: 0; }
+.sp-field input::placeholder { color: var(--muted); }
+.sp-esc {
+  flex: none; font: inherit; font-size: .8rem; color: var(--muted); cursor: pointer; padding: .45rem .7rem;
+  background: var(--soft); border: 1px solid var(--border); border-radius: 8px;
+}
+.sp-esc:hover { color: var(--text); }
+
+.results { flex: 1; overflow-y: auto; padding: 0 .9rem .9rem; }
+.hintline { margin: .5rem .25rem; }
+.group { display: grid; gap: .1rem; padding: .35rem; background: var(--soft); border: 1px solid var(--border); border-radius: 10px; }
+.group + .group { margin-top: .6rem; }
+.gh {
+  display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem .35rem; color: var(--muted);
+  font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+}
+.recent { display: flex; align-items: center; gap: .6rem; padding: .5rem .55rem; border-radius: 8px; cursor: pointer; }
+.recent:hover, .recent:focus-visible { background: var(--surface); outline: 0; }
 .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.item { display: block; line-height: 1.45; }
-.item + .item { border-top: 1px solid var(--border); }
-.link { text-decoration: none; color: inherit; cursor: pointer; }
+.item {
+  display: flex; align-items: center; gap: .75rem; padding: .55rem .55rem; border-radius: 8px;
+  color: inherit; text-decoration: none; line-height: 1.4;
+}
+.item:hover, .item:focus-visible { background: var(--surface); outline: 0; }
+.main { flex: 1; min-width: 0; }
+.go { flex: none; font-size: 1.4rem; line-height: 1; color: var(--muted); }
+.item:hover .go { color: var(--text); }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .icon { display: inline-flex; padding: .25rem; color: var(--muted); background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .icon:hover { color: var(--bad); background: var(--bad-bg); }
 .more {
@@ -228,8 +249,6 @@ kbd {
   background: none; border: 0; border-radius: 8px;
 }
 .more:hover { background: var(--surface); color: var(--text); }
-summary { cursor: pointer; }
-.answer { margin: .35rem 0; padding-left: 1.25rem; }
 mark { background: color-mix(in srgb, var(--warn) 30%, transparent); color: inherit; border-radius: 3px; padding: 0 .1em; }
-.foot { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .6rem 1rem; border-top: 1px solid var(--border); }
+.foot { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .55rem 1rem; border-top: 1px solid var(--border); }
 </style>
