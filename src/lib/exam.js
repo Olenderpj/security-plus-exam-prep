@@ -2,10 +2,35 @@ import { QUESTIONS } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleOptions } from './random.js'
 
+// Remembers when each question was last served (in this browser) so new
+// sessions favour questions you haven't seen recently.
+const SEEN_KEY = 'secplus.seen'
+function readSeen() {
+  try {
+    return JSON.parse(localStorage.getItem(SEEN_KEY)) || {}
+  } catch {
+    return {}
+  }
+}
+function markSeen(questions) {
+  const seen = readSeen()
+  const now = Date.now()
+  questions.forEach((q) => (seen[q.id] = now))
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify(seen))
+  } catch {}
+}
+
+// Random order, but least-recently-seen questions come first.
+function freshFirst(pool, seen) {
+  return shuffle(pool).sort((a, b) => (seen[a.id] || 0) - (seen[b.id] || 0))
+}
+
 export function practiceSet(domain, count) {
   const pool = domain ? QUESTIONS.filter((q) => q.domain === Number(domain)) : QUESTIONS
-  const picked = shuffle(pool)
-  return (count === 'all' ? picked : picked.slice(0, Number(count))).map(shuffleOptions)
+  const picked = count === 'all' ? pool : freshFirst(pool, readSeen()).slice(0, Number(count))
+  markSeen(picked)
+  return shuffle(picked).map(shuffleOptions)
 }
 
 // Builds an exam weighted by the official domain percentages.
@@ -18,17 +43,19 @@ export function examSet(total = EXAM.questions) {
     targets[i].n += Math.sign(diff)
     diff -= Math.sign(diff)
   }
+  const seen = readSeen()
   const used = new Set()
   let picked = []
   for (const t of targets) {
-    const pool = shuffle(QUESTIONS.filter((q) => q.domain === t.id)).slice(0, t.n)
+    const pool = freshFirst(QUESTIONS.filter((q) => q.domain === t.id), seen).slice(0, t.n)
     pool.forEach((q) => used.add(q.id))
     picked.push(...pool)
   }
   // Top up if any domain ran short.
   if (picked.length < total) {
-    picked.push(...shuffle(QUESTIONS.filter((q) => !used.has(q.id))).slice(0, total - picked.length))
+    picked.push(...freshFirst(QUESTIONS.filter((q) => !used.has(q.id)), seen).slice(0, total - picked.length))
   }
+  markSeen(picked)
   return shuffle(picked).map(shuffleOptions)
 }
 

@@ -2,12 +2,12 @@
 
 A minimal Vue 3 study app for the CompTIA Security+ (SY0-701) exam.
 
-- **Practice by section** — choose Domain 1–5 (or all), 10 / 20 / all questions, instant feedback with explanations.
+- **Practice by section** — choose Domain 1–5 (or all), 10 / 20 / all questions, instant feedback with explanations. Questions are shuffled every session, and ones you have not seen recently are served first.
 - **Practice exams** — 90, 45, or 25 questions weighted by the official domain percentages; timed (1 min/question) or untimed; flag-for-review navigator; estimated 100–900 scaled score.
 - **Flashcards** — by section or all, 10 / 20 / all cards, reshuffled every deck; review missed cards. Keyboard: Space flips, ← / → mark.
 - **Progress** — overall accuracy, accuracy per domain, best exam score, recent sessions. Stored in Supabase when signed in, otherwise in the browser.
 
-Question bank lives in `src/data/questions/d1.js` … `d5.js`; flashcards in `src/data/flashcards.js`. Run `npm run check:data` after editing.
+Question bank (304 questions) lives in `src/data/questions/d1.js` … `d5.js` and `d1-more.js` … `d5-more.js`; flashcards in `src/data/flashcards.js`. Run `npm run check:data` after editing.
 
 ## Local development
 
