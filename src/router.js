@@ -10,7 +10,6 @@ export default createRouter({
     { path: '/exam', component: () => import('./views/Exam.vue') },
     { path: '/flashcards', component: () => import('./views/Flashcards.vue') },
     { path: '/notes', component: () => import('./views/Notes.vue') },
-    { path: '/search', component: () => import('./views/Search.vue') },
     { path: '/progress', component: () => import('./views/Progress.vue') },
     { path: '/settings', component: () => import('./views/Settings.vue') },
     { path: '/login', component: () => import('./views/Login.vue') },

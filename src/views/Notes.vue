@@ -3,18 +3,29 @@ import { nextTick, ref } from 'vue'
 import { DOMAINS } from '../data/domains.js'
 import TITLES from '../data/messer.js'
 import { user } from '../lib/auth.js'
-import { addSection, addSections, moveSection, notes, removeSection, save, syncFailed } from '../lib/notes.js'
+import { addSection, addSections, notes, removeSection, save, syncFailed } from '../lib/notes.js'
+import * as rt from '../lib/richtext.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 const newTitle = ref('')
 const domainPick = ref('')
 const flash = ref('')
+const editing = ref(null) // id of the section being edited; the others show formatted text
+
+const bodyEl = (s) => document.getElementById(`body-${s.id}`)
+
+async function startEditing(s) {
+  editing.value = s.id
+  await nextTick()
+  const el = bodyEl(s)
+  el?.focus()
+  el?.setSelectionRange(el.value.length, el.value.length)
+}
 
 async function add() {
   const s = addSection(newTitle.value.trim())
   newTitle.value = ''
-  await nextTick()
-  document.getElementById(`body-${s.id}`)?.focus()
+  startEditing(s)
 }
 
 function addDomain() {
@@ -29,52 +40,54 @@ function remove(s) {
   removeSection(s.id)
 }
 
-// Enter on a bullet line starts the next bullet; Enter on an empty bullet ends the list.
-function onEnter(e, s) {
-  const ta = e.target
-  const pos = ta.selectionStart
-  if (e.shiftKey || e.isComposing || pos !== ta.selectionEnd) return
-  const text = s.body
-  const start = text.lastIndexOf('\n', pos - 1) + 1
-  const m = text.slice(start, pos).match(/^(\s*)([-*•]) (.*)$/)
-  if (!m) return
-  e.preventDefault()
-  let caret
-  if (!m[3].trim()) {
-    s.body = text.slice(0, start) + text.slice(pos)
-    caret = start
-  } else {
-    const ins = `\n${m[1]}${m[2]} `
-    s.body = text.slice(0, pos) + ins + text.slice(pos)
-    caret = pos + ins.length
-  }
-  save()
-  nextTick(() => ta.setSelectionRange(caret, caret))
-}
-
-// Adds or removes "- " on the line the cursor is on.
-function toggleBullet(s) {
-  const ta = document.getElementById(`body-${s.id}`)
-  const pos = ta.selectionStart
-  const text = s.body
-  const start = text.lastIndexOf('\n', pos - 1) + 1
-  const bullet = /^(\s*)[-*•] /.exec(text.slice(start))
-  let caret
-  if (bullet) {
-    s.body = text.slice(0, start) + bullet[1] + text.slice(start + bullet[0].length)
-    caret = Math.max(start, pos - 2)
-  } else {
-    s.body = text.slice(0, start) + '- ' + text.slice(start)
-    caret = pos + 2
-  }
+// Writes an edit result back to the note and restores the selection.
+function apply(s, el, r) {
+  s.body = r.text
   save()
   nextTick(() => {
-    ta.focus()
-    ta.setSelectionRange(caret, caret)
+    el.focus()
+    el.setSelectionRange(r.start, r.end ?? r.start)
   })
 }
 
-const rowsFor = (s) => Math.max(4, s.body.split('\n').length + 1)
+function onInput(e, s) {
+  const el = e.target
+  // "- " or "* " at the start of a line turns into a bullet as soon as the space is typed.
+  const r = e.inputType === 'insertText' && e.data === ' ' ? rt.autoBullet(el.value, el.selectionStart) : null
+  if (r) return apply(s, el, r)
+  s.body = el.value
+  save()
+}
+
+function onKeydown(e, s) {
+  if (e.isComposing) return
+  const el = e.target
+  const { selectionStart: a, selectionEnd: b } = el
+  const text = s.body
+  let r = null
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') r = rt.toggleBold(text, a, b)
+  else if (e.metaKey || e.ctrlKey || e.altKey) return
+  else if (e.key === 'Enter' && !e.shiftKey && a === b) r = rt.handleEnter(text, a)
+  else if (e.key === 'Tab') r = rt.handleTab(text, a, e.shiftKey)
+  else if (e.key === 'Backspace' && a === b) r = rt.handleBackspace(text, a)
+  if (!r) return
+  e.preventDefault()
+  apply(s, el, r)
+}
+
+// Toolbar buttons (they keep focus in the textarea via @mousedown.prevent).
+function tool(s, kind) {
+  const el = bodyEl(s)
+  if (!el) return
+  const { selectionStart: a, selectionEnd: b } = el
+  const r =
+    kind === 'bold' ? rt.toggleBold(s.body, a, b)
+    : kind === 'bullet' ? rt.toggleBullet(s.body, a)
+    : rt.handleTab(s.body, a, kind === 'outdent')
+  if (r) apply(s, el, r)
+}
+
+const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 </script>
 
 <template>
@@ -82,7 +95,8 @@ const rowsFor = (s) => Math.max(4, s.body.split('\n').length + 1)
     <div>
       <h1>Notes</h1>
       <p class="muted small">
-        Plain text, saved as you type. Start a line with “- ” for a bullet; Enter continues the list.
+        Click a section to edit. Type <code>* </code> or <code>- </code> at the start of a line for a bullet; Tab / Shift+Tab make
+        sub-bullets; Ctrl/⌘+B bolds the selection.
         <template v-if="supabaseEnabled && user">
           {{ syncFailed ? 'Account sync is unavailable, so notes are saved in this browser only.' : 'Synced to your account.' }}
         </template>
@@ -114,32 +128,52 @@ const rowsFor = (s) => Math.max(4, s.body.split('\n').length + 1)
 
     <p v-if="!notes.sections.length" class="muted">No notes yet. Add a section above to get started.</p>
 
-    <div v-for="(s, i) in notes.sections" :key="s.id" class="card section">
+    <div v-for="s in notes.sections" :key="s.id" class="card section">
       <div class="head">
         <input
           v-model="s.title"
-          class="field title"
+          class="title"
           list="messer-titles"
           placeholder="Section header"
           aria-label="Section header"
           autocomplete="off"
           @input="save"
         />
-        <button class="btn ghost" title="Move up" aria-label="Move section up" :disabled="i === 0" @click="moveSection(s.id, -1)">↑</button>
-        <button class="btn ghost" title="Move down" aria-label="Move section down" :disabled="i === notes.sections.length - 1" @click="moveSection(s.id, 1)">↓</button>
-        <button class="btn ghost" title="Toggle bullet on this line" @click="toggleBullet(s)">• Bullet</button>
-        <button class="btn ghost bad" title="Delete section" aria-label="Delete section" @click="remove(s)">Delete</button>
+        <template v-if="editing === s.id">
+          <button class="tool" title="Bold (Ctrl/⌘+B)" aria-label="Bold" @mousedown.prevent @click="tool(s, 'bold')"><b>B</b></button>
+          <button class="tool" title="Bullet" aria-label="Toggle bullet" @mousedown.prevent @click="tool(s, 'bullet')">•</button>
+          <button class="tool" title="Sub-bullet (Tab)" aria-label="Indent" @mousedown.prevent @click="tool(s, 'indent')">⇥</button>
+          <button class="tool" title="Outdent (Shift+Tab)" aria-label="Outdent" @mousedown.prevent @click="tool(s, 'outdent')">⇤</button>
+        </template>
+        <button class="tool del" title="Delete section" aria-label="Delete section" @click="remove(s)">Delete</button>
       </div>
+
       <textarea
+        v-if="editing === s.id"
         :id="`body-${s.id}`"
-        v-model="s.body"
-        class="field body"
+        class="body"
+        :value="s.body"
         :rows="rowsFor(s)"
-        placeholder="- Type your notes here"
-        spellcheck="true"
-        @input="save"
-        @keydown.enter="onEnter($event, s)"
+        placeholder="Type notes — start a line with * for a bullet"
+        @input="onInput($event, s)"
+        @keydown="onKeydown($event, s)"
+        @blur="editing = null"
       ></textarea>
+      <div v-else class="view" tabindex="0" role="button" aria-label="Edit notes" @click="startEditing(s)" @keydown.enter.self="startEditing(s)">
+        <p v-if="!s.body.trim()" class="muted empty">Click to add notes</p>
+        <template v-else>
+          <div
+            v-for="(b, i) in rt.renderBlocks(s.body)"
+            :key="i"
+            class="ln"
+            :class="{ gap: !b.segments.length && !b.bullet }"
+            :style="b.level ? { paddingLeft: `${b.level * 1.1}rem` } : null"
+          >
+            <span v-if="b.bullet" class="glyph" aria-hidden="true">{{ b.glyph }}</span>
+            <span><template v-for="(p, j) in b.segments" :key="j"><strong v-if="p.bold">{{ p.text }}</strong><template v-else>{{ p.text }}</template></template></span>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -154,8 +188,36 @@ const rowsFor = (s) => Math.max(4, s.body.split('\n').length + 1)
 .add .field:first-child { flex: 1 1 18rem; width: auto; }
 .pick { flex: 1 1 14rem; width: auto; }
 .hint { margin: 0; }
-.section { display: grid; gap: .6rem; }
-.head { display: flex; gap: .25rem; align-items: center; flex-wrap: wrap; }
-.title { flex: 1 1 14rem; width: auto; font-weight: 600; }
-.body { resize: vertical; line-height: 1.5; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9rem; white-space: pre-wrap; }
+code { background: var(--soft); border-radius: 4px; padding: 0 .3em; }
+
+/* Dense note cards */
+.section { display: grid; gap: .2rem; padding: .45rem .7rem .55rem; border-radius: 8px; }
+.head { display: flex; gap: .15rem; align-items: center; flex-wrap: wrap; }
+.title {
+  flex: 1 1 12rem; min-width: 0; font: inherit; font-weight: 600; font-size: .95rem; color: var(--text);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: .15rem .35rem;
+}
+.title:hover { border-color: var(--border); }
+.title:focus { outline: 2px solid var(--accent); outline-offset: 0; background: var(--surface); }
+.tool {
+  font: inherit; font-size: .8rem; line-height: 1; min-width: 1.7rem; padding: .3rem .4rem; cursor: pointer;
+  color: var(--text); background: none; border: 1px solid transparent; border-radius: 6px;
+}
+.tool:hover { background: var(--soft); border-color: var(--border); }
+.tool.del { color: var(--muted); margin-left: .15rem; }
+.tool.del:hover { color: var(--bad); }
+.body, .view { font-size: .9rem; line-height: 1.4; }
+.body {
+  width: 100%; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem;
+  color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: .35rem .5rem;
+  white-space: pre-wrap; tab-size: 2;
+}
+.body:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.view { cursor: text; border-radius: 6px; padding: .1rem .35rem; min-height: 1.6rem; }
+.view:hover { background: var(--soft); }
+.view:focus-visible { outline: 2px solid var(--accent); }
+.empty { margin: 0; font-size: .85rem; }
+.ln { display: flex; gap: .45rem; }
+.ln.gap { min-height: .6rem; }
+.glyph { color: var(--muted); flex: none; width: .8rem; text-align: center; }
 </style>

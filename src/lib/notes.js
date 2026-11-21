@@ -87,12 +87,3 @@ export function removeSection(id) {
   notes.value.sections = notes.value.sections.filter((s) => s.id !== id)
   save()
 }
-
-export function moveSection(id, dir) {
-  const list = notes.value.sections
-  const i = list.findIndex((s) => s.id === id)
-  const j = i + dir
-  if (i < 0 || j < 0 || j >= list.length) return
-  ;[list[i], list[j]] = [list[j], list[i]]
-  save()
-}

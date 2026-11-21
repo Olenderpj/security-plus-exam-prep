@@ -5,6 +5,7 @@ import FLASHCARDS from '../data/flashcards.js'
 import ACRONYMS from '../data/acronyms.js'
 import { domainById, objectiveName } from '../data/domains.js'
 import { notes } from './notes.js'
+import { stripMarkup } from './richtext.js'
 
 const low = (s) => String(s ?? '').toLowerCase()
 
@@ -54,7 +55,7 @@ function searchNotes(terms) {
   const hits = []
   for (const s of notes.value.sections) {
     const title = low(s.title)
-    const body = low(s.body)
+    const body = low(stripMarkup(s.body))
     let score = 0
     for (const t of terms) {
       if (title.includes(t)) score += 3
@@ -62,7 +63,7 @@ function searchNotes(terms) {
       else { score = 0; break }
     }
     if (!score) continue
-    const lines = s.body.split('\n').filter((l) => terms.some((t) => low(l).includes(t))).slice(0, 4)
+    const lines = stripMarkup(s.body).split('\n').filter((l) => terms.some((t) => low(l).includes(t))).slice(0, 4)
     hits.push({ id: s.id, title: s.title, lines, score })
   }
   return hits.sort((a, b) => b.score - a.score)
