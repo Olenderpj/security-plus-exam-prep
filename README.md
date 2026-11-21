@@ -32,5 +32,5 @@ Without these keys the app still works; progress is just saved in the browser an
 ## Deploy to Vercel
 
 1. Import this repo at vercel.com/new (framework preset: Vite).
-2. Add environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+2. Connect the Supabase integration in Vercel (it adds `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which the app reads), or add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` manually.
 3. Deploy. `vercel.json` handles SPA routing.
