@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { QUESTIONS } from '../data/questions/index.js'
-import { practiceSet, isCorrect, breakdown } from '../lib/exam.js'
+import { practiceSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
@@ -10,6 +9,12 @@ import Results from '../components/Results.vue'
 
 const domain = ref(null)
 const count = ref(10)
+const kind = ref('all')
+const KINDS = [
+  { id: 'all', label: 'All types' },
+  { id: 'mc', label: 'Multiple choice' },
+  { id: 'pbq', label: 'Performance-based & exhibits' }
+]
 const stage = ref('setup')
 const questions = ref([])
 const answers = ref([])
@@ -19,11 +24,12 @@ const startedAt = ref(0)
 const seconds = ref(0)
 
 const counts = computed(() => {
-  const c = { all: QUESTIONS.length }
-  QUESTIONS.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
+  const pool = practicePool(null, kind.value)
+  const c = { all: pool.length }
+  pool.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
   return c
 })
-const max = computed(() => (domain.value ? counts.value[domain.value] : QUESTIONS.length))
+const max = computed(() => practicePool(domain.value, kind.value).length)
 const current = computed(() => questions.value[idx.value])
 const sel = computed({
   get: () => answers.value[idx.value] || [],
@@ -32,7 +38,7 @@ const sel = computed({
 const runningCorrect = computed(() => questions.value.slice(0, idx.value + (revealed.value ? 1 : 0)).filter((q, i) => isCorrect(q, answers.value[i] || [])).length)
 
 function start() {
-  questions.value = practiceSet(domain.value, count.value)
+  questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value)
   answers.value = []
   idx.value = 0
   revealed.value = false
@@ -65,6 +71,12 @@ async function next() {
     <h1>Practice by section</h1>
     <p class="muted">Instant feedback after each question. Questions and answer order are randomized every time.</p>
     <div class="card stack">
+      <div>
+        <div class="label">Question type</div>
+        <div class="row">
+          <button v-for="k in KINDS" :key="k.id" class="chip" :class="{ on: kind === k.id }" @click="kind = k.id">{{ k.label }}</button>
+        </div>
+      </div>
       <DomainPicker v-model="domain" :counts="counts" />
       <CountPicker v-model="count" :max="max" />
       <div><button class="btn primary" @click="start">Start</button></div>
@@ -82,7 +94,7 @@ async function next() {
     </div>
     <div class="row between">
       <button class="btn ghost" @click="stage = 'setup'">Quit</button>
-      <button v-if="!revealed" class="btn primary" :disabled="sel.length !== current.correct.length" @click="revealed = true">
+      <button v-if="!revealed" class="btn primary" :disabled="!isComplete(current, sel)" @click="revealed = true">
         Check answer
       </button>
       <button v-else class="btn primary" @click="next">{{ idx < questions.length - 1 ? 'Next' : 'See results' }}</button>

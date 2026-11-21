@@ -7,8 +7,13 @@ export function shuffle(list) {
   return a
 }
 
-// Shuffle answer options while keeping track of which ones are correct.
-export function shuffleOptions(q) {
+// Randomizes presentation order while keeping the answer key consistent.
+export function shuffleQuestion(q) {
+  if (q.type === 'match') return { ...q, items: shuffle(q.items) }
+  if (q.type === 'order') {
+    const perm = shuffle(q.items.map((_, i) => i))
+    return { ...q, items: perm.map((i) => q.items[i]), correct: q.correct.map((k) => perm.indexOf(k)) }
+  }
   const order = shuffle(q.options.map((_, i) => i))
   return {
     ...q,

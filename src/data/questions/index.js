@@ -8,22 +8,38 @@ import d2b from './d2-more.js'
 import d3b from './d3-more.js'
 import d4b from './d4-more.js'
 import d5b from './d5-more.js'
+import pbq from './pbq.js'
 
-const tag = (list, domain) =>
-  list.map((q, i) => ({
-    id: `d${domain}-${i}`,
-    domain,
-    objective: q.o,
-    question: q.q,
-    options: q.a,
-    correct: Array.isArray(q.c) ? q.c : [q.c],
-    explanation: q.e
-  }))
+// Normalizes the compact authoring format into one shape per question type:
+//   mc:    options[], correct[]              (answer = selected option indexes)
+//   match: items[{label, choices, answer}]   (answer = chosen choice index per item)
+//   order: items[], correct[]                (answer = item indexes in chosen order)
+function normalize(q, domain, id) {
+  const base = { id, domain, objective: q.o, question: q.q, explanation: q.e, exhibit: q.x || null }
+  if (q.t === 'match') {
+    const items = q.items.map(([label, ans, own]) => {
+      const choices = own || q.choices
+      return { label, choices, answer: choices.indexOf(ans) }
+    })
+    return { ...base, type: 'match', items, mono: !!q.mono }
+  }
+  if (q.t === 'order') {
+    return { ...base, type: 'order', items: q.items, correct: q.items.map((_, i) => i) }
+  }
+  return { ...base, type: 'mc', options: q.a, correct: Array.isArray(q.c) ? q.c : [q.c] }
+}
+
+const tag = (list, domain) => list.map((q, i) => normalize(q, domain, `d${domain}-${i}`))
 
 export const QUESTIONS = [
   ...tag([...d1, ...d1b], 1),
   ...tag([...d2, ...d2b], 2),
   ...tag([...d3, ...d3b], 3),
   ...tag([...d4, ...d4b], 4),
-  ...tag([...d5, ...d5b], 5)
+  ...tag([...d5, ...d5b], 5),
+  ...pbq.map((q, i) => normalize(q, q.d, `p-${i}`))
 ]
+
+// Performance-based = anything that isn't plain multiple choice.
+export const isPBQ = (q) => q.type !== 'mc'
+export const hasExhibit = (q) => Boolean(q.exhibit)

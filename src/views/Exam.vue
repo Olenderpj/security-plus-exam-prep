@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { EXAM } from '../data/domains.js'
-import { examSet, isCorrect, breakdown } from '../lib/exam.js'
+import { examSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
@@ -29,7 +29,7 @@ const sel = computed({
   get: () => answers.value[idx.value] || [],
   set: (v) => (answers.value[idx.value] = v)
 })
-const answeredCount = computed(() => questions.value.filter((_, i) => (answers.value[i] || []).length).length)
+const answeredCount = computed(() => questions.value.filter((q, i) => isComplete(q, answers.value[i] || [])).length)
 const clock = computed(() => {
   const m = Math.floor(remaining.value / 60)
   const s = remaining.value % 60
@@ -95,7 +95,7 @@ onBeforeUnmount(() => clearInterval(timer))
     <h1>Practice exam</h1>
     <p class="muted">
       Questions are drawn from every domain using the official SY0-701 weightings. No feedback until you submit —
-      just like the real exam. Flag questions to revisit them before submitting.
+      just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back. Flag questions to revisit before submitting.
     </p>
     <div class="card stack">
       <div>
@@ -140,13 +140,14 @@ onBeforeUnmount(() => clearInterval(timer))
           v-for="(q, i) in questions"
           :key="q.id"
           class="cell"
-          :class="{ current: i === idx, answered: (answers[i] || []).length, flagged: flags.has(i) }"
+          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), flagged: flags.has(i), pbq: q.type !== 'mc' }"
           @click="idx = i"
         >{{ i + 1 }}</button>
       </div>
       <div class="row small muted legend">
         <span><i class="sw answered" /> Answered</span>
         <span><i class="sw flagged" /> Flagged</span>
+        <span><i class="sw dot" /> Performance-based</span>
       </div>
     </div>
     <div><button class="btn ghost small" @click="quit">Quit exam</button></div>
@@ -164,9 +165,12 @@ onBeforeUnmount(() => clearInterval(timer))
 }
 .cell.answered { background: var(--soft); color: var(--text); }
 .cell.flagged { border-color: var(--warn); }
+.cell.partial { background: var(--soft); color: var(--muted); border-style: dashed; }
+.cell.pbq::after { content: ''; position: absolute; top: 3px; right: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
 .cell.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--text); }
 .legend { margin-top: .75rem; gap: 1rem; }
 .sw { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; border: 1px solid var(--border); vertical-align: -1px; margin-right: .25rem; }
 .sw.answered { background: var(--soft); }
 .sw.flagged { border-color: var(--warn); }
+.sw.dot { width: .4rem; height: .4rem; border-radius: 50%; background: var(--muted); border: 0; vertical-align: 1px; }
 </style>
