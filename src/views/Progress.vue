@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { DOMAINS, EXAM } from '../data/domains.js'
+import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { loadAttempts, clearAttempts } from '../lib/progress.js'
 import { scaled } from '../lib/exam.js'
 import { user, authReady } from '../lib/auth.js'
@@ -18,13 +18,25 @@ async function load() {
 }
 watch([user, authReady], () => authReady.value && load(), { immediate: true })
 
+// Missed counts keyed by domain id and by objective code (plus "all").
 const missedByDomain = computed(() => {
   const c = { all: 0 }
   QUESTIONS.forEach((q) => {
-    if (missed.value.has(q.id)) { c[q.domain] = (c[q.domain] || 0) + 1; c.all++ }
+    if (!missed.value.has(q.id)) return
+    c[q.domain] = (c[q.domain] || 0) + 1
+    c[q.objective] = (c[q.objective] || 0) + 1
+    c.all++
   })
   return c
 })
+
+const expanded = ref(new Set())
+const toggleDomain = (id) => {
+  const s = new Set(expanded.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  expanded.value = s
+}
+const pctClass = (pct) => (pct === null ? 'muted' : pct >= 85 ? 'good' : pct < 70 ? 'bad' : '')
 
 const quizzes = computed(() => attempts.value.filter((a) => a.mode !== 'flashcards'))
 const exams = computed(() => attempts.value.filter((a) => a.mode === 'exam'))
@@ -43,7 +55,18 @@ const domainStats = computed(() =>
       const b = a.domain_breakdown?.[d.id]
       if (b) { c += b.correct; n += b.total }
     })
-    return { ...d, c, n, pct: n ? Math.round((100 * c) / n) : null }
+    const objectives = objectivesOf(d).map((o) => {
+      let oc = 0
+      let on = 0
+      quizzes.value.forEach((a) => {
+        const b = a.domain_breakdown?.objectives?.[o.code]
+        if (b) { oc += b.correct; on += b.total }
+      })
+      return { ...o, n: on, pct: on ? Math.round((100 * oc) / on) : null }
+    })
+    // Weakest objective with enough data to be meaningful.
+    const weakest = objectives.filter((o) => o.n >= 3).sort((a, b) => a.pct - b.pct)[0]
+    return { ...d, c, n, pct: n ? Math.round((100 * c) / n) : null, objectives, weakest: weakest?.pct < 85 ? weakest.code : null }
   })
 )
 
@@ -104,21 +127,40 @@ async function reset() {
 
       <div class="card stack">
         <div class="label">Accuracy by domain</div>
-        <div v-for="d in domainStats" :key="d.id">
-          <div class="row between small">
-            <span>{{ d.id }}.0 {{ d.name }}</span>
-            <span>
-              <RouterLink
-                v-if="missedByDomain[d.id]"
-                class="muted missed-link"
-                :to="`/practice?missed=1&domain=${d.id}`"
-              >{{ missedByDomain[d.id] }} missed</RouterLink>
-              <span :class="d.pct === null ? 'muted' : d.pct >= 85 ? 'good' : d.pct < 70 ? 'bad' : ''">
-                {{ d.pct === null ? 'No data' : `${d.pct}% · ${d.n} answered` }}
+        <p class="muted small" style="margin: 0">Select a domain to see each exam objective.</p>
+        <div v-for="d in domainStats" :key="d.id" class="domain">
+          <button class="domain-head" :aria-expanded="expanded.has(d.id)" @click="toggleDomain(d.id)">
+            <span class="row between small">
+              <span><span class="chev" :class="{ open: expanded.has(d.id) }">›</span> {{ d.id }}.0 {{ d.name }}</span>
+              <span>
+                <span v-if="missedByDomain[d.id]" class="muted missed-link">{{ missedByDomain[d.id] }} missed</span>
+                <span :class="pctClass(d.pct)">{{ d.pct === null ? 'No data' : `${d.pct}% · ${d.n} answered` }}</span>
               </span>
             </span>
+            <span class="bar"><span :style="{ width: (d.pct || 0) + '%' }" /></span>
+          </button>
+
+          <div v-if="expanded.has(d.id)" class="objectives">
+            <div v-for="o in d.objectives" :key="o.code" class="objective">
+              <div class="row between small">
+                <span>
+                  {{ o.code }} {{ o.name }}
+                  <span v-if="o.code === d.weakest" class="tag">Weakest</span>
+                </span>
+                <span :class="pctClass(o.pct)">{{ o.pct === null ? 'No data' : `${o.pct}% · ${o.n}` }}</span>
+              </div>
+              <div class="bar thin"><span :style="{ width: (o.pct || 0) + '%' }" /></div>
+              <div class="row small links">
+                <RouterLink :to="`/practice?domain=${d.id}&objective=${o.code}`">Practice</RouterLink>
+                <RouterLink v-if="missedByDomain[o.code]" :to="`/practice?missed=1&domain=${d.id}&objective=${o.code}`" class="bad">
+                  Retest {{ missedByDomain[o.code] }} missed
+                </RouterLink>
+              </div>
+            </div>
+            <p v-if="d.objectives.every((o) => o.pct === null)" class="muted small" style="margin: 0">
+              Objective-level accuracy is recorded for sessions from now on.
+            </p>
           </div>
-          <div class="bar"><span :style="{ width: (d.pct || 0) + '%' }" /></div>
         </div>
       </div>
 
@@ -144,6 +186,22 @@ async function reset() {
 .big { font-size: 1.6rem; font-weight: 600; }
 .big-sm { font-size: 1.25rem; font-weight: 600; }
 .missed-link { margin-right: .6rem; }
+.domain + .domain { border-top: 1px solid var(--border); padding-top: .75rem; }
+.domain-head {
+  display: grid; gap: .35rem; width: 100%; background: none; border: 0; padding: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.domain-head:hover .chev { color: var(--text); }
+.chev { display: inline-block; width: .8rem; color: var(--muted); transition: transform .15s; }
+.chev.open { transform: rotate(90deg); }
+.objectives { margin: .75rem 0 .25rem 1.1rem; display: grid; gap: .8rem; }
+.objective { display: grid; gap: .3rem; }
+.bar.thin { height: 4px; }
+.links { gap: 1rem; }
+.links a { text-decoration: none; color: var(--muted); }
+.links a:hover { color: var(--text); text-decoration: underline; }
+.links a.bad { color: var(--bad); }
+.tag { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bad); border: 1px solid var(--bad); border-radius: 4px; padding: 0 .3rem; margin-left: .35rem; }
 .stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .item { padding: .5rem 0; border-top: 1px solid var(--border); }
 .item:first-of-type { border-top: 0; }

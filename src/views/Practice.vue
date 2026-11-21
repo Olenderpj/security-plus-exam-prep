@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
+import { objectiveName } from '../data/domains.js'
 import { practiceSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
@@ -12,10 +13,11 @@ import Results from '../components/Results.vue'
 const route = useRoute()
 const domain = ref(route.query.domain ? Number(route.query.domain) : null)
 const count = ref(10)
+const objective = ref(route.query.objective || null)
 const kind = ref('all')
 const source = ref(route.query.missed ? 'missed' : 'all') // all | missed
 const onlyIds = computed(() => (source.value === 'missed' ? missed.value : null))
-const missedTotal = computed(() => practicePool(null, 'all', missed.value).length)
+const missedTotal = computed(() => practicePool(null, 'all', missed.value, objective.value).length)
 const KINDS = [
   { id: 'all', label: 'All types' },
   { id: 'mc', label: 'Multiple choice' },
@@ -30,12 +32,12 @@ const startedAt = ref(0)
 const seconds = ref(0)
 
 const counts = computed(() => {
-  const pool = practicePool(null, kind.value, onlyIds.value)
+  const pool = practicePool(null, kind.value, onlyIds.value, objective.value)
   const c = { all: pool.length }
   pool.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
   return c
 })
-const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value).length)
+const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value, objective.value).length)
 const current = computed(() => questions.value[idx.value])
 const sel = computed({
   get: () => answers.value[idx.value] || [],
@@ -46,7 +48,7 @@ const runningCorrect = computed(() => questions.value.slice(0, idx.value + (reve
 function start() {
   // Snapshot the missed list so questions cleared mid-session stay in this session.
   const ids = onlyIds.value ? new Set(onlyIds.value) : null
-  questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids)
+  questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objective.value)
   answers.value = []
   idx.value = 0
   revealed.value = false
@@ -84,6 +86,10 @@ async function next() {
     <h1>Practice by section</h1>
     <p class="muted">Instant feedback after each question. Questions and answer order are randomized every time.</p>
     <div class="card stack">
+      <div v-if="objective" class="row between objective">
+        <span><span class="label" style="margin: 0">Objective</span> {{ objective }} {{ objectiveName(objective) }}</span>
+        <button class="btn ghost small" @click="objective = null">Clear ✕</button>
+      </div>
       <div>
         <div class="label">Questions</div>
         <div class="row">
@@ -126,3 +132,7 @@ async function next() {
 
   <Results v-else :questions="questions" :answers="answers" :seconds="seconds" @restart="stage = 'setup'" />
 </template>
+
+<style scoped>
+.objective { background: var(--soft); border-radius: 8px; padding: .5rem .75rem; }
+</style>

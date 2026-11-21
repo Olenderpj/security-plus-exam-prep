@@ -65,6 +65,13 @@ export const DOMAINS = [
   }
 ]
 
+// "1.4 Cryptographic solutions" -> { code: '1.4', name: 'Cryptographic solutions' }
+export const objectivesOf = (d) =>
+  d.objectives.map((o) => ({ code: o.split(' ')[0], name: o.slice(o.indexOf(' ') + 1) }))
+
+export const objectiveName = (code) =>
+  objectivesOf(domainById(code.split('.')[0])).find((o) => o.code === code)?.name ?? ''
+
 export const domainById = (id) => DOMAINS.find((d) => d.id === Number(id))
 
 // Real exam: max 90 questions, 90 minutes, 100–900 scale, 750 to pass.

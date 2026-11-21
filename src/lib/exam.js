@@ -31,13 +31,18 @@ export const matchesKind = (q, kind) =>
   kind === 'all' || (kind === 'pbq' ? isPBQ(q) || Boolean(q.exhibit) : !isPBQ(q) && !q.exhibit)
 
 // onlyIds: restrict to a set of question IDs (e.g. previously missed questions)
-export const practicePool = (domain, kind = 'all', onlyIds = null) =>
+// objective: restrict to one exam objective, e.g. "2.4"
+export const practicePool = (domain, kind = 'all', onlyIds = null, objective = null) =>
   QUESTIONS.filter(
-    (q) => (!domain || q.domain === Number(domain)) && matchesKind(q, kind) && (!onlyIds || onlyIds.has(q.id))
+    (q) =>
+      (!domain || q.domain === Number(domain)) &&
+      (!objective || q.objective === objective) &&
+      matchesKind(q, kind) &&
+      (!onlyIds || onlyIds.has(q.id))
   )
 
-export function practiceSet(domain, count, kind = 'all', onlyIds = null) {
-  const pool = practicePool(domain, kind, onlyIds)
+export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null) {
+  const pool = practicePool(domain, kind, onlyIds, objective)
   const picked = count === 'all' ? pool : freshFirst(pool, readSeen()).slice(0, Number(count))
   markSeen(picked)
   return shuffle(picked).map(shuffleQuestion)
@@ -110,12 +115,16 @@ export function partsCorrect(q, ans = []) {
 // Approximation of CompTIA's 100–900 scale. The real scaling is not published.
 export const scaled = (correct, total) => Math.round(100 + (800 * correct) / Math.max(total, 1))
 
+// Per-domain results keyed by domain id, plus per-objective results under
+// "objectives" (e.g. { "1": {...}, "objectives": { "1.4": {...} } }).
 export function breakdown(questions, answers) {
-  const out = {}
+  const out = { objectives: {} }
   questions.forEach((q, i) => {
-    const b = (out[q.domain] ||= { correct: 0, total: 0 })
-    b.total++
-    if (isCorrect(q, answers[i] || [])) b.correct++
+    const ok = isCorrect(q, answers[i] || [])
+    for (const b of [(out[q.domain] ||= { correct: 0, total: 0 }), (out.objectives[q.objective] ||= { correct: 0, total: 0 })]) {
+      b.total++
+      if (ok) b.correct++
+    }
   })
   return out
 }
