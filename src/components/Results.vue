@@ -63,7 +63,8 @@ function rate(kind) {
       <div class="row between">
         <div>
           <div class="label">Score</div>
-          <div class="big">{{ pts }} / {{ questions.length }} <span class="muted">· {{ pct }}%</span></div>
+          <div class="hero num">{{ pct }}<span class="unit">%</span></div>
+          <div class="muted">{{ pts }} of {{ questions.length }} · <span :class="pct >= 80 ? 'good' : pct < 60 ? 'bad' : 'warn'">{{ pct >= 85 ? 'Excellent' : pct >= 70 ? 'Solid' : pct >= 55 ? 'Keep going' : 'Needs work' }}</span></div>
           <div v-if="pts !== correct" class="muted small">{{ correct }} fully correct · partial credit on performance-based items</div>
         </div>
         <div v-if="exam" style="text-align: right">
@@ -184,9 +185,12 @@ function rate(kind) {
 
 <style scoped>
 .big { font-size: 1.6rem; font-weight: 600; }
+.hero { font-family: var(--display); font-size: 3rem; line-height: 1; font-weight: 500; letter-spacing: -.02em; }
+.hero .unit { font-size: 1.4rem; color: var(--muted); margin-left: .1rem; }
 .tight > * + * { margin-top: .6rem; }
-.sec { display: grid; gap: .2rem; }
+.sec { display: grid; gap: .35rem; padding: .35rem 0; }
 .track { position: relative; height: 6px; background: var(--soft); border-radius: 99px; }
-.track .level { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 99px; opacity: .55; }
-.track .mark { position: absolute; top: -3px; width: 3px; height: 12px; margin-left: -1px; background: var(--warn); border-radius: 2px; }
+.track { height: 8px; }
+.track .level { position: absolute; inset: 0 auto 0 0; background: var(--brand); border-radius: 99px; opacity: .8; }
+.track .mark { position: absolute; top: -4px; width: 3px; height: 16px; margin-left: -1px; background: var(--text); border-radius: 2px; box-shadow: 0 0 0 2px var(--surface); }
 </style>

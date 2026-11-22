@@ -1,54 +1,155 @@
 <script setup>
+import { computed } from 'vue'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
+import { estimate, labelFor, MIN_FOR_ESTIMATE, state, weakSections } from '../lib/level.js'
+import { missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
+import { formatDuration, study, summarize } from '../lib/studyTime.js'
+
+const level = computed(() => state.value.g)
+const answered = computed(() => state.value.n)
+const est = computed(() => estimate())
+const weak = computed(() => weakSections(3))
+const time = computed(() => summarize(study.value))
+
+const firstName = computed(() => {
+  const m = user.value?.user_metadata
+  return m?.first_name?.trim() || user.value?.email?.split('@')[0] || ''
+})
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  const part = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+  return supabaseEnabled && user.value ? `${part}, ${firstName.value}` : part
+})
+
+const actions = [
+  { to: '/practice', title: 'Practice by section', text: 'Instant feedback with explanations, adapted to your level.', paths: ['M9 11l3 3L22 4', 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'] },
+  { to: '/exam', title: 'Practice exam', text: `Up to ${EXAM.questions} questions weighted like the real exam.`, paths: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M12 6v6l4 2'] },
+  { to: '/flashcards', title: 'Flashcards', text: 'Concepts and acronyms, reshuffled every deck.', paths: ['M12 2 2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
+  { to: '/progress', title: 'Progress', text: 'Scores over time and accuracy by domain.', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] }
+]
+const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'info' : 'warn')
+const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}% correct`)
 </script>
 
 <template>
   <div class="stack">
     <div>
-      <h1>CompTIA Security+ SY0-701</h1>
+      <h1>{{ greeting }}</h1>
       <p class="muted">
         {{ QUESTIONS.length }} exam-style questions and {{ FLASHCARDS.length }} flashcards across all five domains.
         <template v-if="supabaseEnabled && !user"> <RouterLink to="/login">Sign in</RouterLink> to sync progress across devices.</template>
       </p>
     </div>
 
-    <div class="grid">
-      <RouterLink to="/practice" class="card tile">
-        <h2>Practice by section</h2>
-        <p class="muted small">Pick a domain and get instant feedback with explanations.</p>
-      </RouterLink>
-      <RouterLink to="/exam" class="card tile">
-        <h2>Practice exam</h2>
-        <p class="muted small">Up to {{ EXAM.questions }} questions, weighted like the real exam. Timed or untimed.</p>
-      </RouterLink>
-      <RouterLink to="/flashcards" class="card tile">
-        <h2>Flashcards</h2>
-        <p class="muted small">Randomized decks of 10, 20, or all cards — by section or all.</p>
-      </RouterLink>
-      <RouterLink to="/progress" class="card tile">
-        <h2>Progress</h2>
-        <p class="muted small">Scores over time and accuracy by domain.</p>
+    <!-- Where you stand -->
+    <div v-if="answered" class="stats">
+      <div class="card stat">
+        <div class="label">Your level</div>
+        <div class="big num">{{ level.toFixed(1) }}</div>
+        <div class="small"><span class="tag" :class="tone(level)">{{ labelFor(level) }}</span> <span class="muted">· {{ answered }} answered</span></div>
+      </div>
+      <div class="card stat">
+        <div class="label">Est. exam score</div>
+        <div class="big" :class="est && est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est ? est.scaled : '—' }}</div>
+        <div class="muted small">{{ est ? `likely ${est.low}–${est.high} · pass ${EXAM.passScaled}` : `needs ${MIN_FOR_ESTIMATE}+ answers` }}</div>
+      </div>
+      <div class="card stat">
+        <div class="label">Today</div>
+        <div class="big">{{ formatDuration(time.today) }}</div>
+        <div class="muted small">{{ formatDuration(time.total) }} in total</div>
+      </div>
+    </div>
+    <div v-else class="card welcome">
+      <div>
+        <h2>Start with a short practice session</h2>
+        <p class="muted small" style="margin: 0">Questions adapt to how you do, section by section, and your level and estimated exam score appear here.</p>
+      </div>
+      <RouterLink to="/practice" class="btn primary">Start practicing</RouterLink>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="actions">
+      <RouterLink v-for="a in actions" :key="a.to" :to="a.to" class="card action">
+        <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in a.paths" :key="d" :d="d" /></svg></span>
+        <span class="body">
+          <span class="title">{{ a.title }}</span>
+          <span class="muted small">{{ a.text }}</span>
+        </span>
       </RouterLink>
     </div>
 
+    <div class="cols">
+    <!-- What to work on next -->
+    <div v-if="weak.length || missed.size" class="card stack">
+      <div class="row between">
+        <div class="label" style="margin: 0">Worth practicing next</div>
+        <div class="row">
+          <RouterLink v-if="weak.length" to="/practice?weak=1" class="btn small primary">Practice weak areas</RouterLink>
+          <RouterLink v-if="missed.size" to="/practice?missed=1" class="btn small">Missed · {{ missed.size }}</RouterLink>
+        </div>
+      </div>
+      <div v-for="s in weak" :key="s.code" class="focus">
+        <span class="code">{{ s.code }}</span>
+        <span class="grow">{{ s.name }}</span>
+        <span class="muted small">{{ pct(s.accuracy) }}</span>
+        <span class="tag" :class="tone(s.rating)">{{ s.rating.toFixed(1) }}</span>
+      </div>
+    </div>
+
+    <!-- Exam blueprint -->
     <div class="card">
       <div class="label">Exam domains</div>
-      <div v-for="d in DOMAINS" :key="d.id" class="row between small dom">
-        <span>{{ d.id }}.0 {{ d.name }}</span>
-        <span class="muted">{{ d.weight }}%</span>
+      <div v-for="d in DOMAINS" :key="d.id" class="dom">
+        <span class="num">{{ d.id }}.0</span>
+        <span class="grow">{{ d.name }}</span>
+        <span class="track" aria-hidden="true"><span :style="{ width: d.weight * 3 + '%' }" /></span>
+        <span class="muted pctcol">{{ d.weight }}%</span>
       </div>
+    </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.tile { text-decoration: none; transition: border-color .15s; }
-.tile:hover { border-color: var(--muted); }
-.tile p { margin: 0; }
-.dom { padding: .35rem 0; border-top: 1px solid var(--border); }
+.stats { display: grid; gap: .75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cols { display: grid; gap: .75rem; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 900px) { .cols { grid-template-columns: 1fr 1fr; } }
+.stat { padding: 1rem 1.1rem; }
+.stat .label { margin-bottom: .35rem; }
+.big { font-size: 1.7rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+.welcome { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.welcome h2 { margin-bottom: .25rem; }
+
+.actions { display: grid; gap: .75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.action { display: flex; gap: .9rem; align-items: flex-start; text-decoration: none; padding: 1rem 1.1rem; transition: border-color .15s, background .15s; }
+.action:hover { border-color: var(--muted); background: var(--soft); }
+.badge { display: inline-grid; place-items: center; flex: none; width: 2.2rem; height: 2.2rem; border-radius: 10px; background: var(--soft); border: 1px solid var(--border); }
+.action:hover .badge { background: var(--surface); }
+.badge svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.body { display: grid; gap: .15rem; min-width: 0; }
+.title { font-weight: 600; }
+
+.focus, .dom { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; border-top: 1px solid var(--border); font-size: .92rem; flex-wrap: nowrap; }
 .dom:first-of-type { border-top: 0; }
+.grow { flex: 1; min-width: 0; }
+.code, .num { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 2rem; }
+.lvl { min-width: 2.2rem; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.track { flex: none; width: 4rem; height: 5px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+.track span { display: block; height: 100%; background: var(--brand); }
+.pctcol { min-width: 2.4rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 720px) {
+  .stats { gap: .5rem; }
+  .stat { padding: .75rem .8rem; }
+  .stat .small { display: none; }
+  .big { font-size: 1.35rem; }
+  .actions { gap: .5rem; }
+  .action { padding: .8rem; gap: .7rem; align-items: center; }
+  .action .muted { display: none; }
+  .track { display: none; }
+}
 </style>

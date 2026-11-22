@@ -45,6 +45,8 @@ const sections = computed(() =>
 )
 const weak = computed(() => new Set(weakSections().map((s) => s.code)))
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
+// Level colour: building (amber) → proficient (blue) → strong (green).
+const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'info' : 'warn')
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
 
 // ── study time ──
@@ -115,7 +117,7 @@ function resetDifficulty() {
       </div>
 
       <div class="week" role="img" :aria-label="`Study time for the last 7 days: ${time.days.map((d) => `${d.label} ${formatDuration(d.seconds)}`).join(', ')}`">
-        <div v-for="d in time.days" :key="d.key" class="day">
+        <div v-for="d in time.days" :key="d.key" class="day" :title="`${d.label}: ${formatDuration(d.seconds)}`">
           <div class="amount small muted">{{ d.seconds ? formatDuration(d.seconds) : '' }}</div>
           <div class="col"><span :style="{ height: d.seconds ? Math.max(4, Math.round((d.seconds / peakDay) * 100)) + '%' : '0' }" /></div>
           <div class="small" :class="d.key === time.days[6].key ? '' : 'muted'">{{ d.label }}</div>
@@ -165,7 +167,7 @@ function resetDifficulty() {
       <div class="card row between">
         <div>
           <div class="label">Overall level</div>
-          <div class="big">{{ overall.toFixed(1) }} <span class="muted small">{{ labelFor(overall) }}</span></div>
+          <div class="big num">{{ overall.toFixed(1) }} <span class="tag" :class="tone(overall)">{{ labelFor(overall) }}</span></div>
           <div class="muted small">{{ state.n }} answers recorded</div>
         </div>
         <div style="text-align: right">
@@ -181,26 +183,22 @@ function resetDifficulty() {
         </div>
       </div>
 
-      <div v-for="d in sections" :key="d.id" class="card stack">
-        <div class="row between">
-          <strong>{{ d.id }}.0 {{ d.name }}</strong>
-          <span class="muted small">{{ d.weight }}% of exam</span>
-        </div>
-        <div class="row between small">
-          <span>Level <strong>{{ d.stat.rating.toFixed(1) }}</strong> <span class="muted">· {{ labelFor(d.stat.rating) }}</span></span>
-          <span class="muted">{{ pct(d.stat.accuracy) }} correct · {{ d.stat.answered }} answered</span>
-        </div>
-        <div class="bar" role="img" :aria-label="`Level ${d.stat.rating.toFixed(1)} of 10`"><span :style="{ width: barWidth(d.stat.rating) }" /></div>
-
-        <details>
-          <summary class="small muted">Sub-sections</summary>
+      <div class="card tbl">
+        <details v-for="d in sections" :key="d.id" class="drow">
+          <summary>
+            <span class="chev" aria-hidden="true">›</span>
+            <span class="dname"><span class="muted num">{{ d.id }}.0</span> {{ d.name }}</span>
+            <span class="tag" :class="tone(d.stat.rating)">{{ d.stat.rating.toFixed(1) }} · {{ labelFor(d.stat.rating) }}</span>
+            <span class="dstat muted small num">{{ pct(d.stat.accuracy) }} · {{ d.stat.answered }} answered</span>
+            <span class="bar thin dbar" role="img" :aria-label="`Level ${d.stat.rating.toFixed(1)} of 10`"><span :style="{ width: barWidth(d.stat.rating) }" /></span>
+          </summary>
           <div class="subs">
             <div v-for="o in d.objectives" :key="o.code" class="sub">
-              <div class="row between small">
-                <span>{{ o.code }} {{ o.name }} <span v-if="weak.has(o.code)" class="weaktag">weak area</span></span>
-                <span :class="o.stat.answered ? '' : 'muted'">
-                  {{ o.stat.rating.toFixed(1) }}
-                </span>
+              <div class="subhead">
+                <span class="mono muted">{{ o.code }}</span>
+                <span class="grow small">{{ o.name }}</span>
+                <span v-if="weak.has(o.code)" class="tag warn">weak area</span>
+                <span class="tag" :class="o.stat.answered ? tone(o.stat.rating) : ''">{{ o.stat.rating.toFixed(1) }}</span>
               </div>
               <div class="bar thin"><span :style="{ width: barWidth(o.stat.rating) }" /></div>
               <div class="muted small">
@@ -219,18 +217,39 @@ function resetDifficulty() {
 </template>
 
 <style scoped>
-.big { font-size: 1.6rem; font-weight: 600; }
+.big { font-size: 1.7rem; font-weight: 600; letter-spacing: -.02em; }
 .fields { max-width: 28rem; }
-.subs { display: grid; gap: .9rem; margin-top: .75rem; }
-.sub { display: grid; gap: .25rem; }
+.tbl { padding: .25rem 0; overflow: hidden; }
+.drow { border-top: 1px solid var(--border); }
+.drow:first-child { border-top: 0; }
+.drow summary {
+  display: grid; grid-template-columns: 1rem minmax(0, 1fr) auto auto 5.5rem; align-items: center; gap: .75rem; padding: .85rem 1.1rem;
+  cursor: pointer; list-style: none; transition: background .15s;
+}
+.drow summary::-webkit-details-marker { display: none; }
+.drow summary:hover { background: var(--soft); }
+.chev { color: var(--muted); transition: transform .15s var(--ease); font-size: 1.1rem; line-height: 1; }
+.drow[open] .chev { transform: rotate(90deg); }
+.dname { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbar { margin: 0; height: 5px; }
+.subs { display: grid; gap: .9rem; padding: .25rem 1.1rem 1.1rem 2.85rem; }
+.sub { display: grid; gap: .3rem; }
+.subhead { display: flex; align-items: center; gap: .6rem; }
+.grow { flex: 1; min-width: 0; }
 .bar.thin { height: 4px; }
-.stats { text-align: right; display: grid; gap: .15rem; }
-.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: .4rem; align-items: end; }
-.day { display: grid; gap: .2rem; text-align: center; }
-.amount { min-height: 1.2em; font-size: .7rem; }
-.col { height: 4.5rem; display: flex; align-items: flex-end; justify-content: center; background: var(--soft); border-radius: 6px; overflow: hidden; }
-.col span { display: block; width: 100%; background: var(--accent); opacity: .7; border-radius: 6px 6px 0 0; }
+.stats { text-align: right; display: grid; gap: .15rem; margin-left: auto; }
+@media (max-width: 720px) {
+  .drow summary { grid-template-columns: 1rem minmax(0, 1fr) auto; }
+  .dstat, .dbar { display: none; }
+  .subs { padding-left: 1.1rem; }
+}
+@media (max-width: 480px) { .stats { text-align: left; margin-left: 0; } }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: .5rem; align-items: end; }
+.day { display: grid; gap: .25rem; text-align: center; }
+.amount { min-height: 1.2em; font-size: .7rem; font-variant-numeric: tabular-nums; }
+.col { height: 5rem; display: flex; align-items: flex-end; justify-content: center; background: var(--soft); border-radius: 8px; overflow: hidden; border: 1px dashed transparent; }
+.col span { display: block; width: 100%; background: var(--brand); opacity: .85; border-radius: 8px 8px 0 0; transition: height .3s var(--ease); }
+.day:hover .col { border-color: var(--border); }
 .areas { gap: .6rem; }
-.weaktag { margin-left: .35rem; padding: .05rem .45rem; font-size: .7rem; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; }
 summary { cursor: pointer; }
 </style>

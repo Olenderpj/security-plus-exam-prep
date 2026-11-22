@@ -139,13 +139,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </div>
     <div class="bar"><span :style="{ width: (idx / deck.length) * 100 + '%' }" /></div>
     <button class="card flash" @click="flipped = !flipped">
-      <span class="muted small">{{ isAcronym(card) ? sideLabel(card, flipped) : `${cardLabel(card)} · ${sideLabel(card, flipped)}` }}</span>
-      <span v-if="!flipped" class="front">{{ frontText(card) }}</span>
-      <span v-else class="back">
+      <span class="tag">{{ isAcronym(card) ? sideLabel(card, flipped) : `${cardLabel(card)} · ${sideLabel(card, flipped)}` }}</span>
+      <span v-if="!flipped" :key="'f' + idx" class="front">{{ frontText(card) }}</span>
+      <span v-else :key="'b' + idx" class="back">
         <strong>{{ backText(card) }}</strong>
         <span v-if="card.note" class="note muted">{{ card.note }}</span>
       </span>
-      <span v-if="!flipped" class="muted small">Tap or press Space to flip</span>
+      <span class="muted small flip"><span class="kbd">Space</span> {{ flipped ? 'to flip back' : 'or tap to flip' }}</span>
     </button>
     <div class="row between">
       <div class="row">
@@ -155,8 +155,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </button>
       </div>
       <div v-if="flipped" class="row">
-        <button class="btn" @click="mark(false)">Still learning</button>
-        <button class="btn primary" @click="mark(true)">Got it</button>
+        <button class="btn" @click="mark(false)"><span class="kbd" aria-hidden="true">←</span> Still learning</button>
+        <button class="btn primary" @click="mark(true)">Got it <span class="kbd" aria-hidden="true">→</span></button>
       </div>
     </div>
   </div>
@@ -180,13 +180,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 <style scoped>
 .flash {
-  min-height: 260px; width: 100%; display: flex; flex-direction: column; justify-content: space-between;
-  align-items: center; text-align: center; gap: 1rem; font: inherit; color: var(--text); cursor: pointer; padding: 1.5rem;
+  min-height: 22rem; width: 100%; display: flex; flex-direction: column; justify-content: center; position: relative;
+  align-items: center; text-align: center; gap: 1.25rem; font: inherit; color: var(--text); cursor: pointer; padding: 2.5rem 1.5rem 3rem;
+  border-radius: 20px; transition: border-color .15s var(--ease), box-shadow .2s var(--ease);
 }
-.front { font-size: 1.4rem; font-weight: 600; }
-.back { font-size: 1.1rem; max-width: 34rem; display: flex; flex-direction: column; gap: .5rem; }
+.flash:hover { border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); box-shadow: 0 6px 24px rgba(0, 0, 0, .06); }
+.flash > .tag { position: absolute; top: 1rem; left: 1rem; }
+.flash > .flip { position: absolute; bottom: 1rem; left: 0; right: 0; }
+.front { font-family: var(--display); font-size: 2.1rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.25; max-width: 30rem; animation: pop .22s var(--ease); }
+.back { font-size: 1.25rem; max-width: 34rem; display: flex; flex-direction: column; gap: .6rem; animation: pop .22s var(--ease); }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
 .back strong { font-weight: 600; }
 .note { font-size: .95rem; }
 .big { font-size: 1.6rem; font-weight: 600; }
-.btn.marked { border-color: var(--warn); color: var(--warn); }
+.btn.marked { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); }
 </style>

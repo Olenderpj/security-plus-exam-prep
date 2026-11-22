@@ -131,7 +131,7 @@ function confirmClearMissed() {
                 <span :class="pctClass(d.pct)">{{ d.pct === null ? 'No data' : `${d.pct}% · ${d.n} answered` }}</span>
               </span>
             </span>
-            <span class="bar"><span :style="{ width: (d.pct || 0) + '%' }" /></span>
+            <span class="bar" :class="pctClass(d.pct)"><span :style="{ width: (d.pct || 0) + '%' }" /></span>
           </button>
 
           <div v-if="expanded.has(d.id)" class="objectives">
@@ -143,7 +143,7 @@ function confirmClearMissed() {
                 </span>
                 <span :class="pctClass(o.pct)">{{ o.pct === null ? 'No data' : `${o.pct}% · ${o.n}` }}</span>
               </div>
-              <div class="bar thin"><span :style="{ width: (o.pct || 0) + '%' }" /></div>
+              <div class="bar thin" :class="pctClass(o.pct)"><span :style="{ width: (o.pct || 0) + '%' }" /></div>
               <div class="row small links">
                 <RouterLink :to="`/practice?domain=${d.id}&objective=${o.code}`">Practice</RouterLink>
                 <RouterLink v-if="missedByDomain[o.code]" :to="`/practice?missed=1&domain=${d.id}&objective=${o.code}`" class="bad">

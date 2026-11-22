@@ -3,12 +3,13 @@
 // every question, flashcard, acronym, and note; each result opens its own page.
 // "/" or Ctrl/⌘+K opens it from anywhere.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { objectiveName } from '../data/domains.js'
 import { search } from '../lib/search.js'
 import Hl from './Hl.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 const STEP = 8
 const RECENT_KEY = 'secplus.recentSearches'
@@ -21,6 +22,29 @@ const recent = ref(readRecent())
 const results = computed(() => search(query.value))
 const terms = computed(() => results.value.terms)
 const total = computed(() => ['questions', 'cards', 'acronyms', 'notes'].reduce((n, k) => n + results.value[k].length, 0))
+
+// Keyboard navigation: one flat list in display order; ↑/↓ move, Enter opens the highlighted result.
+const activeIdx = ref(0)
+const flat = computed(() => [
+  ...results.value.notes.map((n) => ({ key: `n:${n.id}`, to: '/notes' })),
+  ...results.value.acronyms.slice(0, shown.value.acronyms).map((a) => ({ key: a.id, to: `/card/${a.id}` })),
+  ...results.value.cards.slice(0, shown.value.cards).map((c) => ({ key: c.id, to: `/card/${c.id}` })),
+  ...results.value.questions.slice(0, shown.value.questions).map((q) => ({ key: q.id, to: `/question/${q.id}` }))
+])
+const activeKey = computed(() => flat.value[activeIdx.value]?.key)
+function onNavKey(e) {
+  if (!flat.value.length || !terms.value.length) return
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    const n = flat.value.length
+    activeIdx.value = (activeIdx.value + (e.key === 'ArrowDown' ? 1 : -1) + n) % n
+    nextTick(() => document.querySelector('.panel .item.active')?.scrollIntoView({ block: 'nearest' }))
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    const target = flat.value[activeIdx.value]
+    if (target) router.push(target.to)
+  }
+}
 
 function readRecent() {
   try {
@@ -71,7 +95,10 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
 
-watch(query, () => (shown.value = { questions: STEP, cards: STEP, acronyms: STEP }))
+watch(query, () => {
+  shown.value = { questions: STEP, cards: STEP, acronyms: STEP }
+  activeIdx.value = 0
+})
 // Opening a result navigates; the popup closes itself (and remembers the search).
 watch(() => route.fullPath, close)
 </script>
@@ -97,7 +124,7 @@ watch(() => route.fullPath, close)
               aria-label="Search"
               autocomplete="off"
               spellcheck="false"
-              @keydown.enter="remember"
+              @keydown="onNavKey"
             />
           </label>
           <button class="sp-esc" type="button" aria-label="Close search" @click="close">Esc</button>
@@ -124,7 +151,7 @@ watch(() => route.fullPath, close)
           <template v-else>
             <div v-if="results.notes.length" class="group">
               <div class="gh">Notes · {{ results.notes.length }}</div>
-              <RouterLink v-for="n in results.notes" :key="n.id" to="/notes" class="item">
+              <RouterLink v-for="n in results.notes" :key="n.id" to="/notes" class="item" :class="{ active: activeKey === `n:${n.id}` }" @mousemove="activeIdx = flat.findIndex((f) => f.key === `n:${n.id}`)">
                 <div class="main">
                   <strong><Hl :text="n.title || 'Untitled'" :terms="terms" /></strong>
                   <div v-for="(line, i) in n.lines" :key="i" class="small muted"><Hl :text="line" :terms="terms" /></div>
@@ -135,7 +162,7 @@ watch(() => route.fullPath, close)
 
             <div v-if="results.acronyms.length" class="group">
               <div class="gh">Acronyms · {{ results.acronyms.length }}</div>
-              <RouterLink v-for="a in results.acronyms.slice(0, shown.acronyms)" :key="a.id" :to="`/card/${a.id}`" class="item">
+              <RouterLink v-for="a in results.acronyms.slice(0, shown.acronyms)" :key="a.id" :to="`/card/${a.id}`" class="item" :class="{ active: activeKey === a.id }" @mousemove="activeIdx = flat.findIndex((f) => f.key === a.id)">
                 <div class="main">
                   <div><strong><Hl :text="a.front" :terms="terms" /></strong> <span class="muted">— <Hl :text="a.back" :terms="terms" /></span></div>
                   <div class="small muted"><Hl :text="a.note" :terms="terms" /></div>
@@ -147,7 +174,7 @@ watch(() => route.fullPath, close)
 
             <div v-if="results.cards.length" class="group">
               <div class="gh">Flashcards · {{ results.cards.length }}</div>
-              <RouterLink v-for="c in results.cards.slice(0, shown.cards)" :key="c.id" :to="`/card/${c.id}`" class="item">
+              <RouterLink v-for="c in results.cards.slice(0, shown.cards)" :key="c.id" :to="`/card/${c.id}`" class="item" :class="{ active: activeKey === c.id }" @mousemove="activeIdx = flat.findIndex((f) => f.key === c.id)">
                 <div class="main">
                   <strong><Hl :text="c.front" :terms="terms" /></strong>
                   <div class="small muted clamp"><Hl :text="c.back" :terms="terms" /></div>
@@ -159,7 +186,7 @@ watch(() => route.fullPath, close)
 
             <div v-if="results.questions.length" class="group">
               <div class="gh">Questions · {{ results.questions.length }}</div>
-              <RouterLink v-for="q in results.questions.slice(0, shown.questions)" :key="q.id" :to="`/question/${q.id}`" class="item">
+              <RouterLink v-for="q in results.questions.slice(0, shown.questions)" :key="q.id" :to="`/question/${q.id}`" class="item" :class="{ active: activeKey === q.id }" @mousemove="activeIdx = flat.findIndex((f) => f.key === q.id)">
                 <div class="main">
                   <div class="small muted">Domain {{ q.domain }} · {{ q.objective }} {{ objectiveName(q.objective) }}</div>
                   <div class="clamp"><Hl :text="q.question" :terms="terms" /></div>
@@ -172,8 +199,8 @@ watch(() => route.fullPath, close)
         </div>
 
         <div class="foot small muted">
-          <span>Select a result to open it</span>
-          <span><kbd>/</kbd> search · <kbd>Esc</kbd> close</span>
+          <span><kbd>↑</kbd> <kbd>↓</kbd> navigate · <kbd>↵</kbd> open</span>
+          <span><kbd>/</kbd> or <kbd>Ctrl K</kbd> search · <kbd>Esc</kbd> close</span>
         </div>
       </div>
     </div>
@@ -237,10 +264,11 @@ kbd {
   display: flex; align-items: center; gap: .75rem; padding: .55rem .55rem; border-radius: 8px;
   color: inherit; text-decoration: none; line-height: 1.4;
 }
-.item:hover, .item:focus-visible { background: var(--surface); outline: 0; }
+.item:hover, .item:focus-visible, .item.active { background: var(--surface); outline: 0; }
+.item.active { box-shadow: inset 0 0 0 1px var(--border), inset 3px 0 0 var(--brand); }
 .main { flex: 1; min-width: 0; }
 .go { flex: none; font-size: 1.4rem; line-height: 1; color: var(--muted); }
-.item:hover .go { color: var(--text); }
+.item:hover .go, .item.active .go { color: var(--text); }
 .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .icon { display: inline-flex; padding: .25rem; color: var(--muted); background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .icon:hover { color: var(--bad); background: var(--bad-bg); }

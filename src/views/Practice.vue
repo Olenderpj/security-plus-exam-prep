@@ -154,6 +154,28 @@ async function quit() {
   await commit(answeredCount.value, true)
 }
 
+// Keyboard: A–D / 1–4 pick an answer, Enter checks and continues. Off while the acronym dialog is open.
+function onKeys(e) {
+  if (stage.value !== 'run' || lookupInfo.value || e.metaKey || e.ctrlKey || e.altKey) return
+  const t = e.target
+  if (t.closest && (t.closest('[data-noshortcut]') || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return
+  if (e.key === 'Enter') {
+    if (!revealed.value && isComplete(current.value, sel.value)) { e.preventDefault(); check() }
+    else if (revealed.value) { e.preventDefault(); next() }
+    return
+  }
+  const q = current.value
+  if (revealed.value || q.type !== 'mc') return
+  const k = e.key.toLowerCase()
+  const n = 'abcdefgh'.includes(k) && k.length === 1 ? 'abcdefgh'.indexOf(k) : /^[1-8]$/.test(k) ? Number(k) - 1 : -1
+  if (n < 0 || n >= q.options.length) return
+  e.preventDefault()
+  if (q.correct.length === 1) sel.value = [n]
+  else sel.value = sel.value.includes(n) ? sel.value.filter((x) => x !== n) : sel.value.length < q.correct.length ? [...sel.value, n] : sel.value
+}
+onMounted(() => window.addEventListener('keydown', onKeys))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeys))
+
 // Leaving the page (navigating away or closing the tab) mid-session also keeps the answered questions.
 const saveOnLeave = () => stage.value === 'run' && commit(answeredCount.value, false)
 onMounted(() => window.addEventListener('pagehide', saveOnLeave))
@@ -216,15 +238,16 @@ onBeforeUnmount(() => {
     <div class="card">
       <QuestionBody v-model:selected="sel" :question="current" :reveal="revealed" />
     </div>
-    <div class="row between">
-      <button class="btn ghost" :title="answeredCount ? 'Ends the session and scores the questions you answered' : ''" @click="quit">
+    <div class="row between actions">
+      <button class="btn ghost" data-noshortcut :title="answeredCount ? 'Ends the session and scores the questions you answered' : ''" @click="quit">
         {{ answeredCount ? 'End & score' : 'Quit' }}
       </button>
       <button v-if="!revealed" class="btn primary" :disabled="!isComplete(current, sel)" @click="check">
-        Check answer
+        Check answer <span class="kbd" aria-hidden="true">↵</span>
       </button>
-      <button v-else class="btn primary" @click="next">{{ idx < questions.length - 1 ? 'Next' : 'See results' }}</button>
+      <button v-else class="btn primary" @click="next">{{ idx < questions.length - 1 ? 'Next' : 'See results' }} <span class="kbd" aria-hidden="true">↵</span></button>
     </div>
+    <p class="hint muted small">Keys: <span class="kbd">A</span>–<span class="kbd">D</span> or <span class="kbd">1</span>–<span class="kbd">4</span> to answer · <span class="kbd">↵</span> to check and continue</p>
   </div>
 
   <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" :ended-early="endedEarly" @restart="stage = 'setup'" />
@@ -233,6 +256,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.hint { margin: 0; }
+@media (max-width: 959px) {
+  .hint { display: none; }
+  .actions { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); z-index: 5; padding: .6rem 0; background: var(--bg); }
+}
 .weak { margin: .25rem 0 0; padding-left: 1.1rem; }
 .objective { background: var(--soft); border-radius: 8px; padding: .5rem .75rem; }
 </style>

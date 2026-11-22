@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { domainById } from '../data/domains.js'
+import { domainById, objectiveName } from '../data/domains.js'
 import { isCorrect, partsCorrect } from '../lib/exam.js'
 import AcronymText from './AcronymText.vue'
 
@@ -37,7 +37,7 @@ function optClass(i) {
   if (!props.reveal) return { selected: props.selected.includes(i) }
   if (q.value.correct.includes(i)) return { correct: true }
   if (props.selected.includes(i)) return { wrong: true }
-  return {}
+  return { dim: true }
 }
 
 // ── matching ──
@@ -105,8 +105,10 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
 
 <template>
   <div class="stack">
-    <div class="muted small">
-      {{ typeLabel }} · Domain {{ q.domain }} · Objective {{ q.objective }} · {{ domainById(q.domain).name }}
+    <div class="meta">
+      <span class="tag">{{ typeLabel }}</span>
+      <span class="tag mono" :title="`Domain ${q.domain}: ${domainById(q.domain).name}`">D{{ q.domain }} · {{ q.objective }}</span>
+      <span class="muted small">{{ objectiveName(q.objective) }}</span>
     </div>
     <p class="q"><AcronymText :text="q.question" :objective="q.objective" :qid="q.id" :free="reveal" /></p>
     <pre v-if="q.exhibit" class="exhibit">{{ q.exhibit }}</pre>
@@ -114,8 +116,10 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
     <!-- Multiple choice -->
     <div v-if="q.type === 'mc'" class="opts">
       <button v-for="(opt, i) in q.options" :key="i" class="option" :class="optClass(i)" :disabled="reveal" @click="toggle(i)">
-        <span class="key">{{ letters[i] }}.</span>
-        <span><AcronymText :text="opt" :objective="q.objective" :qid="q.id" :free="reveal" /></span>
+        <span class="kbd letter">{{ letters[i] }}</span>
+        <span class="grow"><AcronymText :text="opt" :objective="q.objective" :qid="q.id" :free="reveal" /></span>
+        <span v-if="reveal && q.correct.includes(i)" class="res good" aria-label="Correct answer">✓</span>
+        <span v-else-if="reveal && selected.includes(i)" class="res bad" aria-label="Your answer, incorrect">✕</span>
       </button>
     </div>
 
@@ -200,21 +204,27 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
       </div>
     </div>
 
-    <div v-if="reveal" class="explain">
+    <div v-if="reveal" class="explain" :class="review ? '' : correct ? 'ok' : 'no'">
       <strong v-if="review">{{ q.type === 'mc' ? `Answer: ${q.correct.map((i) => letters[i]).join(', ')}.` : 'Correct answers shown above.' }}</strong>
       <template v-else>
-        <strong :class="correct ? 'good' : 'bad'">{{ correct ? 'Correct' : 'Incorrect' }}</strong>
+        <strong :class="correct ? 'good' : 'bad'">{{ correct ? '✓ Correct' : '✕ Incorrect' }}</strong>
         <template v-if="q.type === 'mc'"> — Answer: {{ q.correct.map((i) => letters[i]).join(', ') }}.</template>
         <template v-else> — {{ parts.got }} of {{ parts.of }} parts correct.</template>
       </template>
+      {{ ' ' }}
       <AcronymText :text="q.explanation" :objective="q.objective" :qid="q.id" :free="reveal" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.q { font-size: 1.05rem; margin: 0; }
-.opts, .order-list { display: grid; gap: .5rem; }
+.q { font-size: 1.2rem; font-weight: 500; line-height: 1.5; margin: 0; letter-spacing: -.005em; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .5rem; margin-bottom: .6rem; }
+.letter { flex: none; margin-top: .1rem; }
+.grow { flex: 1; min-width: 0; }
+.res { flex: none; font-weight: 700; margin-left: auto; padding-left: .5rem; }
+.option.dim { opacity: .55; }
+.opts { display: grid; gap: .5rem; }
 .exhibit {
   margin: 0; padding: .9rem 1rem; background: var(--soft); border: 1px solid var(--border); border-radius: 8px;
   font: .82rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre;
@@ -257,5 +267,7 @@ select {
 .mini:disabled { opacity: .35; cursor: default; }
 .pool .option[draggable='true'] { cursor: grab; }
 .correct-order { margin: 0; padding-left: 1.25rem; }
-.explain { background: var(--soft); border-radius: 8px; padding: .9rem 1rem; font-size: .95rem; }
+.explain { background: var(--soft); border-left: 3px solid var(--border); border-radius: 4px 12px 12px 4px; padding: .9rem 1.1rem; font-size: .95rem; line-height: 1.6; }
+.explain.ok { background: var(--good-bg); border-left-color: var(--good); }
+.explain.no { background: var(--bad-bg); border-left-color: var(--bad); }
 </style>

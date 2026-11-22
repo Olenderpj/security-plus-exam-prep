@@ -150,7 +150,7 @@ onBeforeUnmount(() => clearInterval(timer))
   <div v-else-if="stage === 'run'" class="stack">
     <div class="row between small">
       <span class="muted">Question {{ idx + 1 }} of {{ questions.length }} · {{ answeredCount }} answered</span>
-      <span v-if="timed" class="clock" :class="{ warn: remaining < 300 }">{{ clock }}</span>
+      <span v-if="timed" class="clock mono" :class="{ low: remaining < 300 }" title="Time remaining">{{ clock }}</span>
     </div>
     <div class="card">
       <QuestionBody v-model:selected="sel" :question="current" />
@@ -189,20 +189,24 @@ onBeforeUnmount(() => clearInterval(timer))
 </template>
 
 <style scoped>
-.clock { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1rem; }
-.nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.3rem, 1fr)); gap: .35rem; }
+.clock { font-weight: 600; font-size: 1.05rem; padding: .15rem .7rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); }
+.clock.low { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr)); gap: .4rem; }
 .cell {
-  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
-  border-radius: 6px; padding: .35rem 0; font: inherit; font-size: .8rem; cursor: pointer; position: relative;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 10px; height: 2.4rem;
+  font: inherit; font-size: .85rem; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; position: relative;
+  transition: background .15s var(--ease), border-color .15s var(--ease);
 }
-.cell.answered { background: var(--soft); color: var(--text); }
-.cell.flagged { border-color: var(--warn); }
-.cell.partial { background: var(--soft); color: var(--muted); border-style: dashed; }
-.cell.pbq::after { content: ''; position: absolute; top: 3px; right: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
-.cell.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--text); }
+.cell:hover { border-color: var(--muted); }
+.cell.answered { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.cell.partial { background: var(--soft); color: var(--text); border-style: dashed; }
+.cell.flagged { box-shadow: 0 0 0 2px var(--warn); }
+.cell.pbq::after { content: ''; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--brand); }
+.cell.current { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); color: var(--text); }
+.cell.current.answered { color: var(--accent-text); }
 .legend { margin-top: .75rem; gap: 1rem; }
-.sw { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; border: 1px solid var(--border); vertical-align: -1px; margin-right: .25rem; }
-.sw.answered { background: var(--soft); }
-.sw.flagged { border-color: var(--warn); }
-.sw.dot { width: .4rem; height: .4rem; border-radius: 50%; background: var(--muted); border: 0; vertical-align: 1px; }
+.sw { display: inline-block; width: .85rem; height: .85rem; border-radius: 4px; border: 1px solid var(--border); vertical-align: -2px; margin-right: .3rem; }
+.sw.answered { background: var(--accent); border-color: var(--accent); }
+.sw.flagged { box-shadow: 0 0 0 2px var(--warn); }
+.sw.dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--brand); border: 0; vertical-align: 1px; }
 </style>
