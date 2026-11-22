@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { DOMAINS, EXAM, objectiveName } from '../data/domains.js'
 import { isCorrect, score as scoreSession, breakdown } from '../lib/exam.js'
 import { rateSession } from '../lib/adaptive.js'
-import { estimate, labelFor, MIN_FOR_ESTIMATE, objectiveRating, state } from '../lib/level.js'
+import { estimate, MIN_FOR_ESTIMATE, objectiveRating, overallLabel, state } from '../lib/level.js'
 import QuestionBody from './QuestionBody.vue'
 
 const props = defineProps({
@@ -113,7 +113,7 @@ function rate(kind) {
             {{ level.toFixed(1) }}
             <span class="small" :class="delta >= 0 ? 'good' : 'bad'">{{ delta >= 0 ? '▲' : '▼' }} {{ Math.abs(delta).toFixed(1) }}</span>
           </div>
-          <div class="small muted">{{ labelFor(level) }} · questions averaged {{ adaptive.avgDifficulty }}</div>
+          <div class="small muted">{{ overallLabel() }} · questions averaged {{ adaptive.avgDifficulty }}</div>
         </div>
         <div class="rightcol">
           <div class="small muted">Estimated exam score</div>

@@ -1,13 +1,13 @@
 <script setup>
 import { computed } from 'vue'
-import { labelFor, state } from '../lib/level.js'
+import { overallLabel, state } from '../lib/level.js'
 
 const level = computed(() => state.value.g)
 </script>
 
 <template>
   <RouterLink to="/settings" class="badge small">
-    Adaptive difficulty · level {{ level.toFixed(1) }} ({{ labelFor(level) }})<span class="more"> · see it by section</span>
+    Adaptive difficulty · level {{ level.toFixed(1) }} ({{ overallLabel() }})<span class="more"> · see it by section</span>
   </RouterLink>
 </template>
 

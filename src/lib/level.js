@@ -126,6 +126,19 @@ export function applyFeedback(kind, codes = []) {
 
 export const snapshot = () => state.value.g
 
+// A level is only a measurement once there are answers behind it. Sections with none inherit the overall
+// level purely to pick starting difficulty, so they must never be labelled (e.g. "Proficient") in the UI.
+export const EVIDENCE_MIN = 5
+export const toneFor = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
+export function sectionBadge(stat) {
+  if (!stat.answered) return { text: 'Not started', tone: '', measured: false }
+  if (stat.answered < EVIDENCE_MIN) return { text: 'Early', tone: '', measured: false }
+  return { text: labelFor(stat.rating), tone: toneFor(stat.rating), measured: true }
+}
+// The overall label waits for enough answers too (the same threshold as the exam-score estimate).
+export const overallLabel = () => (state.value.n >= MIN_FOR_ESTIMATE ? labelFor(state.value.g) : 'Getting started')
+export const overallTone = () => (state.value.n >= MIN_FOR_ESTIMATE ? toneFor(state.value.g) : '')
+
 export function labelFor(rating) {
   return rating < 3 ? 'Foundational' : rating < 5 ? 'Developing' : rating < 6.5 ? 'Proficient' : rating < 8 ? 'Advanced' : 'Expert'
 }

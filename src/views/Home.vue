@@ -4,7 +4,7 @@ import { DOMAINS, EXAM } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
-import { domainStats, estimate, labelFor, MIN_FOR_ESTIMATE, state, weakSections } from '../lib/level.js'
+import { domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
 import { missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { formatDuration, study, summarize } from '../lib/studyTime.js'
@@ -64,7 +64,7 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
       <div class="card stat">
         <div class="label">Your level</div>
         <div class="big num">{{ level.toFixed(1) }}</div>
-        <div class="small"><span class="tag" :class="tone(level)">{{ labelFor(level) }}</span> <span class="muted">· {{ answered }} answered</span></div>
+        <div class="small"><span class="tag" :class="overallTone()">{{ overallLabel() }}</span> <span class="muted">· {{ answered }} answered</span></div>
       </div>
       <div class="card stat">
         <div class="label">Est. exam score</div>
@@ -121,7 +121,7 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
         <span class="num">{{ d.id }}.0</span>
         <span class="grow">{{ d.name }} <span class="muted small">· {{ d.weight }}% of exam</span></span>
         <span class="track" aria-hidden="true"><span :style="{ width: d.stat.answered ? Math.round(((d.stat.rating - 1) / 9) * 100) + '%' : '0' }" /></span>
-        <span class="tag" :class="d.stat.answered ? tone(d.stat.rating) : ''">{{ d.stat.answered ? d.stat.rating.toFixed(1) : '—' }}</span>
+        <span class="tag" :class="sectionBadge(d.stat).tone" :title="sectionBadge(d.stat).measured ? '' : 'Not enough answers yet to rate this domain'">{{ d.stat.answered ? d.stat.rating.toFixed(1) : '—' }}</span>
       </div>
     </div>
     </div>

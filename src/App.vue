@@ -5,7 +5,7 @@ import ShortcutsSheet from './components/ShortcutsSheet.vue'
 import { sheetOpen } from './lib/shortcuts.js'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
-import { labelFor, state, weakSections } from './lib/level.js'
+import { overallLabel, overallTone, state, weakSections } from './lib/level.js'
 import { missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
 import { formatDuration, study, summarize } from './lib/studyTime.js'
@@ -26,7 +26,8 @@ const level = computed(() => state.value.g)
 const today = computed(() => summarize(study.value).today)
 const weakCount = computed(() => weakSections().length)
 const missedCount = computed(() => missed.value.size)
-const levelTone = computed(() => (level.value >= 8 ? 'good' : level.value >= 6.5 ? 'good' : level.value >= 5 ? 'brand' : 'warn'))
+const levelTone = computed(() => overallTone())
+const levelLabel = computed(() => overallLabel())
 
 // The search box is hidden while a session is running (practice, exam, flashcards).
 // Account menu: opens from the username, closes on outside click or Escape.
@@ -71,7 +72,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="sidefoot" aria-label="Study status">
-        <div class="statline"><span class="muted small">Level</span><span class="tag" :class="levelTone">{{ level.toFixed(1) }} · {{ labelFor(level) }}</span></div>
+        <div class="statline"><span class="muted small">Level</span><span class="tag" :class="levelTone">{{ level.toFixed(1) }} · {{ levelLabel }}</span></div>
         <div class="statline"><span class="muted small">Studied today</span><span class="num small">{{ formatDuration(today) }}</span></div>
       </div>
 

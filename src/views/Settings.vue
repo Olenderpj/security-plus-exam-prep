@@ -4,7 +4,7 @@ import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
-import { domainStats, estimate, labelFor, MIN_FOR_ESTIMATE, reset, state, stats, weakSections } from '../lib/level.js'
+import { domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 // ── profile ──
@@ -167,7 +167,7 @@ function resetDifficulty() {
       <div class="card row between">
         <div>
           <div class="label">Overall level</div>
-          <div class="big num">{{ overall.toFixed(1) }} <span class="tag" :class="tone(overall)">{{ labelFor(overall) }}</span></div>
+          <div class="big num">{{ overall.toFixed(1) }} <span class="tag" :class="overallTone()">{{ overallLabel() }}</span></div>
           <div class="muted small">{{ state.n }} answers recorded</div>
         </div>
         <div class="rightcol">
@@ -188,9 +188,9 @@ function resetDifficulty() {
           <summary>
             <span class="chev" aria-hidden="true">›</span>
             <span class="dname"><span class="muted num">{{ d.id }}.0</span> {{ d.name }}</span>
-            <span class="tag" :class="tone(d.stat.rating)">{{ d.stat.rating.toFixed(1) }} · {{ labelFor(d.stat.rating) }}</span>
+            <span class="tag" :class="sectionBadge(d.stat).tone">{{ sectionBadge(d.stat).measured ? `${d.stat.rating.toFixed(1)} · ${sectionBadge(d.stat).text}` : sectionBadge(d.stat).text }}</span>
             <span class="dstat muted small num">{{ pct(d.stat.accuracy) }} · {{ d.stat.answered }} answered</span>
-            <span class="bar thin dbar" role="img" :aria-label="`Level ${d.stat.rating.toFixed(1)} of 10`"><span :style="{ width: barWidth(d.stat.rating) }" /></span>
+            <span class="bar thin dbar" role="img" :aria-label="d.stat.answered ? `Level ${d.stat.rating.toFixed(1)} of 10` : 'Not started'"><span :style="{ width: d.stat.answered ? barWidth(d.stat.rating) : '0' }" /></span>
           </summary>
           <div class="subs">
             <div v-for="o in d.objectives" :key="o.code" class="sub">
@@ -198,15 +198,15 @@ function resetDifficulty() {
                 <span class="mono muted">{{ o.code }}</span>
                 <span class="grow small">{{ o.name }}</span>
                 <span v-if="weak.has(o.code)" class="tag warn">weak area</span>
-                <span class="tag" :class="o.stat.answered ? tone(o.stat.rating) : ''">{{ o.stat.rating.toFixed(1) }}</span>
+                <span class="tag" :class="sectionBadge(o.stat).tone">{{ o.stat.answered ? o.stat.rating.toFixed(1) : 'Not started' }}</span>
               </div>
-              <div class="bar thin"><span :style="{ width: barWidth(o.stat.rating) }" /></div>
+              <div class="bar thin"><span :style="{ width: o.stat.answered ? barWidth(o.stat.rating) : '0' }" /></div>
               <div class="muted small">
                 <template v-if="o.stat.answered">
-                  {{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered · serving questions near {{ Math.min(9.5, o.stat.rating + 0.5).toFixed(1) }}<template v-if="o.stat.lookups"> · {{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }}</template>
+                  <template v-if="o.stat.answered < EVIDENCE_MIN">Early: only {{ o.stat.answered }} answered, so this level is still mostly your overall level · </template>{{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered · serving questions near {{ Math.min(9.5, o.stat.rating + 0.5).toFixed(1) }}<template v-if="o.stat.lookups"> · {{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }}</template>
                 </template>
                 <template v-else-if="o.stat.lookups">{{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }} · no questions answered yet</template>
-                <template v-else>Not started · uses your overall level</template>
+                <template v-else>Not started yet. Questions here begin near your overall level ({{ overall.toFixed(1) }}) until you answer some.</template>
               </div>
             </div>
           </div>
