@@ -458,5 +458,26 @@ D  Data center flood            Low          High`,
     a: ['Risk A', 'Risk B', 'Risk C', 'Risk D'],
     c: 0,
     e: 'Risk A has both high likelihood and high impact, giving it the highest qualitative risk rating.'
+  },
+  {
+    d: 1, t: 'match', o: '1.4',
+    q: 'Classify each encryption algorithm found in this study guide as symmetric or asymmetric.',
+    choices: ['Symmetric', 'Asymmetric'],
+    items: [
+      ['AES', 'Symmetric'],
+      ['3DES', 'Symmetric'],
+      ['DES', 'Symmetric'],
+      ['Blowfish', 'Symmetric'],
+      ['RC4', 'Symmetric'],
+      ['ChaCha20', 'Symmetric'],
+      ['IDEA', 'Symmetric'],
+      ['RSA', 'Asymmetric'],
+      ['ECC', 'Asymmetric'],
+      ['Diffie-Hellman', 'Asymmetric'],
+      ['ECDHE', 'Asymmetric'],
+      ['DSA', 'Asymmetric'],
+      ['ECDSA', 'Asymmetric']
+    ],
+    e: 'Symmetric algorithms use one shared secret key for both encryption and decryption (AES, 3DES, DES, Blowfish, RC4, ChaCha20, IDEA) and are fast enough for bulk data. Asymmetric algorithms use a public/private key pair (RSA, ECC) or build on one: Diffie-Hellman and ECDHE agree on a shared key over an untrusted network, and DSA/ECDSA create digital signatures.'
   }
 ]

@@ -1764,5 +1764,9 @@ export default {
   "l-17-3": [
     "A penetration test is scoped as unknown-environment. The rules of engagement allow social engineering of employees but prohibit denial of service against production. The team finds a SQL injection in production that could expose customer records. Which action is BEST?",
     "During an unknown-environment test whose rules of engagement permit social engineering but forbid denial of service on production, testers discover a SQL injection that could expose customer records. What is the BEST action?"
+  ],
+  "p-36": [
+    "Sort each encryption algorithm from the study guide into symmetric or asymmetric.",
+    "For every algorithm listed, choose whether it is symmetric or asymmetric."
   ]
 }
