@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { domainById } from '../data/domains.js'
 import { isCorrect, partsCorrect } from '../lib/exam.js'
+import AcronymText from './AcronymText.vue'
 
 const props = defineProps({
   question: { type: Object, required: true },
@@ -64,14 +65,14 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
     <div class="muted small">
       {{ typeLabel }} · Domain {{ q.domain }} · Objective {{ q.objective }} · {{ domainById(q.domain).name }}
     </div>
-    <p class="q">{{ q.question }}</p>
+    <p class="q"><AcronymText :text="q.question" :objective="q.objective" :qid="q.id" /></p>
     <pre v-if="q.exhibit" class="exhibit">{{ q.exhibit }}</pre>
 
     <!-- Multiple choice -->
     <div v-if="q.type === 'mc'" class="opts">
       <button v-for="(opt, i) in q.options" :key="i" class="option" :class="optClass(i)" :disabled="reveal" @click="toggle(i)">
         <span class="key">{{ letters[i] }}.</span>
-        <span>{{ opt }}</span>
+        <span><AcronymText :text="opt" :objective="q.objective" :qid="q.id" /></span>
       </button>
     </div>
 
@@ -79,7 +80,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
     <div v-else-if="q.type === 'match'" class="match">
       <p class="muted small hint">Select the correct option for each item.</p>
       <div v-for="(item, i) in q.items" :key="item.label" class="match-row" :class="matchState(i)">
-        <span class="match-label" :class="{ mono: q.mono }">{{ item.label }}</span>
+        <span class="match-label" :class="{ mono: q.mono }"><AcronymText :text="item.label" :objective="q.objective" :qid="q.id" /></span>
         <div class="match-pick">
           <select :value="selected[i] ?? ''" :disabled="reveal" @change="choose(i, $event.target.value)">
             <option value="" disabled>Select…</option>
@@ -105,20 +106,20 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
           @click="unplace(pos)"
         >
           <span class="key">{{ pos + 1 }}.</span>
-          <span>{{ q.items[itemIdx] }}</span>
+          <span><AcronymText :text="q.items[itemIdx]" :objective="q.objective" :qid="q.id" /></span>
         </button>
       </div>
       <template v-if="unplaced.length && !reveal">
         <div class="label">Available</div>
         <div class="order-list">
           <button v-for="i in unplaced" :key="i" class="option" @click="place(i)">
-            <span class="key">+</span><span>{{ q.items[i] }}</span>
+            <span class="key">+</span><span><AcronymText :text="q.items[i]" :objective="q.objective" :qid="q.id" /></span>
           </button>
         </div>
       </template>
       <div v-if="reveal && !correct" class="small">
         <div class="label" style="margin-top: .5rem">Correct order</div>
-        <ol class="correct-order"><li v-for="i in q.correct" :key="i">{{ q.items[i] }}</li></ol>
+        <ol class="correct-order"><li v-for="i in q.correct" :key="i"><AcronymText :text="q.items[i]" :objective="q.objective" :qid="q.id" /></li></ol>
       </div>
     </div>
 
@@ -129,7 +130,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
         <template v-if="q.type === 'mc'"> — Answer: {{ q.correct.map((i) => letters[i]).join(', ') }}.</template>
         <template v-else> — {{ parts.got }} of {{ parts.of }} parts correct.</template>
       </template>
-      {{ q.explanation }}
+      <AcronymText :text="q.explanation" :objective="q.objective" :qid="q.id" />
     </div>
   </div>
 </template>

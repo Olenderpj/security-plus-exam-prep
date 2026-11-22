@@ -2,7 +2,7 @@ import { QUESTIONS, isPBQ } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleQuestion } from './random.js'
 import { difficultyOf } from './difficulty.js'
-import { targetFor } from './level.js'
+import { targetFor, weakBoost } from './level.js'
 
 // Remembers when each question was last served (in this browser) so new
 // sessions favour questions you haven't seen recently.
@@ -51,13 +51,13 @@ function freshFirst(pool, seen) {
 
 // Adaptive pick: questions near the difficulty the user should be seeing in their own sub-section
 // are favoured (Gaussian weight), then ones not seen recently. Weighted sampling without replacement.
-function pickAdaptive(pool, n, mode, seen) {
+function pickAdaptive(pool, n, mode, seen, boost = null) {
   const now = Date.now()
   return pool
     .map((q) => {
       const gap = difficultyOf(q) - targetFor(q, mode)
       const age = seen[q.id] ? Math.min(14, (now - seen[q.id]) / 864e5) : 14
-      const w = Math.max(1e-6, Math.exp(-(gap * gap) / (2 * 1.5 * 1.5)) * (0.4 + (0.6 * age) / 14))
+      const w = Math.max(1e-6, Math.exp(-(gap * gap) / (2 * 1.5 * 1.5)) * (0.4 + (0.6 * age) / 14) * (boost ? boost(q) : 1))
       return { q, k: Math.random() ** (1 / w) }
     })
     .sort((a, b) => b.k - a.k)
@@ -74,19 +74,21 @@ export const matchesKind = (q, kind) =>
 
 // onlyIds: restrict to a set of question IDs (e.g. previously missed questions)
 // objective: restrict to one exam objective, e.g. "2.4"
-export const practicePool = (domain, kind = 'all', onlyIds = null, objective = null) =>
+// sections: restrict to a set of objective codes (e.g. the learner's weak areas)
+export const practicePool = (domain, kind = 'all', onlyIds = null, objective = null, sections = null) =>
   QUESTIONS.filter(
     (q) =>
       (!domain || q.domain === Number(domain)) &&
+      (!sections || sections.has(q.objective)) &&
       (!objective || q.objective === objective) &&
       matchesKind(q, kind) &&
       (!onlyIds || onlyIds.has(q.id))
   )
 
-export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null) {
-  const pool = practicePool(domain, kind, onlyIds, objective)
+export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null, sections = null) {
+  const pool = practicePool(domain, kind, onlyIds, objective, sections)
   // Retesting a chosen set (missed questions) uses exactly that set; otherwise difficulty adapts.
-  const picked = count === 'all' ? pool : onlyIds ? freshFirst(pool, readSeen()).slice(0, Number(count)) : pickAdaptive(pool, Number(count), 'practice', readSeen())
+  const picked = count === 'all' ? pool : onlyIds ? freshFirst(pool, readSeen()).slice(0, Number(count)) : pickAdaptive(pool, Number(count), 'practice', readSeen(), sections ? weakBoost : null)
   markSeen(picked)
   return applyWordings(shuffle(picked).map(shuffleQuestion))
 }

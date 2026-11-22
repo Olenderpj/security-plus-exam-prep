@@ -3,7 +3,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
-import { domainStats, estimate, labelFor, MIN_FOR_ESTIMATE, reset, state, stats } from '../lib/level.js'
+import { domainStats, estimate, labelFor, MIN_FOR_ESTIMATE, reset, state, stats, weakSections } from '../lib/level.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 // ── profile ──
@@ -42,6 +42,7 @@ const sections = computed(() =>
     objectives: objectivesOf(d).map((o) => ({ ...o, stat: stats(o.code) }))
   }))
 )
+const weak = computed(() => new Set(weakSections().map((s) => s.code)))
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
 
@@ -101,7 +102,10 @@ function resetDifficulty() {
     <section class="stack">
       <div class="row between">
         <h2 style="margin: 0">Difficulty</h2>
-        <button class="btn ghost small" @click="resetDifficulty">Reset levels</button>
+        <div class="row">
+          <RouterLink v-if="weak.size" to="/practice?weak=1" class="btn small">Practice weak areas</RouterLink>
+          <button class="btn ghost small" @click="resetDifficulty">Reset levels</button>
+        </div>
       </div>
       <p class="muted small" style="margin: 0">
         Questions are rated 1–10 and served a little above your level in each sub-section, so they get harder where you succeed and
@@ -143,7 +147,7 @@ function resetDifficulty() {
           <div class="subs">
             <div v-for="o in d.objectives" :key="o.code" class="sub">
               <div class="row between small">
-                <span>{{ o.code }} {{ o.name }}</span>
+                <span>{{ o.code }} {{ o.name }} <span v-if="weak.has(o.code)" class="weaktag">weak area</span></span>
                 <span :class="o.stat.answered ? '' : 'muted'">
                   {{ o.stat.rating.toFixed(1) }}
                 </span>
@@ -151,8 +155,9 @@ function resetDifficulty() {
               <div class="bar thin"><span :style="{ width: barWidth(o.stat.rating) }" /></div>
               <div class="muted small">
                 <template v-if="o.stat.answered">
-                  {{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered · serving questions near {{ Math.min(9.5, o.stat.rating + 0.5).toFixed(1) }}
+                  {{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered · serving questions near {{ Math.min(9.5, o.stat.rating + 0.5).toFixed(1) }}<template v-if="o.stat.lookups"> · {{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }}</template>
                 </template>
+                <template v-else-if="o.stat.lookups">{{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }} · no questions answered yet</template>
                 <template v-else>Not started · uses your overall level</template>
               </div>
             </div>
@@ -169,5 +174,6 @@ function resetDifficulty() {
 .subs { display: grid; gap: .9rem; margin-top: .75rem; }
 .sub { display: grid; gap: .25rem; }
 .bar.thin { height: 4px; }
+.weaktag { margin-left: .35rem; padding: .05rem .45rem; font-size: .7rem; color: var(--warn); border: 1px solid var(--warn); border-radius: 999px; }
 summary { cursor: pointer; }
 </style>

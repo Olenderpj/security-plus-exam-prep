@@ -24,11 +24,16 @@ export const { state, save, replace } = syncedValue('secplus.level', 'difficulty
 
 export const expectedCorrect = (rating, difficulty) => sigmoid((rating - difficulty) / SCALE)
 
+// How much evidence a sub-section entry carries: answered questions, plus a quarter-answer per acronym lookup.
+const LOOKUP_WEIGHT = 0.25
+const LOOKUP_PENALTY = 0.06 // rating points taken off the sub-section per lookup (slight, and recoverable)
+const weight = (e) => e[1] + LOOKUP_WEIGHT * (e[3] || 0)
+
 // Rating for a sub-section, blended toward the overall rating until it has enough answers.
 export function objectiveRating(code) {
   const e = state.value.o[code]
   if (!e) return state.value.g
-  return (e[0] * e[1] + state.value.g * PRIOR) / (e[1] + PRIOR)
+  return (e[0] * weight(e) + state.value.g * PRIOR) / (weight(e) + PRIOR)
 }
 
 export function domainRating(id) {
@@ -38,8 +43,8 @@ export function domainRating(id) {
   for (const c of codes) {
     const e = state.value.o[c]
     if (e) {
-      sum += objectiveRating(c) * e[1]
-      n += e[1]
+      sum += objectiveRating(c) * weight(e)
+      n += weight(e)
     }
   }
   return (sum + state.value.g * PRIOR) / (n + PRIOR)
@@ -47,7 +52,7 @@ export function domainRating(id) {
 
 export function stats(code) {
   const e = state.value.o[code]
-  return { rating: objectiveRating(code), answered: e?.[1] || 0, accuracy: e?.[1] ? e[2] / e[1] : null }
+  return { rating: objectiveRating(code), answered: e?.[1] || 0, accuracy: e?.[1] ? e[2] / e[1] : null, lookups: e?.[3] || 0 }
 }
 
 export function domainStats(id) {
@@ -79,6 +84,29 @@ export function applyAnswers(items, pct) {
   s.h = [...s.h, [Date.now(), s.g, Math.round(pct)]].slice(-15)
   save()
 }
+
+// Looking up an acronym during practice counts slightly against that sub-section. It lowers the level a
+// little (and the level recovers as questions there are answered correctly) and is tallied for review.
+export function applyLookup(code) {
+  const s = state.value
+  const o = (s.o[code] ||= [s.g, 0, 0])
+  o[0] = round(clamp(o[0] - LOOKUP_PENALTY))
+  o[3] = (o[3] || 0) + 1
+  save()
+}
+
+// Sub-sections to focus on: the ones where the level is lowest, using only sections with some evidence
+// (at least 3 answers). Prefers sections clearly below the overall level; otherwise the three lowest.
+export function weakSections(limit = 5) {
+  const rows = DOMAINS.flatMap((d) => objectivesOf(d).map((o) => ({ code: o.code, name: o.name, ...stats(o.code) })))
+    .filter((r) => r.answered >= 3)
+    .sort((a, b) => a.rating - b.rating)
+  const below = rows.filter((r) => r.rating < state.value.g - 0.15)
+  return (below.length ? below : rows.slice(0, 3)).slice(0, limit)
+}
+
+// Practice weighting: questions in sections further below your overall level are favoured (up to 2x).
+export const weakBoost = (q) => clamp(1 + (state.value.g - objectiveRating(q.objective)) / 2, 1, 2)
 
 // Manual feedback after a session nudges every sub-section that session covered.
 const NUDGE = { easy: 0.5, right: 0, hard: -0.5 }
