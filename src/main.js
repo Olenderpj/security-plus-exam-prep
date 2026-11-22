@@ -7,5 +7,7 @@ import './style.css'
 import './lib/progress.js'
 import './lib/missed.js'
 import './lib/marked.js'
+import { startStudyTimer } from './lib/studyTime.js'
 
 createApp(App).use(router).mount('#app')
+startStudyTimer(router)

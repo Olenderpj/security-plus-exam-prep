@@ -42,7 +42,7 @@ export async function updateProfile(firstName, lastName) {
 // using a shared computer starts fresh. Everything stays in the account.
 export async function signOut() {
   await supabase.auth.signOut()
-  for (const key of ['secplus.missed', 'secplus.marked', 'secplus.notes', 'secplus.level']) {
+  for (const key of ['secplus.missed', 'secplus.marked', 'secplus.notes', 'secplus.level', 'secplus.studytime']) {
     try {
       localStorage.removeItem(key)
     } catch {}
