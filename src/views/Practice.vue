@@ -2,7 +2,7 @@
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
-import { computed, provide, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
 import { objectiveName } from '../data/domains.js'
@@ -61,6 +61,7 @@ provide('acronymLookup', lookupAcronym)
 const stage = ref('setup')
 useFocusMode(stage)
 const adaptive = ref(null)
+const endedEarly = ref(0) // planned question count when the session was ended early, else 0
 const questions = ref([])
 const answers = ref([])
 const idx = ref(0)
@@ -87,6 +88,8 @@ function start() {
   const ids = onlyIds.value ? new Set(onlyIds.value) : null
   questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objective.value, weakCodes.value)
   counted.clear()
+  committed = false
+  endedEarly.value = 0
   answers.value = []
   adaptive.value = null
   idx.value = 0
@@ -100,25 +103,64 @@ function check() {
   recordAnswer(current.value, sel.value)
 }
 
+// Questions answered so far: every earlier one (you must check an answer to move on), plus this one once checked.
+const answeredCount = computed(() => (stage.value === 'run' ? idx.value + (revealed.value ? 1 : 0) : 0))
+let committed = false // this session's results have been recorded (never record twice)
+
+// Records the session for the first n questions: updates the section levels, saves the score, and
+// (when `show` is set) switches to the results screen. Used for finishing, quitting early, and when
+// the page is left mid-session, so answered questions are never thrown away.
+async function commit(n, show) {
+  if (committed || n < 1) return
+  committed = true
+  const qs = questions.value.slice(0, n)
+  const ans = answers.value.slice(0, n)
+  const secs = Math.round((Date.now() - startedAt.value) / 1000)
+  const info = recordSession(qs, ans)
+  if (show) {
+    endedEarly.value = n < questions.value.length ? questions.value.length : 0
+    questions.value = qs
+    answers.value = ans
+    seconds.value = secs
+    adaptive.value = info
+    stage.value = 'done'
+  }
+  await saveAttempt({
+    mode: 'practice',
+    domain: domain.value,
+    total: qs.length,
+    correct: qs.filter((q, i) => isCorrect(q, ans[i] || [])).length,
+    timed: false,
+    duration_seconds: secs,
+    domain_breakdown: breakdown(qs, ans)
+  })
+}
+
 async function next() {
   if (idx.value < questions.value.length - 1) {
     idx.value++
     revealed.value = false
     return
   }
-  seconds.value = Math.round((Date.now() - startedAt.value) / 1000)
-  adaptive.value = recordSession(questions.value, answers.value)
-  stage.value = 'done'
-  await saveAttempt({
-    mode: 'practice',
-    domain: domain.value,
-    total: questions.value.length,
-    correct: questions.value.filter((q, i) => isCorrect(q, answers.value[i] || [])).length,
-    timed: false,
-    duration_seconds: seconds.value,
-    domain_breakdown: breakdown(questions.value, answers.value)
-  })
+  await commit(questions.value.length, true)
 }
+
+// Quit: score what was answered. With nothing answered there is nothing to record.
+async function quit() {
+  if (!answeredCount.value) {
+    stage.value = 'setup'
+    return
+  }
+  await commit(answeredCount.value, true)
+}
+
+// Leaving the page (navigating away or closing the tab) mid-session also keeps the answered questions.
+const saveOnLeave = () => stage.value === 'run' && commit(answeredCount.value, false)
+onMounted(() => window.addEventListener('pagehide', saveOnLeave))
+onBeforeUnmount(() => {
+  window.removeEventListener('pagehide', saveOnLeave)
+  saveOnLeave()
+})
 </script>
 
 <template>
@@ -175,7 +217,9 @@ async function next() {
       <QuestionBody v-model:selected="sel" :question="current" :reveal="revealed" />
     </div>
     <div class="row between">
-      <button class="btn ghost" @click="stage = 'setup'">Quit</button>
+      <button class="btn ghost" :title="answeredCount ? 'Ends the session and scores the questions you answered' : ''" @click="quit">
+        {{ answeredCount ? 'End & score' : 'Quit' }}
+      </button>
       <button v-if="!revealed" class="btn primary" :disabled="!isComplete(current, sel)" @click="check">
         Check answer
       </button>
@@ -183,7 +227,7 @@ async function next() {
     </div>
   </div>
 
-  <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" @restart="stage = 'setup'" />
+  <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" :ended-early="endedEarly" @restart="stage = 'setup'" />
 
   <AcronymModal :info="lookupInfo" @close="lookupInfo = null" @reveal="revealAcronym" />
 </template>

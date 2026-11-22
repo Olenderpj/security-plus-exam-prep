@@ -11,7 +11,8 @@ const props = defineProps({
   answers: { type: Array, required: true },
   exam: { type: Boolean, default: false },
   seconds: { type: Number, default: null },
-  adaptive: { type: Object, default: null }
+  adaptive: { type: Object, default: null },
+  endedEarly: { type: Number, default: 0 } // planned question count, when the session was ended early
 })
 defineEmits(['restart'])
 
@@ -73,6 +74,10 @@ function rate(kind) {
           </div>
         </div>
       </div>
+      <p v-if="endedEarly" class="small" style="margin: 0">
+        You ended this session early, so it is scored on the <strong>{{ questions.length }}</strong> of {{ endedEarly }} questions you
+        answered. Your section levels were updated from those answers.
+      </p>
       <div v-if="seconds !== null" class="muted small">Time: {{ fmt(seconds) }}</div>
       <div class="stack">
         <div v-for="d in DOMAINS.filter((d) => byDomain[d.id])" :key="d.id">
