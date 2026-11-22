@@ -7,11 +7,12 @@ import { splitAcronyms } from '../lib/acronyms.js'
 const props = defineProps({
   text: { type: String, default: '' },
   objective: { type: String, default: '' },
-  qid: { type: String, default: '' }
+  qid: { type: String, default: '' },
+  free: { type: Boolean, default: false } // answer already submitted: lookups cost nothing
 })
 const lookup = inject('acronymLookup', null)
 const parts = computed(() => (lookup ? splitAcronyms(props.text) : [{ text: props.text }]))
-const open = (p) => lookup(p.acr, { objective: props.objective, qid: props.qid })
+const open = (p) => lookup(p.acr, { objective: props.objective, qid: props.qid, free: props.free })
 </script>
 
 <template>

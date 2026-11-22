@@ -40,6 +40,11 @@ const KINDS = [
 const lookupInfo = ref(null)
 const counted = new Set() // `${questionId}:${acronym}` already counted this session
 function lookupAcronym(entry, ctx) {
+  // After the answer is submitted there is nothing to protect: show the definition, no cost.
+  if (ctx.free) {
+    lookupInfo.value = { entry, ...ctx, revealed: true, repeat: false }
+    return
+  }
   const repeat = counted.has(`${ctx.qid}:${entry.front}`)
   lookupInfo.value = { entry, ...ctx, revealed: repeat, repeat }
 }
