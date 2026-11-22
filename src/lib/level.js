@@ -63,9 +63,9 @@ export function domainStats(id) {
   return { rating: domainRating(id), answered, accuracy: answered ? points / answered : null }
 }
 
-// Difficulty to serve for a question: a little above the user's level in that question's sub-section
-// (practice), or a full point above it for exams, so the better you do, the harder it gets.
-export const targetFor = (q, mode = 'practice') => clamp(objectiveRating(q.objective) + (mode === 'exam' ? 1 : 0.5), 1.5, 9.5)
+// Difficulty to prefer for a question: the user's level in that question's sub-section. (serving.js enforces the
+// ±10% window around it; this only chooses among the eligible questions.)
+export const targetFor = (q) => clamp(objectiveRating(q.objective), 1.5, 9.5)
 
 // items: [{ q, d, score }] with score 0–1 (partial credit allowed). pct: session percent for the history.
 export function applyAnswers(items, pct) {

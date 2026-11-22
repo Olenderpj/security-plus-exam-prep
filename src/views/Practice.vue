@@ -2,7 +2,7 @@
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
-import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
 import { objectiveName } from '../data/domains.js'
@@ -76,6 +76,10 @@ const counts = computed(() => {
   return c
 })
 const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value, objective.value, weakCodes.value).length)
+// If fewer questions are in range than the chosen count, switch to "all" so the chip matches what will be served.
+watch(max, (m) => {
+  if (count.value !== 'all' && count.value > m) count.value = 'all'
+}, { immediate: true })
 const current = computed(() => questions.value[idx.value])
 const sel = computed({
   get: () => answers.value[idx.value] || [],
@@ -237,6 +241,10 @@ onBeforeUnmount(() => {
       </div>
       <DomainPicker v-model="domain" :counts="counts" />
       <CountPicker v-model="count" :max="max" />
+      <p class="rangenote small" :class="max ? 'muted' : 'warn'">
+        Only questions within ±10% of your level in each section are served: {{ max }} match this selection.
+        <template v-if="!max">Try another section, question type, or source.</template>
+      </p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
   </div>
@@ -290,6 +298,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.rangenote { margin: 0; }
 .run { display: block; }
 .rail { display: none; }
 .weakchips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }

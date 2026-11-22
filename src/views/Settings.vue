@@ -5,6 +5,7 @@ import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
 import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
+import { countInRange, servingWindow } from '../lib/serving.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 // ── profile ──
@@ -44,6 +45,11 @@ const sections = computed(() =>
   }))
 )
 const weak = computed(() => new Set(weakSections().map((s) => s.code)))
+// "rated 5.0–6.2 (14 available)", noting when the level is held at the easiest/hardest band the bank can serve.
+function serving(code) {
+  const w = servingWindow(code)
+  return `serving questions rated ${w.lo.toFixed(1)}–${w.hi.toFixed(1)} (${countInRange(code)} available)${w.clamped ? `, the ${w.level < w.centre ? 'easiest' : 'hardest'} band the bank has` : ''}`
+}
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 // Level colour: building (amber) → proficient (blue) → strong (green).
 const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
@@ -160,7 +166,7 @@ function resetDifficulty() {
         </div>
       </div>
       <p class="muted small" style="margin: 0">
-        Questions are rated 1–10 and served a little above your level in each sub-section, so they get harder where you succeed and
+        Questions are rated 1–10 and only served within ±10% of your level in each sub-section, so they get harder where you succeed and
         easier where you struggle. Levels update after every practice session and exam, and from the feedback you give.
       </p>
 
@@ -204,11 +210,12 @@ function resetDifficulty() {
               <div class="bar thin"><span :style="{ width: o.stat.answered ? barWidth(o.stat.rating) : '0' }" /></div>
               <div class="muted small">
                 <template v-if="o.stat.answered">
-                  <template v-if="o.stat.answered < EVIDENCE_MIN">Early: only {{ o.stat.answered }} answered, so this level is still mostly your overall level · </template>{{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered · serving questions near {{ Math.min(9.5, o.stat.rating + 0.5).toFixed(1) }}<template v-if="o.stat.lookups"> · {{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }}</template>
+                  <template v-if="o.stat.answered < EVIDENCE_MIN">Early: only {{ o.stat.answered }} answered, so this level is still mostly your overall level · </template>{{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered<template v-if="o.stat.lookups"> · {{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }}</template>
                 </template>
                 <template v-else-if="o.stat.lookups">{{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }} · no questions answered yet</template>
                 <template v-else>Not started yet. Questions here begin near your overall level ({{ overall.toFixed(1) }}) until you answer some.</template>
               </div>
+              <div class="muted small">{{ serving(o.code) }}</div>
             </div>
           </div>
         </details>

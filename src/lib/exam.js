@@ -3,6 +3,7 @@ import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleQuestion } from './random.js'
 import { difficultyOf } from './difficulty.js'
 import { targetFor, weakBoost } from './level.js'
+import { inRange } from './serving.js'
 
 // Remembers when each question was last served (in this browser) so new
 // sessions favour questions you haven't seen recently.
@@ -80,6 +81,7 @@ export const practicePool = (domain, kind = 'all', onlyIds = null, objective = n
     (q) =>
       (!domain || q.domain === Number(domain)) &&
       (!sections || sections.has(q.objective)) &&
+      inRange(q) &&
       (!objective || q.objective === objective) &&
       matchesKind(q, kind) &&
       (!onlyIds || onlyIds.has(q.id))
@@ -106,24 +108,39 @@ export function domainTargets(total) {
   return rows.map(({ id, n }) => ({ id, n }))
 }
 
-// Builds an exam weighted by the official domain percentages. Like the real exam, performance-based
-// questions are presented first, and they count toward their domain's share. Difficulty adapts to
-// the learner, but never at the expense of the domain ratio: a short domain is topped up from the
-// same domain, and only borrows from another domain if that domain has too few questions.
+// How big an exam can be built from the questions inside the learner's difficulty window. Questions are never
+// pulled from outside the window, so when a domain has too few eligible questions the exam is shortened
+// instead, to the largest size that still honours the official domain ratio.
+export function examPlan(requested = EXAM.questions) {
+  const pool = QUESTIONS.filter(inRange)
+  const avail = Object.fromEntries(DOMAINS.map((d) => [d.id, pool.filter((q) => q.domain === d.id).length]))
+  const cap = Math.min(requested, pool.length)
+  for (let total = cap; total >= 1; total--) {
+    const targets = domainTargets(total)
+    if (targets.every((t) => t.n <= avail[t.id])) return { requested, size: total, available: pool.length, perDomain: avail, targets }
+  }
+  return { requested, size: 0, available: pool.length, perDomain: avail, targets: [] }
+}
+
+// Builds an exam weighted by the official domain percentages (as many questions as the difficulty window
+// allows, up to `total`). Like the real exam, performance-based questions are presented first and count
+// toward their domain's share.
 export function examSet(total = EXAM.questions, onlyIds = null) {
   const seen = readSeen()
+  const eligible = QUESTIONS.filter(inRange)
   if (onlyIds) {
-    // Retest exam from a given set (e.g. missed questions): PBQs first, then the rest.
-    const picked = freshFirst(QUESTIONS.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
+    // Retest exam from a given set (e.g. missed questions), still limited to the difficulty window.
+    const picked = freshFirst(eligible.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
     markSeen(picked)
     return applyWordings([...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion))
   }
-  total = Math.min(total, QUESTIONS.length)
-  const left = Object.fromEntries(domainTargets(total).map((t) => [t.id, t.n]))
+  const plan = examPlan(total)
+  total = plan.size
+  const left = Object.fromEntries(plan.targets.map((t) => [t.id, t.n]))
 
   // Performance-based questions first (about 1 in 18), each using a slot in its own domain.
-  const pbqWanted = Math.max(1, Math.round(total / 18))
-  const allPbqs = QUESTIONS.filter(isPBQ)
+  const pbqWanted = total ? Math.max(1, Math.round(total / 18)) : 0
+  const allPbqs = eligible.filter(isPBQ)
   const pbqs = []
   for (const q of pickAdaptive(allPbqs, allPbqs.length, 'exam', seen)) {
     if (pbqs.length >= pbqWanted) break
@@ -136,11 +153,11 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
   const used = new Set(pbqs.map((q) => q.id))
   const rest = []
   for (const [id, n] of Object.entries(left)) {
-    const domainPool = QUESTIONS.filter((q) => q.domain === Number(id))
+    const domainPool = eligible.filter((q) => q.domain === Number(id))
     const mc = pickAdaptive(domainPool.filter((q) => !isPBQ(q)), n, 'exam', seen)
     mc.forEach((q) => used.add(q.id))
     rest.push(...mc)
-    // Same-domain top-up (extra PBQs) before ever borrowing from another domain.
+    // Same-domain top-up (extra PBQs) before anything else.
     const short = n - mc.length
     if (short > 0) {
       const extra = pickAdaptive(domainPool.filter((q) => !used.has(q.id)), short, 'exam', seen)
@@ -148,8 +165,6 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
       rest.push(...extra)
     }
   }
-  const missing = total - pbqs.length - rest.length
-  if (missing > 0) rest.push(...pickAdaptive(QUESTIONS.filter((q) => !used.has(q.id) && !isPBQ(q)), missing, 'exam', seen))
 
   const picked = [...shuffle(pbqs), ...shuffle(rest.filter(isPBQ)), ...shuffle(rest.filter((q) => !isPBQ(q)))]
   markSeen(picked)
