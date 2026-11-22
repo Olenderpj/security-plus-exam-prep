@@ -240,10 +240,8 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
 .match-label { flex: 1 1 16rem; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; white-space: pre; overflow-x: auto; }
 .match-pick { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-select {
-  font: inherit; font-size: .92rem; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 6px;
-  background: var(--surface); color: var(--text); min-width: 11rem; max-width: 100%;
-}
+select { font-size: .92rem; padding-top: .45rem; padding-bottom: .45rem; min-width: 11rem; max-width: 100%; width: auto; }
+select:hover { border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); }
 .empty { margin: 0; padding: .5rem 0; }
 .slots, .pool { display: grid; gap: .5rem; }
 .pool { padding: .5rem; border: 1px dashed var(--border); border-radius: 10px; min-height: 3rem; }

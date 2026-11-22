@@ -170,7 +170,7 @@ function resetDifficulty() {
           <div class="big num">{{ overall.toFixed(1) }} <span class="tag" :class="tone(overall)">{{ labelFor(overall) }}</span></div>
           <div class="muted small">{{ state.n }} answers recorded</div>
         </div>
-        <div style="text-align: right">
+        <div class="rightcol">
           <div class="label">Estimated exam score</div>
           <template v-if="est">
             <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
@@ -217,7 +217,7 @@ function resetDifficulty() {
 </template>
 
 <style scoped>
-.big { font-size: 1.7rem; font-weight: 600; letter-spacing: -.02em; }
+.big { font-size: 1.7rem; font-weight: 500; letter-spacing: -.02em; }
 .fields { max-width: 28rem; }
 .tbl { padding: .25rem 0; overflow: hidden; }
 .drow { border-top: 1px solid var(--border); }
@@ -237,6 +237,8 @@ function resetDifficulty() {
 .subhead { display: flex; align-items: center; gap: .6rem; }
 .grow { flex: 1; min-width: 0; }
 .bar.thin { height: 4px; }
+.rightcol { text-align: right; }
+@media (max-width: 720px) { .rightcol { text-align: left; } }
 .stats { text-align: right; display: grid; gap: .15rem; margin-left: auto; }
 @media (max-width: 720px) {
   .drow summary { grid-template-columns: 1rem minmax(0, 1fr) auto; }

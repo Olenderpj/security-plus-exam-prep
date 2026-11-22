@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import SearchBar from './components/SearchBar.vue'
+import ShortcutsSheet from './components/ShortcutsSheet.vue'
+import { sheetOpen } from './lib/shortcuts.js'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
 import { labelFor, state, weakSections } from './lib/level.js'
@@ -73,6 +75,10 @@ onBeforeUnmount(() => {
         <div class="statline"><span class="muted small">Studied today</span><span class="num small">{{ formatDuration(today) }}</span></div>
       </div>
 
+      <button type="button" class="helpbtn" @click="sheetOpen = true">
+        <span>Keyboard shortcuts</span><span class="kbd" aria-hidden="true">?</span>
+      </button>
+
       <div class="acct">
         <RouterLink to="/settings" class="iconbtn" aria-label="Settings" title="Settings">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in settingsPaths" :key="d" :d="d" /></svg>
@@ -97,6 +103,8 @@ onBeforeUnmount(() => {
     </div>
   </header>
 
+  <ShortcutsSheet />
+
   <main class="page">
     <div class="pagein" :class="{ wide: focusMode }">
       <SearchBar v-if="!focusMode" />
@@ -114,7 +122,7 @@ onBeforeUnmount(() => {
   display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 9px; font-size: .78rem; font-weight: 700;
   letter-spacing: .02em; color: #fff; background: var(--brand);
 }
-.newbtn, .sidefoot, .lbl, .review { display: none; }
+.newbtn, .sidefoot, .lbl, .review, .helpbtn { display: none; }
 .ico { width: 1.1rem; height: 1.1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
 .links { display: flex; align-items: center; gap: .15rem; }
@@ -164,7 +172,7 @@ onBeforeUnmount(() => {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--border);
     background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   }
-  .links a { flex-direction: column; gap: .15rem; padding: .35rem .2rem; font-size: .68rem; text-align: center; border-radius: 12px; }
+  .links a { flex-direction: column; gap: .15rem; padding: .35rem .2rem; margin: 0 .15rem; font-size: .7rem; text-align: center; border-radius: 12px; }
   .links .ico { width: 1.3rem; height: 1.3rem; }
 }
 
@@ -180,6 +188,8 @@ onBeforeUnmount(() => {
   .review .label { padding: 0 .75rem; margin-bottom: .25rem; }
   .rlink { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .45rem .75rem; border-radius: 10px; color: var(--muted); font-size: .92rem; font-weight: 500; text-decoration: none; transition: background .15s, color .15s; }
   .rlink:hover { background: var(--soft); color: var(--text); }
+  .helpbtn { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; padding: .45rem .75rem; margin-top: .5rem; border: 0; border-radius: 10px; background: none; color: var(--muted); font: inherit; font-size: .88rem; cursor: pointer; transition: background .15s, color .15s; }
+  .helpbtn:hover { background: var(--soft); color: var(--text); }
   .sidefoot { display: grid; gap: .5rem; margin-top: auto; padding: .8rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
   .statline { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .acct { flex-direction: column; align-items: stretch; margin: .25rem 0 0; gap: .15rem; }

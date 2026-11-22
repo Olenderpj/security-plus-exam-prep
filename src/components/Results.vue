@@ -193,7 +193,7 @@ function rate(kind) {
 .secgrid { display: grid; gap: 1.1rem 2rem; }
 @media (min-width: 900px) { .secgrid { grid-template-columns: 1fr 1fr; align-items: start; } }
 @media (max-width: 720px) { .rightcol { text-align: left; } }
-.big { font-size: 1.6rem; font-weight: 600; }
+.big { font-size: 1.6rem; font-weight: 500; }
 .hero { font-family: var(--display); font-size: 3rem; line-height: 1; font-weight: 500; letter-spacing: -.02em; }
 .hero .unit { font-size: 1.4rem; color: var(--muted); margin-left: .1rem; }
 .tight > * + * { margin-top: .6rem; }

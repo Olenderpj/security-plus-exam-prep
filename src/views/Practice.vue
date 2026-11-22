@@ -296,13 +296,12 @@ onBeforeUnmount(() => {
 .tag.wrap { white-space: normal; }
 .startbar {
   position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
-  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--border);
-  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
 }
 .tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; }
-.tnum { font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
+.tnum { font-size: 1.8rem; font-weight: 500; line-height: 1.2; }
 .dots { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .9rem; }
-.dot { width: .85rem; height: .85rem; border-radius: 50%; background: var(--soft); border: 1px solid var(--border); }
+.dot { width: .85rem; height: .85rem; border-radius: 50%; background: var(--soft); border: 1px solid color-mix(in srgb, var(--muted) 55%, var(--border)); }
 .dot.ok { background: var(--good); border-color: var(--good); }
 .dot.no { background: var(--bad); border-color: var(--bad); }
 .dot.cur { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }

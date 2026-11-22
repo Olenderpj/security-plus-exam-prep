@@ -230,8 +230,7 @@ onBeforeUnmount(() => clearInterval(timer))
 .rail { display: block; margin-top: 1rem; }
 .startbar {
   position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
-  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--border);
-  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
 }
 .krow { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; }
 .krow .muted { margin-left: auto; }

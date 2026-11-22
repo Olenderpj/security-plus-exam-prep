@@ -121,7 +121,7 @@ watch(() => route.fullPath, close)
   <button class="trigger" type="button" aria-label="Search questions, flashcards, acronyms, and notes" @click="show">
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"/></svg>
     <span class="ph">Search questions, flashcards, notes…</span>
-    <kbd>/</kbd>
+    <kbd>/</kbd><kbd class="alt">Ctrl K</kbd>
   </button>
 
   <Teleport to="body">
@@ -239,11 +239,13 @@ watch(() => route.fullPath, close)
 <style scoped>
 /* Note: avoid the class names .bar and .row; style.css defines those globally. */
 .trigger {
-  display: flex; align-items: center; gap: .6rem; width: 100%; margin: 0 0 1.25rem; padding: .55rem .85rem;
-  font: inherit; font-size: .95rem; color: var(--muted); text-align: left; cursor: pointer;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  display: flex; align-items: center; gap: .6rem; width: 100%; margin: 0 0 1.5rem; padding: .42rem .9rem;
+  font: inherit; font-size: .92rem; color: var(--muted); text-align: left; cursor: pointer;
+  background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--border); border-radius: 999px;
 }
-.trigger:hover { border-color: var(--muted); }
+.trigger:hover { border-color: var(--muted); background: var(--surface); }
+.trigger .alt { margin-left: .25rem; }
+@media (max-width: 720px) { .trigger .alt { display: none; } }
 .trigger .ph { flex: 1; }
 kbd {
   font: inherit; font-size: .75rem; padding: .05rem .4rem; color: var(--muted);

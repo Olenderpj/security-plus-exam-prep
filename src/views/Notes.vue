@@ -193,7 +193,7 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 .field:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .add { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 .add .field:first-child { flex: 1 1 18rem; width: auto; }
-.pick { flex: 1 1 14rem; width: auto; }
+.pick { flex: 1 1 14rem; width: auto; border-radius: 999px; }
 .add .field, .pick { min-width: 0; max-width: 100%; }
 @media (max-width: 720px) { .add > * { flex: 1 1 100%; } }
 .hint { margin: 0; }
@@ -214,7 +214,7 @@ code { background: var(--soft); border-radius: 4px; padding: 0 .3em; }
 }
 .tool:hover { background: var(--soft); border-color: var(--border); }
 .tool.del { color: var(--muted); margin-left: .15rem; }
-.tool.del:hover { color: var(--bad); }
+.tool.del:hover { color: var(--bad); background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
 .body, .view { font-size: .9rem; line-height: 1.4; }
 .body {
   width: 100%; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem;

@@ -136,7 +136,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </div>
   </div>
 
-  <div v-else-if="stage === 'run'" class="stack">
+  <div v-else-if="stage === 'run'" class="run">
+    <div class="stack main">
     <div class="row between small muted">
       <span>Card {{ idx + 1 }} of {{ deck.length }}</span>
       <span>{{ known }} known</span>
@@ -163,6 +164,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <button class="btn primary" @click="mark(true)">Got it <span class="kbd" aria-hidden="true">→</span></button>
       </div>
     </div>
+      </div>
+
+    <aside class="rail stack" aria-label="Deck progress">
+      <div class="card">
+        <div class="label">Deck</div>
+        <div class="tally">
+          <div><div class="tnum num good">{{ known }}</div><div class="muted small">known</div></div>
+          <div><div class="tnum num warn">{{ missed.length }}</div><div class="muted small">learning</div></div>
+          <div><div class="tnum num">{{ deck.length - idx }}</div><div class="muted small">left</div></div>
+        </div>
+        <div class="bar" style="margin-top: .9rem"><span :style="{ width: (idx / deck.length) * 100 + '%' }" /></div>
+      </div>
+      <div class="card keys">
+        <div class="label">Shortcuts</div>
+        <div class="krow"><span class="kbd">Space</span><span class="muted small">Flip card</span></div>
+        <div class="krow"><span class="kbd">→</span><span class="muted small">Got it</span></div>
+        <div class="krow"><span class="kbd">←</span><span class="muted small">Still learning</span></div>
+        <div class="krow"><span class="kbd">M</span><span class="muted small">Mark for review</span></div>
+      </div>
+    </aside>
   </div>
 
   <div v-else class="stack">
@@ -183,10 +204,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </template>
 
 <style scoped>
+.run { display: block; }
+.rail { display: none; }
+.tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; }
+.tnum { font-size: 1.8rem; font-weight: 500; line-height: 1.2; }
+.krow { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem 0; }
+@media (min-width: 1180px) {
+  .run { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 1.5rem; align-items: start; }
+  .rail { display: block; position: sticky; top: 1.5rem; }
+}
 .startbar {
   position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
-  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--border);
-  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
 }
 @media (max-width: 959px) { .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); } }
 .flash {
@@ -194,14 +223,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   align-items: center; text-align: center; gap: 1.25rem; font: inherit; color: var(--text); cursor: pointer; padding: 2.5rem 1.5rem 3rem;
   border-radius: 20px; transition: border-color .15s var(--ease), box-shadow .2s var(--ease);
 }
-.flash:hover { border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); box-shadow: 0 6px 24px rgba(0, 0, 0, .06); }
+.flash { box-shadow: 0 2px 0 var(--border), 0 10px 28px rgba(0, 0, 0, .05); }
+.flash:hover { border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); box-shadow: 0 2px 0 var(--border), 0 14px 34px rgba(0, 0, 0, .09); }
+.flash > .flip { font-size: .9rem; }
 .flash > .tag { position: absolute; top: 1rem; left: 1rem; }
 .flash > .flip { position: absolute; bottom: 1rem; left: 0; right: 0; }
-.front { font-family: var(--display); font-size: 2.1rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.25; max-width: 30rem; animation: pop .22s var(--ease); }
-.back { font-size: 1.25rem; max-width: 34rem; display: flex; flex-direction: column; gap: .6rem; animation: pop .22s var(--ease); }
+.front { font-family: var(--display); font-size: 2.4rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.25; max-width: 30rem; animation: flipin .28s var(--ease); }
+.back { font-size: 1.3rem; max-width: 34rem; display: flex; flex-direction: column; gap: .6rem; animation: flipin .28s var(--ease); }
+@keyframes flipin { from { opacity: 0; transform: perspective(900px) rotateX(-14deg) translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
 .back strong { font-weight: 600; }
 .note { font-size: .95rem; }
-.big { font-size: 1.6rem; font-weight: 600; }
+.big { font-size: 1.6rem; font-weight: 500; }
 .btn.marked { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); }
 </style>

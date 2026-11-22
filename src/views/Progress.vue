@@ -121,7 +121,7 @@ function confirmClearMissed() {
 
       <div class="card stack">
         <div class="label">Accuracy by domain</div>
-        <p class="muted small" style="margin: 0">Select a domain to see each exam objective. Bars: <span class="good">green</span> 85%+, <span class="bad">red</span> under 70%.</p>
+        <p class="muted small" style="margin: 0">Select a domain to see each exam objective. <span class="lg"><i class="sw g" /> 85%+</span> <span class="lg"><i class="sw r" /> under 70%</span></p>
         <div v-for="d in domainStats" :key="d.id" class="domain">
           <button class="domain-head" :aria-expanded="expanded.has(d.id)" @click="toggleDomain(d.id)">
             <span class="row between small">
@@ -176,12 +176,16 @@ function confirmClearMissed() {
 </template>
 
 <style scoped>
+.lg { display: inline-flex; align-items: center; gap: .3rem; margin-left: .6rem; }
+.sw { width: .6rem; height: .6rem; border-radius: 50%; display: inline-block; }
+.sw.g { background: var(--good); }
+.sw.r { background: var(--bad); }
 .act { display: inline-flex; align-items: center; gap: .5rem; }
 .mdot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--muted); flex: none; }
 .mdot.practice { background: var(--brand); }
 .mdot.exam { background: var(--text); }
 .mdot.flashcards { background: var(--good); }
-.big { font-size: 1.6rem; font-weight: 600; }
+.big { font-size: 1.6rem; font-weight: 500; }
 .big-sm { font-size: 1.25rem; font-weight: 600; }
 .missed-link { margin-right: .6rem; }
 .domain + .domain { border-top: 1px solid var(--border); padding-top: .75rem; }

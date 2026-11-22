@@ -26,10 +26,10 @@ const greeting = computed(() => {
 })
 
 const actions = [
-  { to: '/practice', title: 'Practice by section', text: 'Instant feedback with explanations, adapted to your level.', paths: ['M9 11l3 3L22 4', 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'] },
-  { to: '/exam', title: 'Practice exam', text: `Up to ${EXAM.questions} questions weighted like the real exam.`, paths: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M12 6v6l4 2'] },
-  { to: '/flashcards', title: 'Flashcards', text: 'Concepts and acronyms, reshuffled every deck.', paths: ['M12 2 2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
-  { to: '/progress', title: 'Progress', text: 'Scores over time and accuracy by domain.', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] }
+  { to: '/practice', title: 'Practice by section', text: 'Adaptive questions with instant feedback.', paths: ['M9 11l3 3L22 4', 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'] },
+  { to: '/exam', title: 'Practice exam', text: `Up to ${EXAM.questions} questions, weighted like the real exam.`, paths: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M12 6v6l4 2'] },
+  { to: '/flashcards', title: 'Flashcards', text: 'Concepts and acronyms, reshuffled.', paths: ['M12 2 2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
+  { to: '/progress', title: 'Progress', text: 'Scores and accuracy by domain.', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] }
 ]
 const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
 const domains = computed(() => DOMAINS.map((d) => ({ ...d, stat: domainStats(d.id) })))
@@ -44,6 +44,19 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
         {{ QUESTIONS.length }} exam-style questions and {{ FLASHCARDS.length }} flashcards across all five domains.
         <template v-if="supabaseEnabled && !user"> <RouterLink to="/login">Sign in</RouterLink> to sync progress across devices.</template>
       </p>
+    </div>
+
+    <!-- Up next: the primary action -->
+    <div class="card upnext">
+      <div>
+        <div class="label">Up next</div>
+        <div class="herotitle">{{ weak.length ? `Sharpen ${weak[0].code} ${weak[0].name}` : answered ? 'Keep your streak going' : 'Start your first session' }}</div>
+        <div class="muted small">{{ weak.length ? `Your lowest section so far, level ${weak[0].rating.toFixed(1)}. Practice adapts to you.` : 'Ten adaptive questions, scored by section.' }}</div>
+      </div>
+      <div class="row">
+        <RouterLink :to="weak.length ? '/practice?weak=1' : '/practice'" class="btn primary">{{ weak.length ? 'Practice weak areas' : 'Start practice' }} <span class="kbd" aria-hidden="true">/</span></RouterLink>
+        <RouterLink to="/exam" class="btn">Take an exam</RouterLink>
+      </div>
     </div>
 
     <!-- Where you stand -->
@@ -116,6 +129,8 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
 </template>
 
 <style scoped>
+.upnext { display: flex; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; flex-wrap: wrap; padding: 1.4rem 1.5rem; background: linear-gradient(135deg, var(--brand-soft), var(--surface) 60%); }
+.herotitle { font-family: var(--display); font-size: 1.5rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.25; margin: .1rem 0 .25rem; }
 .stats { display: grid; gap: .75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cols { display: grid; gap: .75rem; grid-template-columns: 1fr; align-items: start; }
 @media (min-width: 900px) { .cols { grid-template-columns: 1fr 1fr; } }
