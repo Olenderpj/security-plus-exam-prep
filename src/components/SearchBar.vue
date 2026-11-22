@@ -21,19 +21,33 @@ const recent = ref(readRecent())
 
 const results = computed(() => search(query.value))
 const terms = computed(() => results.value.terms)
-const total = computed(() => ['questions', 'cards', 'acronyms', 'notes'].reduce((n, k) => n + results.value[k].length, 0))
+
+// Quick actions: shown when the box is empty, and matched by label as you type.
+const ACTIONS = [
+  { key: 'act:practice', label: 'Start practice', to: '/practice' },
+  { key: 'act:weak', label: 'Practice weak areas', to: '/practice?weak=1' },
+  { key: 'act:missed', label: 'Practice missed questions', to: '/practice?missed=1' },
+  { key: 'act:exam', label: 'Take a practice exam', to: '/exam' },
+  { key: 'act:cards', label: 'Review flashcards', to: '/flashcards' },
+  { key: 'act:notes', label: 'Open notes', to: '/notes' },
+  { key: 'act:progress', label: 'View progress', to: '/progress' },
+  { key: 'act:settings', label: 'Settings and study time', to: '/settings' }
+]
+const matchedActions = computed(() => (terms.value.length ? ACTIONS.filter((a) => terms.value.every((t) => a.label.toLowerCase().includes(t))) : ACTIONS))
+const total = computed(() => ['questions', 'cards', 'acronyms', 'notes'].reduce((n, k) => n + results.value[k].length, 0) + (terms.value.length ? matchedActions.value.length : 0))
 
 // Keyboard navigation: one flat list in display order; ↑/↓ move, Enter opens the highlighted result.
 const activeIdx = ref(0)
 const flat = computed(() => [
-  ...results.value.notes.map((n) => ({ key: `n:${n.id}`, to: '/notes' })),
-  ...results.value.acronyms.slice(0, shown.value.acronyms).map((a) => ({ key: a.id, to: `/card/${a.id}` })),
-  ...results.value.cards.slice(0, shown.value.cards).map((c) => ({ key: c.id, to: `/card/${c.id}` })),
-  ...results.value.questions.slice(0, shown.value.questions).map((q) => ({ key: q.id, to: `/question/${q.id}` }))
+  ...matchedActions.value.map((a) => ({ key: a.key, to: a.to })),
+  ...(terms.value.length ? results.value.notes : []).map((n) => ({ key: `n:${n.id}`, to: '/notes' })),
+  ...(terms.value.length ? results.value.acronyms : []).slice(0, shown.value.acronyms).map((a) => ({ key: a.id, to: `/card/${a.id}` })),
+  ...(terms.value.length ? results.value.cards : []).slice(0, shown.value.cards).map((c) => ({ key: c.id, to: `/card/${c.id}` })),
+  ...(terms.value.length ? results.value.questions : []).slice(0, shown.value.questions).map((q) => ({ key: q.id, to: `/question/${q.id}` }))
 ])
 const activeKey = computed(() => flat.value[activeIdx.value]?.key)
 function onNavKey(e) {
-  if (!flat.value.length || !terms.value.length) return
+  if (!flat.value.length) return
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault()
     const n = flat.value.length
@@ -145,10 +159,25 @@ watch(() => route.fullPath, close)
               </div>
             </div>
             <p v-else class="muted hintline">Type to search every question, flashcard, acronym, and your notes.</p>
+            <div class="group">
+              <div class="gh">Actions</div>
+              <RouterLink v-for="a in matchedActions" :key="a.key" :to="a.to" class="item" :class="{ active: activeKey === a.key }" @mousemove="activeIdx = flat.findIndex((f) => f.key === a.key)">
+                <div class="main"><strong>{{ a.label }}</strong></div>
+                <span class="go" aria-hidden="true">›</span>
+              </RouterLink>
+            </div>
           </template>
           <p v-else-if="!total" class="muted hintline">No results for “{{ query.trim() }}”.</p>
 
           <template v-else>
+            <div v-if="matchedActions.length" class="group">
+              <div class="gh">Actions</div>
+              <RouterLink v-for="a in matchedActions" :key="a.key" :to="a.to" class="item" :class="{ active: activeKey === a.key }" @mousemove="activeIdx = flat.findIndex((f) => f.key === a.key)">
+                <div class="main"><strong>{{ a.label }}</strong></div>
+                <span class="go" aria-hidden="true">›</span>
+              </RouterLink>
+            </div>
+
             <div v-if="results.notes.length" class="group">
               <div class="gh">Notes · {{ results.notes.length }}</div>
               <RouterLink v-for="n in results.notes" :key="n.id" to="/notes" class="item" :class="{ active: activeKey === `n:${n.id}` }" @mousemove="activeIdx = flat.findIndex((f) => f.key === `n:${n.id}`)">

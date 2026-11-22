@@ -223,7 +223,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
 .letter { flex: none; margin-top: .1rem; }
 .grow { flex: 1; min-width: 0; }
 .res { flex: none; font-weight: 700; margin-left: auto; padding-left: .5rem; }
-.option.dim { opacity: .55; }
+.option.dim { opacity: .72; }
 .opts { display: grid; gap: .5rem; }
 .exhibit {
   margin: 0; padding: .9rem 1rem; background: var(--soft); border: 1px solid var(--border); border-radius: 8px;
@@ -260,7 +260,7 @@ select {
 .handle { color: var(--muted); cursor: grab; user-select: none; }
 .ctl { display: inline-flex; gap: .15rem; flex: none; }
 .mini {
-  font: inherit; font-size: .75rem; line-height: 1; min-width: 1.9rem; padding: .4rem .45rem; cursor: pointer;
+  font: inherit; font-size: .8rem; line-height: 1; min-width: 2.2rem; height: 2.2rem; padding: 0 .5rem; cursor: pointer;
   color: var(--text); background: var(--soft); border: 1px solid var(--border); border-radius: 6px;
 }
 .mini:hover:not(:disabled) { border-color: var(--muted); }

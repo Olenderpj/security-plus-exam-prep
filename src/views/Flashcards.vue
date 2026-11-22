@@ -89,6 +89,10 @@ async function mark(gotIt) {
 }
 
 function onKey(e) {
+  if (stage.value === 'setup') {
+    if (e.key === 'Enter' && e.target === document.body && pool.value.length) start()
+    return
+  }
   if (stage.value !== 'run') return
   if (e.code === 'Space') { e.preventDefault(); flipped.value = !flipped.value }
   else if (e.key === 'm' || e.key === 'M') toggleMarked(card.value.id)
@@ -128,7 +132,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         No cards marked yet. While studying, tap "Mark for review" (or press M) on any card.
       </p>
       <CountPicker v-if="pool.length" v-model="count" :max="pool.length" />
-      <div><button class="btn primary" :disabled="!pool.length" @click="start">Start deck</button></div>
+      <div class="startbar"><button class="btn primary" :disabled="!pool.length" @click="start">Start deck <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
   </div>
 
@@ -179,6 +183,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </template>
 
 <style scoped>
+.startbar {
+  position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+@media (max-width: 959px) { .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); } }
 .flash {
   min-height: 22rem; width: 100%; display: flex; flex-direction: column; justify-content: center; position: relative;
   align-items: center; text-align: center; gap: 1.25rem; font: inherit; color: var(--text); cursor: pointer; padding: 2.5rem 1.5rem 3rem;

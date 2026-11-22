@@ -28,4 +28,6 @@ defineEmits(['update:modelValue'])
 
 <style scoped>
 .list { display: grid; gap: .5rem; }
+.list > :first-child { grid-column: 1 / -1; }
+@media (min-width: 720px) { .list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

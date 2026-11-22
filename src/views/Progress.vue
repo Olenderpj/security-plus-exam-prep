@@ -121,7 +121,7 @@ function confirmClearMissed() {
 
       <div class="card stack">
         <div class="label">Accuracy by domain</div>
-        <p class="muted small" style="margin: 0">Select a domain to see each exam objective.</p>
+        <p class="muted small" style="margin: 0">Select a domain to see each exam objective. Bars: <span class="good">green</span> 85%+, <span class="bad">red</span> under 70%.</p>
         <div v-for="d in domainStats" :key="d.id" class="domain">
           <button class="domain-head" :aria-expanded="expanded.has(d.id)" @click="toggleDomain(d.id)">
             <span class="row between small">
@@ -162,8 +162,8 @@ function confirmClearMissed() {
         <div class="label">Recent activity</div>
         <p v-if="!attempts.length" class="muted" style="margin: 0">No sessions yet. <RouterLink to="/practice">Start practicing</RouterLink>.</p>
         <div v-for="a in attempts.slice(0, 25)" :key="a.id || a.created_at" class="row between small item">
-          <span>{{ label(a) }}</span>
-          <span>
+          <span class="act"><i class="mdot" :class="a.mode" /> {{ label(a) }}</span>
+          <span class="num">
             {{ a.correct }}/{{ a.total }} · {{ Math.round((100 * a.correct) / a.total) }}%
             <template v-if="a.mode === 'exam'"> · {{ scaled(a.correct, a.total) }}</template>
             <span class="muted"> · {{ date(a.created_at) }}</span>
@@ -176,6 +176,11 @@ function confirmClearMissed() {
 </template>
 
 <style scoped>
+.act { display: inline-flex; align-items: center; gap: .5rem; }
+.mdot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--muted); flex: none; }
+.mdot.practice { background: var(--brand); }
+.mdot.exam { background: var(--text); }
+.mdot.flashcards { background: var(--good); }
 .big { font-size: 1.6rem; font-weight: 600; }
 .big-sm { font-size: 1.25rem; font-weight: 600; }
 .missed-link { margin-right: .6rem; }

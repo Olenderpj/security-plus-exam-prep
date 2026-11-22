@@ -2,7 +2,7 @@
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
@@ -65,6 +65,32 @@ function start() {
     }, 1000)
   }
 }
+
+// Keyboard: ←/→ move between questions, F flags, A–D / 1–4 answer. Enter starts from the setup screen.
+function onKeys(e) {
+  if (e.metaKey || e.ctrlKey || e.altKey) return
+  const t = e.target
+  if (t.closest && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return
+  if (stage.value === 'setup') {
+    if (e.key === 'Enter' && t === document.body && !(source.value === 'missed' && !missedTotal.value)) start()
+    return
+  }
+  if (stage.value !== 'run') return
+  if (e.key === 'ArrowLeft' && idx.value > 0) { e.preventDefault(); idx.value-- }
+  else if (e.key === 'ArrowRight' && idx.value < questions.value.length - 1) { e.preventDefault(); idx.value++ }
+  else if (e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFlag() }
+  else if (current.value.type === 'mc') {
+    const q = current.value
+    const k = e.key.toLowerCase()
+    const n = k.length === 1 && 'abcdefgh'.includes(k) ? 'abcdefgh'.indexOf(k) : /^[1-8]$/.test(k) ? Number(k) - 1 : -1
+    if (n < 0 || n >= q.options.length) return
+    e.preventDefault()
+    if (q.correct.length === 1) sel.value = [n]
+    else sel.value = sel.value.includes(n) ? sel.value.filter((x) => x !== n) : sel.value.length < q.correct.length ? [...sel.value, n] : sel.value
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKeys))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeys))
 
 function toggleFlag() {
   const f = new Set(flags.value)
@@ -143,11 +169,12 @@ onBeforeUnmount(() => clearInterval(timer))
           <button class="chip" :class="{ on: !timed }" @click="timed = false">Untimed</button>
         </div>
       </div>
-      <div><button class="btn primary" :disabled="source === 'missed' && !missedTotal" @click="start">Begin exam</button></div>
+      <div class="startbar"><button class="btn primary" :disabled="source === 'missed' && !missedTotal" @click="start">Begin exam <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
   </div>
 
-  <div v-else-if="stage === 'run'" class="stack">
+  <div v-else-if="stage === 'run'" class="run">
+    <div class="stack main">
     <div class="row between small">
       <span class="muted">Question {{ idx + 1 }} of {{ questions.length }} · {{ answeredCount }} answered</span>
       <span v-if="timed" class="clock mono" :class="{ low: remaining < 300 }" title="Time remaining">{{ clock }}</span>
@@ -157,14 +184,18 @@ onBeforeUnmount(() => clearInterval(timer))
     </div>
     <div class="row between">
       <div class="row">
-        <button class="btn" :disabled="idx === 0" @click="idx--">Previous</button>
-        <button class="btn" :disabled="idx === questions.length - 1" @click="idx++">Next</button>
+        <button class="btn" :disabled="idx === 0" @click="idx--"><span class="kbd" aria-hidden="true">←</span> Previous</button>
+        <button class="btn" :disabled="idx === questions.length - 1" @click="idx++">Next <span class="kbd" aria-hidden="true">→</span></button>
       </div>
       <div class="row">
-        <button class="btn" @click="toggleFlag">{{ flags.has(idx) ? 'Unflag' : 'Flag for review' }}</button>
+        <button class="btn" @click="toggleFlag">{{ flags.has(idx) ? 'Unflag' : 'Flag for review' }} <span class="kbd" aria-hidden="true">F</span></button>
         <button class="btn primary" @click="confirmFinish">Submit exam</button>
       </div>
     </div>
+    <div><button class="btn ghost small" @click="quit">Quit exam</button></div>
+    </div>
+
+    <aside class="rail stack" aria-label="Exam navigator">
     <div class="card">
       <div class="label">Navigator</div>
       <div class="nav-grid">
@@ -182,13 +213,37 @@ onBeforeUnmount(() => clearInterval(timer))
         <span><i class="sw dot" /> Performance-based</span>
       </div>
     </div>
-    <div><button class="btn ghost small" @click="quit">Quit exam</button></div>
+      <div class="card keys">
+        <div class="label">Shortcuts</div>
+        <div class="krow"><span class="kbd">←</span><span class="kbd">→</span><span class="muted small">Previous / next</span></div>
+        <div class="krow"><span><span class="kbd">A</span>–<span class="kbd">D</span> <span class="kbd">1</span>–<span class="kbd">4</span></span><span class="muted small">Answer</span></div>
+        <div class="krow"><span class="kbd">F</span><span class="muted small">Flag for review</span></div>
+      </div>
+    </aside>
   </div>
 
   <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" exam @restart="stage = 'setup'" />
 </template>
 
 <style scoped>
+.run { display: block; }
+.rail { display: block; margin-top: 1rem; }
+.startbar {
+  position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.krow { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; }
+.krow .muted { margin-left: auto; }
+.keys { display: none; }
+@media (min-width: 1180px) {
+  .run { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 1.5rem; align-items: start; }
+  .rail { margin-top: 0; position: sticky; top: 1.5rem; }
+  .keys { display: block; }
+}
+@media (max-width: 959px) {
+  .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); }
+}
 .clock { font-weight: 600; font-size: 1.05rem; padding: .15rem .7rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); }
 .clock.low { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
 .nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr)); gap: .4rem; }

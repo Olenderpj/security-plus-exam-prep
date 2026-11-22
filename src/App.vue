@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import SearchBar from './components/SearchBar.vue'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
-import { labelFor, state } from './lib/level.js'
+import { labelFor, state, weakSections } from './lib/level.js'
+import { missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
 import { formatDuration, study, summarize } from './lib/studyTime.js'
 
@@ -21,7 +22,9 @@ const plusPaths = ['M12 5v14', 'M5 12h14']
 // Status shown at the bottom of the sidebar.
 const level = computed(() => state.value.g)
 const today = computed(() => summarize(study.value).today)
-const levelTone = computed(() => (level.value >= 8 ? 'good' : level.value >= 6.5 ? 'good' : level.value >= 5 ? 'info' : 'warn'))
+const weakCount = computed(() => weakSections().length)
+const missedCount = computed(() => missed.value.size)
+const levelTone = computed(() => (level.value >= 8 ? 'good' : level.value >= 6.5 ? 'good' : level.value >= 5 ? 'brand' : 'warn'))
 
 // The search box is hidden while a session is running (practice, exam, flashcards).
 // Account menu: opens from the username, closes on outside click or Escape.
@@ -59,6 +62,12 @@ onBeforeUnmount(() => {
         </RouterLink>
       </nav>
 
+      <div class="review" aria-label="Review">
+        <div class="label">Review</div>
+        <RouterLink to="/practice?weak=1" class="rlink"><span>Weak areas</span><span class="tag" :class="weakCount ? 'warn' : ''">{{ weakCount }}</span></RouterLink>
+        <RouterLink to="/practice?missed=1" class="rlink"><span>Missed questions</span><span class="tag" :class="missedCount ? 'bad' : ''">{{ missedCount }}</span></RouterLink>
+      </div>
+
       <div class="sidefoot" aria-label="Study status">
         <div class="statline"><span class="muted small">Level</span><span class="tag" :class="levelTone">{{ level.toFixed(1) }} · {{ labelFor(level) }}</span></div>
         <div class="statline"><span class="muted small">Studied today</span><span class="num small">{{ formatDuration(today) }}</span></div>
@@ -89,7 +98,7 @@ onBeforeUnmount(() => {
   </header>
 
   <main class="page">
-    <div class="pagein">
+    <div class="pagein" :class="{ wide: focusMode }">
       <SearchBar v-if="!focusMode" />
       <RouterView :key="$route.fullPath" />
     </div>
@@ -105,7 +114,7 @@ onBeforeUnmount(() => {
   display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 9px; font-size: .78rem; font-weight: 700;
   letter-spacing: .02em; color: #fff; background: var(--brand);
 }
-.newbtn, .sidefoot, .lbl { display: none; }
+.newbtn, .sidefoot, .lbl, .review { display: none; }
 .ico { width: 1.1rem; height: 1.1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
 .links { display: flex; align-items: center; gap: .15rem; }
@@ -142,7 +151,8 @@ onBeforeUnmount(() => {
 .menu-item:hover { background: var(--soft); }
 
 .page { padding: 1.25rem 1rem calc(6rem + env(safe-area-inset-bottom)); }
-.pagein { max-width: 820px; margin: 0 auto; }
+.pagein { max-width: 860px; margin: 0 auto; }
+.pagein.wide { max-width: 1080px; }
 
 /* Phones: navigation becomes a bottom tab bar */
 @media (max-width: 959px) {
@@ -151,7 +161,8 @@ onBeforeUnmount(() => {
   .who { padding: .2rem; }
   .links {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; padding: .3rem .4rem calc(.3rem + env(safe-area-inset-bottom));
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; background: var(--surface); border-top: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   }
   .links a { flex-direction: column; gap: .15rem; padding: .35rem .2rem; font-size: .68rem; text-align: center; border-radius: 12px; }
   .links .ico { width: 1.3rem; height: 1.3rem; }
@@ -159,13 +170,17 @@ onBeforeUnmount(() => {
 
 /* Desktop: left sidebar */
 @media (min-width: 960px) {
-  .top { position: fixed; inset: 0 auto 0 0; width: 256px; border-bottom: 0; border-right: 1px solid var(--border); overflow-y: auto; }
+  .top { position: fixed; inset: 0 auto 0 0; width: 256px; border-bottom: 0; border-right: 1px solid var(--border); overflow-y: auto; background: var(--sidebar); }
   .nav { flex-direction: column; align-items: stretch; gap: .35rem; min-height: 100%; padding: 1rem .75rem; }
   .brand { padding: .2rem .5rem .8rem; }
   .newbtn { display: inline-flex; width: 100%; padding: .6rem 1rem; }
   .links { flex-direction: column; align-items: stretch; margin: .6rem 0 0; gap: .15rem; }
   .links a { padding: .55rem .75rem; font-size: .95rem; }
-  .sidefoot { display: grid; gap: .5rem; margin-top: auto; padding: .75rem; border: 1px solid var(--border); border-radius: 14px; background: var(--bg); }
+  .review { display: grid; gap: .15rem; margin-top: 1rem; }
+  .review .label { padding: 0 .75rem; margin-bottom: .25rem; }
+  .rlink { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .45rem .75rem; border-radius: 10px; color: var(--muted); font-size: .92rem; font-weight: 500; text-decoration: none; transition: background .15s, color .15s; }
+  .rlink:hover { background: var(--soft); color: var(--text); }
+  .sidefoot { display: grid; gap: .5rem; margin-top: auto; padding: .8rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
   .statline { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .acct { flex-direction: column; align-items: stretch; margin: .25rem 0 0; gap: .15rem; }
   .iconbtn { padding: .55rem .75rem; font-size: .95rem; }
@@ -175,5 +190,6 @@ onBeforeUnmount(() => {
   .account { width: 100%; }
   .menu { top: auto; bottom: calc(100% + .4rem); left: 0; right: 0; min-width: 0; }
   .page { margin-left: 256px; padding: 1.75rem 2.5rem 4rem; }
+  .statline .small { font-size: .85rem; }
 }
 </style>

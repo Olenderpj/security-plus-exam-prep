@@ -120,7 +120,7 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
         v-model="newTitle"
         class="field"
         list="messer-titles"
-        placeholder="New section header — start typing, e.g. “1.2 - Zero”"
+        placeholder="New section header"
         aria-label="New section header"
         autocomplete="off"
       />
@@ -194,6 +194,8 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 .add { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 .add .field:first-child { flex: 1 1 18rem; width: auto; }
 .pick { flex: 1 1 14rem; width: auto; }
+.add .field, .pick { min-width: 0; max-width: 100%; }
+@media (max-width: 720px) { .add > * { flex: 1 1 100%; } }
 .hint { margin: 0; }
 code { background: var(--soft); border-radius: 4px; padding: 0 .3em; }
 

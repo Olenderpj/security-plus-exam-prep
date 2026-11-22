@@ -104,6 +104,10 @@ function check() {
 }
 
 // Questions answered so far: every earlier one (you must check an answer to move on), plus this one once checked.
+const dotClass = (i) => {
+  if (i < answeredCount.value) return isCorrect(questions.value[i], answers.value[i] || []) ? 'ok' : 'no'
+  return i === idx.value ? 'cur' : ''
+}
 const answeredCount = computed(() => (stage.value === 'run' ? idx.value + (revealed.value ? 1 : 0) : 0))
 let committed = false // this session's results have been recorded (never record twice)
 
@@ -173,8 +177,18 @@ function onKeys(e) {
   if (q.correct.length === 1) sel.value = [n]
   else sel.value = sel.value.includes(n) ? sel.value.filter((x) => x !== n) : sel.value.length < q.correct.length ? [...sel.value, n] : sel.value
 }
-onMounted(() => window.addEventListener('keydown', onKeys))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeys))
+// Setup: Enter starts the session when nothing else is focused.
+function onSetupKey(e) {
+  if (stage.value === 'setup' && e.key === 'Enter' && e.target === document.body && max.value) start()
+}
+onMounted(() => {
+  window.addEventListener('keydown', onKeys)
+  window.addEventListener('keydown', onSetupKey)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeys)
+  window.removeEventListener('keydown', onSetupKey)
+})
 
 // Leaving the page (navigating away or closing the tab) mid-session also keeps the answered questions.
 const saveOnLeave = () => stage.value === 'run' && commit(answeredCount.value, false)
@@ -207,11 +221,9 @@ onBeforeUnmount(() => {
         </p>
         <div v-else-if="source === 'weak'" class="small" style="margin: .5rem 0 0">
           <div class="muted">Focusing on the sections where your level is lowest:</div>
-          <ul class="weak">
-            <li v-for="s in weakList" :key="s.code">
-              {{ s.code }} {{ s.name }} <span class="muted">· level {{ s.rating.toFixed(1) }}<template v-if="s.accuracy !== null">, {{ Math.round(s.accuracy * 100) }}% correct</template></span>
-            </li>
-          </ul>
+          <div class="weakchips">
+            <span v-for="s in weakList" :key="s.code" class="tag brand wrap">{{ s.code }} {{ s.name }} · {{ s.rating.toFixed(1) }}</span>
+          </div>
         </div>
         <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
           {{ missedTotal ? 'Questions you got wrong in practice or exams. Answer one correctly and it comes off the list.' : 'No missed questions right now — they\'ll collect here as you practice.' }}
@@ -225,11 +237,12 @@ onBeforeUnmount(() => {
       </div>
       <DomainPicker v-model="domain" :counts="counts" />
       <CountPicker v-model="count" :max="max" />
-      <div><button class="btn primary" :disabled="!max" @click="start">Start</button></div>
+      <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
   </div>
 
-  <div v-else-if="stage === 'run'" class="stack">
+  <div v-else-if="stage === 'run'" class="run">
+    <div class="stack main">
     <div class="row between small muted">
       <span>Question {{ idx + 1 }} of {{ questions.length }}</span>
       <span>{{ runningCorrect }} correct</span>
@@ -247,7 +260,28 @@ onBeforeUnmount(() => {
       </button>
       <button v-else class="btn primary" @click="next">{{ idx < questions.length - 1 ? 'Next' : 'See results' }} <span class="kbd" aria-hidden="true">↵</span></button>
     </div>
-    <p class="hint muted small">Keys: <span class="kbd">A</span>–<span class="kbd">D</span> or <span class="kbd">1</span>–<span class="kbd">4</span> to answer · <span class="kbd">↵</span> to check and continue</p>
+  
+      <p class="hint muted small">Keys: <span class="kbd">A</span>–<span class="kbd">D</span> or <span class="kbd">1</span>–<span class="kbd">4</span> to answer · <span class="kbd">↵</span> to check and continue</p>
+    </div>
+
+    <aside class="rail stack" aria-label="Session">
+      <div class="card">
+        <div class="label">Session</div>
+        <div class="tally">
+          <div><div class="tnum num good">{{ runningCorrect }}</div><div class="muted small">correct</div></div>
+          <div><div class="tnum num bad">{{ answeredCount - runningCorrect }}</div><div class="muted small">missed</div></div>
+          <div><div class="tnum num">{{ questions.length - answeredCount }}</div><div class="muted small">left</div></div>
+        </div>
+        <div class="dots" role="img" :aria-label="`${answeredCount} of ${questions.length} answered`">
+          <span v-for="(q, i) in questions" :key="q.id" class="dot" :class="dotClass(i)" :title="`Question ${i + 1}`" />
+        </div>
+      </div>
+      <div class="card keys">
+        <div class="label">Shortcuts</div>
+        <div class="krow"><span><span class="kbd">A</span>–<span class="kbd">D</span> <span class="kbd">1</span>–<span class="kbd">4</span></span><span class="muted small">Answer</span></div>
+        <div class="krow"><span class="kbd">↵</span><span class="muted small">Check / next</span></div>
+      </div>
+    </aside>
   </div>
 
   <Results v-else :questions="questions" :answers="answers" :seconds="seconds" :adaptive="adaptive" :ended-early="endedEarly" @restart="stage = 'setup'" />
@@ -256,6 +290,31 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.run { display: block; }
+.rail { display: none; }
+.weakchips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+.tag.wrap { white-space: normal; }
+.startbar {
+  position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; }
+.tnum { font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
+.dots { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .9rem; }
+.dot { width: .85rem; height: .85rem; border-radius: 50%; background: var(--soft); border: 1px solid var(--border); }
+.dot.ok { background: var(--good); border-color: var(--good); }
+.dot.no { background: var(--bad); border-color: var(--bad); }
+.dot.cur { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
+.krow { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem 0; }
+@media (min-width: 1180px) {
+  .run { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 1.5rem; align-items: start; }
+  .rail { display: block; position: sticky; top: 1.5rem; }
+  .main .hint { display: none; }
+}
+@media (max-width: 959px) {
+  .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); }
+}
 .hint { margin: 0; }
 @media (max-width: 959px) {
   .hint { display: none; }

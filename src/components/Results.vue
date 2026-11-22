@@ -64,10 +64,11 @@ function rate(kind) {
         <div>
           <div class="label">Score</div>
           <div class="hero num">{{ pct }}<span class="unit">%</span></div>
-          <div class="muted">{{ pts }} of {{ questions.length }} · <span :class="pct >= 80 ? 'good' : pct < 60 ? 'bad' : 'warn'">{{ pct >= 85 ? 'Excellent' : pct >= 70 ? 'Solid' : pct >= 55 ? 'Keep going' : 'Needs work' }}</span></div>
+          <div class="muted">{{ pts }} of {{ questions.length }} correct</div>
+          <div class="small verdict">{{ pct >= 85 ? 'Excellent. You are performing at exam level.' : pct >= 70 ? 'Solid. Review the misses below to lock it in.' : pct >= 55 ? 'Getting there. Retest the questions you missed.' : 'Worth another pass. Retesting your misses is the fastest gain.' }}</div>
           <div v-if="pts !== correct" class="muted small">{{ correct }} fully correct · partial credit on performance-based items</div>
         </div>
-        <div v-if="exam" style="text-align: right">
+        <div v-if="exam" class="rightcol">
           <div class="label">Scaled score (100–900)</div>
           <div class="big" :class="result.pass ? 'good' : 'bad'">{{ result.scaled }}</div>
           <div class="small" :class="result.pass ? 'good' : 'bad'">
@@ -97,8 +98,8 @@ function rate(kind) {
         publish its exact scoring formula, so treat this as a close estimate, not an official result.
       </p>
       <div class="row">
-        <button class="btn primary" @click="$emit('restart')">Start another</button>
-        <RouterLink v-if="correct < questions.length" class="btn" to="/practice?missed=1">Retest missed</RouterLink>
+        <RouterLink v-if="correct < questions.length" class="btn primary" to="/practice?missed=1">Retest missed</RouterLink>
+        <button class="btn" :class="{ primary: correct === questions.length }" @click="$emit('restart')">Start another</button>
         <RouterLink class="btn" to="/progress">View progress</RouterLink>
       </div>
     </div>
@@ -114,7 +115,7 @@ function rate(kind) {
           </div>
           <div class="small muted">{{ labelFor(level) }} · questions averaged {{ adaptive.avgDifficulty }}</div>
         </div>
-        <div style="text-align: right">
+        <div class="rightcol">
           <div class="small muted">Estimated exam score</div>
           <template v-if="est">
             <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
@@ -126,10 +127,12 @@ function rate(kind) {
           </template>
         </div>
       </div>
-      <p class="small muted" style="margin: 0">
+      <details class="how"><summary class="small muted">How is this calculated?</summary>
+        <p class="small muted" style="margin: .5rem 0 0">
         Your level is adjusted automatically from how you answered, per exam sub-section. The estimate predicts accuracy on real-exam-level
         questions, so it can run lower than your percentage here; at 800+ you are in passing range.
       </p>
+      </details>
       <div v-if="!rated" class="stack">
         <div class="small">How did the difficulty feel? <span class="muted">(optional, helps tune it)</span></div>
         <div class="row">
@@ -147,7 +150,7 @@ function rate(kind) {
         Each section has its own level, so one session can mix hard questions where you are strong with easier ones where you are not.
         The marker shows the average difficulty you were served; the bar is your level now.
       </p>
-      <div v-for="g in sectionGroups" :key="g.id" class="stack tight">
+      <div class="secgrid"><div v-for="g in sectionGroups" :key="g.id" class="stack tight">
         <div class="small"><strong>{{ g.id }}.0 {{ g.name }}</strong></div>
         <div v-for="s in g.rows" :key="s.code" class="sec">
           <div class="row between small">
@@ -169,7 +172,7 @@ function rate(kind) {
           </div>
         </div>
       </div>
-    </div>
+    </div></div>
 
     <div class="row between">
       <h2 style="margin: 0">Review</h2>
@@ -184,6 +187,12 @@ function rate(kind) {
 </template>
 
 <style scoped>
+.verdict { margin-top: .4rem; color: var(--muted); }
+.rightcol { text-align: right; }
+.how summary { cursor: pointer; }
+.secgrid { display: grid; gap: 1.1rem 2rem; }
+@media (min-width: 900px) { .secgrid { grid-template-columns: 1fr 1fr; align-items: start; } }
+@media (max-width: 720px) { .rightcol { text-align: left; } }
 .big { font-size: 1.6rem; font-weight: 600; }
 .hero { font-family: var(--display); font-size: 3rem; line-height: 1; font-weight: 500; letter-spacing: -.02em; }
 .hero .unit { font-size: 1.4rem; color: var(--muted); margin-left: .1rem; }

@@ -46,7 +46,7 @@ const sections = computed(() =>
 const weak = computed(() => new Set(weakSections().map((s) => s.code)))
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 // Level colour: building (amber) → proficient (blue) → strong (green).
-const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'info' : 'warn')
+const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
 
 // ── study time ──
@@ -241,6 +241,7 @@ function resetDifficulty() {
 @media (max-width: 720px) {
   .drow summary { grid-template-columns: 1rem minmax(0, 1fr) auto; }
   .dstat, .dbar { display: none; }
+  .dname { white-space: normal; }
   .subs { padding-left: 1.1rem; }
 }
 @media (max-width: 480px) { .stats { text-align: left; margin-left: 0; } }

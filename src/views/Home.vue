@@ -4,7 +4,7 @@ import { DOMAINS, EXAM } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
-import { estimate, labelFor, MIN_FOR_ESTIMATE, state, weakSections } from '../lib/level.js'
+import { domainStats, estimate, labelFor, MIN_FOR_ESTIMATE, state, weakSections } from '../lib/level.js'
 import { missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { formatDuration, study, summarize } from '../lib/studyTime.js'
@@ -31,7 +31,8 @@ const actions = [
   { to: '/flashcards', title: 'Flashcards', text: 'Concepts and acronyms, reshuffled every deck.', paths: ['M12 2 2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
   { to: '/progress', title: 'Progress', text: 'Scores over time and accuracy by domain.', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] }
 ]
-const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'info' : 'warn')
+const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
+const domains = computed(() => DOMAINS.map((d) => ({ ...d, stat: domainStats(d.id) })))
 const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}% correct`)
 </script>
 
@@ -102,12 +103,12 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
 
     <!-- Exam blueprint -->
     <div class="card">
-      <div class="label">Exam domains</div>
-      <div v-for="d in DOMAINS" :key="d.id" class="dom">
+      <div class="label">Exam domains · your level</div>
+      <div v-for="d in domains" :key="d.id" class="dom">
         <span class="num">{{ d.id }}.0</span>
-        <span class="grow">{{ d.name }}</span>
-        <span class="track" aria-hidden="true"><span :style="{ width: d.weight * 3 + '%' }" /></span>
-        <span class="muted pctcol">{{ d.weight }}%</span>
+        <span class="grow">{{ d.name }} <span class="muted small">· {{ d.weight }}% of exam</span></span>
+        <span class="track" aria-hidden="true"><span :style="{ width: d.stat.answered ? Math.round(((d.stat.rating - 1) / 9) * 100) + '%' : '0' }" /></span>
+        <span class="tag" :class="d.stat.answered ? tone(d.stat.rating) : ''">{{ d.stat.answered ? d.stat.rating.toFixed(1) : '—' }}</span>
       </div>
     </div>
     </div>
@@ -120,7 +121,7 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
 @media (min-width: 900px) { .cols { grid-template-columns: 1fr 1fr; } }
 .stat { padding: 1rem 1.1rem; }
 .stat .label { margin-bottom: .35rem; }
-.big { font-size: 1.7rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+.big { font-family: var(--display); font-size: 2.2rem; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
 .welcome { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .welcome h2 { margin-bottom: .25rem; }
 
