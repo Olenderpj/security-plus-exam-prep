@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { domainById } from '../data/domains.js'
 import { isCorrect, partsCorrect } from '../lib/exam.js'
 import AcronymText from './AcronymText.vue'
@@ -57,6 +57,49 @@ function place(i) {
 function unplace(pos) {
   if (!props.reveal) emit('update:selected', props.selected.filter((_, p) => p !== pos))
 }
+
+// Drag and drop: from the pool into a slot, between slots, or back to the pool. Arrow buttons cover
+// touch screens and the keyboard.
+const drag = ref(null)
+const overPos = ref(null)
+const overPool = ref(false)
+function startDrag(e, payload) {
+  if (props.reveal) return e.preventDefault()
+  drag.value = payload
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', 'order-item') // Firefox needs data to start a drag
+}
+function endDrag() {
+  drag.value = null
+  overPos.value = null
+  overPool.value = false
+}
+// pos = the slot the item lands in; an item moved within the list takes the slot it is dropped on.
+function dropAt(pos) {
+  const d = drag.value
+  if (!d || props.reveal) return endDrag()
+  const cur = [...props.selected]
+  if (d.from === 'pool') {
+    if (!cur.includes(d.item)) cur.splice(Math.min(pos, cur.length), 0, d.item)
+  } else {
+    const [item] = cur.splice(d.pos, 1)
+    cur.splice(Math.min(pos, cur.length), 0, item)
+  }
+  emit('update:selected', cur)
+  endDrag()
+}
+function dropToPool() {
+  const d = drag.value
+  if (d && d.from === 'placed' && !props.reveal) emit('update:selected', props.selected.filter((_, p) => p !== d.pos))
+  endDrag()
+}
+function move(pos, delta) {
+  const j = pos + delta
+  if (props.reveal || j < 0 || j >= props.selected.length) return
+  const cur = [...props.selected]
+  ;[cur[pos], cur[j]] = [cur[j], cur[pos]]
+  emit('update:selected', cur)
+}
 const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.value.correct[pos] ? 'correct' : 'wrong')
 </script>
 
@@ -91,30 +134,64 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
       </div>
     </div>
 
-    <!-- Ordering -->
+    <!-- Ordering: drag items into place, or tap to add and use the arrows -->
     <div v-else-if="q.type === 'order'" class="order">
-      <p class="muted small hint">Click the items in the correct order. Click a placed item to remove it.</p>
+      <p v-if="!reveal" class="muted small hint">
+        Drag items into order, or tap them to add. Use the arrows to move an item and ✕ to send it back.
+      </p>
       <div class="label">Your order</div>
-      <div class="order-list">
-        <p v-if="!selected.length" class="muted small empty">Nothing placed yet.</p>
-        <button
-          v-for="(itemIdx, pos) in selected"
-          :key="itemIdx"
-          class="option"
-          :class="orderState(pos)"
-          :disabled="reveal"
-          @click="unplace(pos)"
-        >
-          <span class="key">{{ pos + 1 }}.</span>
-          <span><AcronymText :text="q.items[itemIdx]" :objective="q.objective" :qid="q.id" :free="reveal" /></span>
-        </button>
+      <div class="slots">
+        <template v-for="(_, pos) in q.items" :key="pos">
+          <div
+            v-if="selected[pos] !== undefined"
+            class="placed option"
+            :class="[orderState(pos), { dragging: drag && drag.from === 'placed' && drag.pos === pos, over: overPos === pos }]"
+            :draggable="!reveal"
+            @dragstart="startDrag($event, { from: 'placed', pos })"
+            @dragend="endDrag"
+            @dragover.prevent="overPos = pos"
+            @dragleave="overPos = null"
+            @drop.prevent="dropAt(pos)"
+          >
+            <span v-if="!reveal" class="handle" aria-hidden="true">⠿</span>
+            <span class="key">{{ pos + 1 }}.</span>
+            <span class="grow"><AcronymText :text="q.items[selected[pos]]" :objective="q.objective" :qid="q.id" :free="reveal" /></span>
+            <span v-if="!reveal" class="ctl">
+              <button type="button" class="mini" :disabled="pos === 0" aria-label="Move up" @click="move(pos, -1)">▲</button>
+              <button type="button" class="mini" :disabled="pos === selected.length - 1" aria-label="Move down" @click="move(pos, 1)">▼</button>
+              <button type="button" class="mini" aria-label="Send back" @click="unplace(pos)">✕</button>
+            </span>
+          </div>
+          <div
+            v-else
+            class="slot"
+            :class="{ over: overPos === pos }"
+            @dragover.prevent="overPos = pos"
+            @dragleave="overPos = null"
+            @drop.prevent="dropAt(selected.length)"
+          >
+            <span class="key">{{ pos + 1 }}.</span>
+            <span class="muted small">{{ reveal ? '(left blank)' : 'Drop or tap an item here' }}</span>
+          </div>
+        </template>
       </div>
-      <template v-if="unplaced.length && !reveal">
+      <template v-if="!reveal">
         <div class="label">Available</div>
-        <div class="order-list">
-          <button v-for="i in unplaced" :key="i" class="option" @click="place(i)">
-            <span class="key">+</span><span><AcronymText :text="q.items[i]" :objective="q.objective" :qid="q.id" :free="reveal" /></span>
+        <div class="pool" :class="{ over: overPool }" @dragover.prevent="overPool = true" @dragleave="overPool = false" @drop.prevent="dropToPool">
+          <button
+            v-for="i in unplaced"
+            :key="i"
+            type="button"
+            class="option"
+            draggable="true"
+            @dragstart="startDrag($event, { from: 'pool', item: i })"
+            @dragend="endDrag"
+            @click="place(i)"
+          >
+            <span class="key">+</span>
+            <span><AcronymText :text="q.items[i]" :objective="q.objective" :qid="q.id" :free="reveal" /></span>
           </button>
+          <p v-if="!unplaced.length" class="muted small empty">Everything is placed. Drag an item back here to take it out.</p>
         </div>
       </template>
       <div v-if="reveal && !correct" class="small">
@@ -158,6 +235,27 @@ select {
   background: var(--surface); color: var(--text); min-width: 11rem; max-width: 100%;
 }
 .empty { margin: 0; padding: .5rem 0; }
+.slots, .pool { display: grid; gap: .5rem; }
+.pool { padding: .5rem; border: 1px dashed var(--border); border-radius: 10px; min-height: 3rem; }
+.pool.over { border-color: var(--accent); background: var(--soft); }
+.slot {
+  display: flex; gap: .75rem; align-items: center; padding: .8rem 1rem; border: 1px dashed var(--border);
+  border-radius: 8px; color: var(--muted);
+}
+.slot .key { font-weight: 600; min-width: 1.2rem; }
+.slot.over, .placed.over { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.placed { align-items: center; cursor: grab; }
+.placed.dragging { opacity: .45; }
+.grow { flex: 1; min-width: 0; }
+.handle { color: var(--muted); cursor: grab; user-select: none; }
+.ctl { display: inline-flex; gap: .15rem; flex: none; }
+.mini {
+  font: inherit; font-size: .75rem; line-height: 1; min-width: 1.9rem; padding: .4rem .45rem; cursor: pointer;
+  color: var(--text); background: var(--soft); border: 1px solid var(--border); border-radius: 6px;
+}
+.mini:hover:not(:disabled) { border-color: var(--muted); }
+.mini:disabled { opacity: .35; cursor: default; }
+.pool .option[draggable='true'] { cursor: grab; }
 .correct-order { margin: 0; padding-left: 1.25rem; }
 .explain { background: var(--soft); border-radius: 8px; padding: .9rem 1rem; font-size: .95rem; }
 </style>

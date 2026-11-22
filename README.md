@@ -2,7 +2,7 @@
 
 A minimal Vue 3 study app for the CompTIA Security+ (SY0-701) exam.
 
-- **Question types** — multiple choice (single and "Select TWO"), exhibit questions (logs, scan output, certificates, risk tables), and performance-based questions: matching/drag-and-drop, ordering, and simulations (firewall rules, wireless configuration).
+- **Question types** — multiple choice (single and "Select TWO"), exhibit questions (logs, scan output, certificates, risk tables), and performance-based questions: matching (dropdown choices reshuffled every time), ordering (drag items into numbered slots, or tap to add and use the arrows), and simulations (firewall rules, wireless configuration).
 - **Reworded questions** — each multiple-choice question has more than one wording; you get a different one than last time.
 - **Adaptive difficulty** — every question is rated 1–10 (format, multiple selections, exhibits, scenario length, look-alike options, plus a hand-rated hard tier). Each exam sub-section has its own level that moves with your success there; practice serves questions a little above it and exams a full point above, so they get harder as you improve. After a session you can say "too easy / about right / too hard" (optional; levels already adjust from your answers). The Settings page shows levels by domain and sub-section, and sessions end with an estimated exam score.
 - **Weak areas** — Practice can focus on the sections where your level is lowest (needs a few answers per section), like the missed-questions list but for weaker concepts; Settings flags them and links straight in.
