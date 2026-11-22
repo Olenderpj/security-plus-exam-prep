@@ -16,9 +16,12 @@ import v2 from './variants-d2.js'
 import v3 from './variants-d3.js'
 import v4 from './variants-d4.js'
 import v5 from './variants-d5.js'
+import extra from './variants-extra.js'
 
 // Alternate question wordings keyed by question ID (same concept, same answers).
 export const VARIANTS = { ...v1, ...v2, ...v3, ...v4, ...v5 }
+// Two further wordings per question, so every question can be asked several different ways.
+export const EXTRA_WORDINGS = extra
 
 // Normalizes the compact authoring format into one shape per question type:
 //   mc:    options[], correct[]              (answer = selected option indexes)
@@ -40,7 +43,7 @@ function normalize(q, domain, id) {
 }
 
 // Every question carries all of its wordings; the first is the original.
-const withWordings = (q) => ({ ...q, wordings: [q.question, ...[].concat(VARIANTS[q.id] || [])] })
+const withWordings = (q) => ({ ...q, wordings: [...new Set([q.question, ...[].concat(VARIANTS[q.id] || []), ...(EXTRA_WORDINGS[q.id] || [])])] })
 
 const tag = (list, domain) => list.map((q, i) => withWordings(normalize(q, domain, `d${domain}-${i}`)))
 

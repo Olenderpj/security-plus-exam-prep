@@ -1,4 +1,4 @@
-import { QUESTIONS, VARIANTS } from '../src/data/questions/index.js'
+import { QUESTIONS, VARIANTS, EXTRA_WORDINGS } from '../src/data/questions/index.js'
 import FLASHCARDS from '../src/data/flashcards.js'
 import ACRONYMS from '../src/data/acronyms.js'
 let bad = 0
@@ -20,6 +20,8 @@ for (const q of QUESTIONS) {
 }
 // Alternate wordings
 const ids = new Set(QUESTIONS.map((q) => q.id))
+for (const id of Object.keys(EXTRA_WORDINGS)) if (!ids.has(id)) { console.log('extra wording for unknown id', id); bad++ }
+for (const q of QUESTIONS) if (q.wordings.length < 3) fail(`only ${q.wordings.length} wordings (need >= 3)`, q)
 for (const id of Object.keys(VARIANTS)) if (!ids.has(id)) { console.log('variant for unknown id', id); bad++ }
 for (const q of QUESTIONS) {
   for (const w of q.wordings.slice(1)) {
