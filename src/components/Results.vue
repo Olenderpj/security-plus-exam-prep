@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { DOMAINS, EXAM } from '../data/domains.js'
+import { DOMAINS, EXAM, objectiveName } from '../data/domains.js'
 import { isCorrect, score as scoreSession, breakdown } from '../lib/exam.js'
 import { rateSession } from '../lib/adaptive.js'
-import { estimate, labelFor, MIN_FOR_ESTIMATE, state } from '../lib/level.js'
+import { estimate, labelFor, MIN_FOR_ESTIMATE, objectiveRating, state } from '../lib/level.js'
 import QuestionBody from './QuestionBody.vue'
 
 const props = defineProps({
@@ -33,6 +33,16 @@ const fmt = (s) => `${Math.floor(s / 60)}m ${s % 60}s`
 const level = computed(() => state.value.g)
 const delta = computed(() => (props.adaptive ? level.value - props.adaptive.before : 0))
 const est = computed(() => estimate())
+// Difficulty by section: the level shown is live, so it reflects any feedback given below.
+const sectionGroups = computed(() =>
+  DOMAINS.map((d) => ({
+    ...d,
+    rows: (props.adaptive?.sections || [])
+      .filter((s) => s.domain === d.id)
+      .map((s) => ({ ...s, name: objectiveName(s.code), now: objectiveRating(s.code) }))
+  })).filter((g) => g.rows.length)
+)
+const barPct = (x) => `${Math.round(((x - 1) / 9) * 100)}%`
 const rated = ref(null)
 const MESSAGES = {
   easy: 'Thanks. Upcoming questions will be harder.',
@@ -125,6 +135,36 @@ function rate(kind) {
       <p v-else class="small good" style="margin: 0" role="status">{{ MESSAGES[rated] }}</p>
     </div>
 
+    <div v-if="adaptive && sectionGroups.length" class="card stack">
+      <div class="label">Difficulty by section</div>
+      <p class="small muted" style="margin: 0">
+        Each section has its own level, so one session can mix hard questions where you are strong with easier ones where you are not.
+        The marker shows the average difficulty you were served; the bar is your level now.
+      </p>
+      <div v-for="g in sectionGroups" :key="g.id" class="stack tight">
+        <div class="small"><strong>{{ g.id }}.0 {{ g.name }}</strong></div>
+        <div v-for="s in g.rows" :key="s.code" class="sec">
+          <div class="row between small">
+            <span>{{ s.code }} {{ s.name }}</span>
+            <span class="muted">{{ Math.round(s.points * 10) / 10 }}/{{ s.n }} correct</span>
+          </div>
+          <div class="track" role="img" :aria-label="`Level ${s.now.toFixed(1)}, questions averaged ${s.avgDifficulty}`">
+            <span class="level" :style="{ width: barPct(s.now) }" />
+            <span class="mark" :style="{ left: barPct(s.avgDifficulty) }" />
+          </div>
+          <div class="row between small muted">
+            <span>Served avg {{ s.avgDifficulty }}</span>
+            <span>
+              Level {{ s.before.toFixed(1) }} → <strong>{{ s.now.toFixed(1) }}</strong>
+              <span :class="s.now - s.before >= 0.05 ? 'good' : s.now - s.before <= -0.05 ? 'bad' : ''">
+                {{ s.now - s.before >= 0.05 ? '▲' : s.now - s.before <= -0.05 ? '▼' : '•' }}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="row between">
       <h2 style="margin: 0">Review</h2>
       <label class="check small"><input v-model="onlyWrong" type="checkbox" /> Incorrect only</label>
@@ -139,4 +179,9 @@ function rate(kind) {
 
 <style scoped>
 .big { font-size: 1.6rem; font-weight: 600; }
+.tight > * + * { margin-top: .6rem; }
+.sec { display: grid; gap: .2rem; }
+.track { position: relative; height: 6px; background: var(--soft); border-radius: 99px; }
+.track .level { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 99px; opacity: .55; }
+.track .mark { position: absolute; top: -3px; width: 3px; height: 12px; margin-left: -1px; background: var(--warn); border-radius: 2px; }
 </style>
