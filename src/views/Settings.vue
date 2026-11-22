@@ -4,7 +4,7 @@ import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
-import { domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
+import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 // ── profile ──
@@ -175,6 +175,7 @@ function resetDifficulty() {
           <template v-if="est">
             <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
             <div class="muted small">likely {{ est.low }}–{{ est.high }} (pass: {{ EXAM.passScaled }})</div>
+            <div v-if="est.coverage < 1" class="muted small">Based on {{ coverageText(est) }}. Sections you have not started are not counted.</div>
           </template>
           <template v-else>
             <div class="big muted">—</div>
@@ -188,7 +189,7 @@ function resetDifficulty() {
           <summary>
             <span class="chev" aria-hidden="true">›</span>
             <span class="dname"><span class="muted num">{{ d.id }}.0</span> {{ d.name }}</span>
-            <span class="tag" :class="sectionBadge(d.stat).tone">{{ sectionBadge(d.stat).measured ? `${d.stat.rating.toFixed(1)} · ${sectionBadge(d.stat).text}` : sectionBadge(d.stat).text }}</span>
+            <span class="tag" :class="sectionBadge(d.stat).tone">{{ d.stat.answered ? `${d.stat.rating.toFixed(1)} · ${sectionBadge(d.stat).text}` : sectionBadge(d.stat).text }}</span>
             <span class="dstat muted small num">{{ pct(d.stat.accuracy) }} · {{ d.stat.answered }} answered</span>
             <span class="bar thin dbar" role="img" :aria-label="d.stat.answered ? `Level ${d.stat.rating.toFixed(1)} of 10` : 'Not started'"><span :style="{ width: d.stat.answered ? barWidth(d.stat.rating) : '0' }" /></span>
           </summary>

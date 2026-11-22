@@ -143,15 +143,36 @@ export function labelFor(rating) {
   return rating < 3 ? 'Foundational' : rating < 5 ? 'Developing' : rating < 6.5 ? 'Proficient' : rating < 8 ? 'Advanced' : 'Expert'
 }
 
-// Predicted accuracy on real-exam-difficulty questions, as a 100–900 score with a range that
+// Each sub-section's share of the real exam: its domain's official weight split evenly across the domain's objectives.
+const OBJECTIVES = DOMAINS.flatMap((d) => objectivesOf(d).map((o) => ({ code: o.code, w: d.weight / d.objectives.length })))
+const TOTAL_WEIGHT = OBJECTIVES.reduce((s, o) => s + o.w, 0)
+
+// Predicted accuracy on real-exam-difficulty questions, as a 100–900 score with a range. Only sub-sections the
+// learner has attempted are scored (weighted by their share of the exam); ones not started are left out rather
+// than assumed, and the result reports how much of the exam it covers. The range widens when coverage is low and
 // narrows as more answers are recorded. Returns null until there is enough data.
 export function estimate() {
   const n = state.value.n
   if (n < MIN_FOR_ESTIMATE) return null
-  const p = expectedCorrect(state.value.g, EXAM_REF)
+  const started = OBJECTIVES.filter((o) => (state.value.o[o.code]?.[1] || 0) > 0)
+  if (!started.length) return null
+  const w = started.reduce((s, o) => s + o.w, 0)
+  const p = started.reduce((s, o) => s + o.w * expectedCorrect(objectiveRating(o.code), EXAM_REF), 0) / w
+  const coverage = w / TOTAL_WEIGHT
   const scaled = Math.round(100 + 800 * p)
-  const half = Math.round(110 / Math.sqrt(1 + n / 40) / 10) * 10
-  return { scaled, low: Math.max(100, scaled - half), high: Math.min(900, scaled + half), answers: n }
+  const half = Math.round(((110 / Math.sqrt(1 + n / 40)) * (1 + 1.5 * (1 - coverage))) / 10) * 10
+  return {
+    scaled,
+    low: Math.max(100, scaled - half),
+    high: Math.min(900, scaled + half),
+    answers: n,
+    coverage,
+    started: started.length,
+    sections: OBJECTIVES.length
+  }
 }
+
+// "6 of 22 sections · 28% of the exam"
+export const coverageText = (est) => `${est.started} of ${est.sections} sections (${Math.round(est.coverage * 100)}% of the exam)`
 
 export const reset = () => replace(blank())

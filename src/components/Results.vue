@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { DOMAINS, EXAM, objectiveName } from '../data/domains.js'
 import { isCorrect, score as scoreSession, breakdown } from '../lib/exam.js'
 import { rateSession } from '../lib/adaptive.js'
-import { estimate, MIN_FOR_ESTIMATE, objectiveRating, overallLabel, state } from '../lib/level.js'
+import { coverageText, estimate, MIN_FOR_ESTIMATE, objectiveRating, overallLabel, state } from '../lib/level.js'
 import QuestionBody from './QuestionBody.vue'
 
 const props = defineProps({
@@ -120,6 +120,7 @@ function rate(kind) {
           <template v-if="est">
             <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
             <div class="small muted">likely {{ est.low }}–{{ est.high }} · from {{ est.answers }} answers</div>
+            <div v-if="est.coverage < 1" class="small muted">{{ coverageText(est) }}; unstarted sections are not counted</div>
           </template>
           <template v-else>
             <div class="big muted">—</div>
@@ -163,7 +164,8 @@ function rate(kind) {
           </div>
           <div class="row between small muted">
             <span>Served avg {{ s.avgDifficulty }}</span>
-            <span>
+            <span v-if="s.first">First attempt · level now <strong>{{ s.now.toFixed(1) }}</strong></span>
+            <span v-else>
               Level {{ s.before.toFixed(1) }} → <strong>{{ s.now.toFixed(1) }}</strong>
               <span :class="s.now - s.before >= 0.05 ? 'good' : s.now - s.before <= -0.05 ? 'bad' : ''">
                 {{ s.now - s.before >= 0.05 ? '▲' : s.now - s.before <= -0.05 ? '▼' : '•' }}

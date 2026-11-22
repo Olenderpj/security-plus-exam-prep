@@ -4,7 +4,7 @@ import { DOMAINS, EXAM } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
-import { domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
+import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
 import { missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { formatDuration, study, summarize } from '../lib/studyTime.js'
@@ -69,7 +69,7 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
       <div class="card stat">
         <div class="label">Est. exam score</div>
         <div class="big" :class="est && est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est ? est.scaled : '—' }}</div>
-        <div class="muted small">{{ est ? `likely ${est.low}–${est.high} · pass ${EXAM.passScaled}` : `needs ${MIN_FOR_ESTIMATE}+ answers` }}</div>
+        <div class="muted small">{{ est ? `likely ${est.low}–${est.high} · pass ${EXAM.passScaled}${est.coverage < 1 ? ` · ${est.started}/${est.sections} sections` : ''}` : `needs ${MIN_FOR_ESTIMATE}+ answers` }}</div>
       </div>
       <div class="card stat">
         <div class="label">Today</div>
