@@ -8,6 +8,8 @@ import './lib/progress.js'
 import './lib/missed.js'
 import './lib/marked.js'
 import { startStudyTimer } from './lib/studyTime.js'
+import { sweepStaleSessions } from './lib/sessionStore.js'
 
 createApp(App).use(router).mount('#app')
 startStudyTimer(router)
+sweepStaleSessions()

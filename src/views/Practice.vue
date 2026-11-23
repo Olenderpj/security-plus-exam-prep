@@ -4,6 +4,7 @@ import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
+import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
 import { objectiveName } from '../data/domains.js'
@@ -70,6 +71,24 @@ const idx = ref(0)
 const revealed = ref(false)
 const startedAt = ref(0)
 const seconds = ref(0)
+
+// Resume a session that was running when the page was refreshed or closed.
+const saved = loadSession('practice')
+if (saved) {
+  questions.value = saved.questions
+  answers.value = saved.answers || []
+  idx.value = Math.min(saved.idx || 0, saved.questions.length - 1)
+  revealed.value = Boolean(saved.revealed)
+  startedAt.value = saved.startedAt || Date.now()
+  domain.value = saved.domain ?? null
+  saved.counted?.forEach((c) => counted.add(c))
+  stage.value = 'run'
+}
+const persist = () => {
+  if (stage.value === 'run') saveSession('practice', { questions: questions.value, answers: answers.value, idx: idx.value, revealed: revealed.value, startedAt: startedAt.value, domain: domain.value, counted: [...counted] })
+  else clearSession('practice')
+}
+watch([stage, questions, answers, idx, revealed], persist, { deep: true })
 
 const counts = computed(() => {
   const pool = practicePool(null, kind.value, onlyIds.value, objective.value, weakCodes.value)
@@ -196,12 +215,13 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onSetupKey)
 })
 
-// Leaving the page (navigating away or closing the tab) mid-session also keeps the answered questions.
-const saveOnLeave = () => stage.value === 'run' && commit(answeredCount.value, false)
-onMounted(() => window.addEventListener('pagehide', saveOnLeave))
+
+// Refreshing or closing the tab leaves the session saved (it resumes, or is scored if abandoned for a long
+// time); navigating to another page inside the app scores what was answered and ends the session.
 onBeforeUnmount(() => {
-  window.removeEventListener('pagehide', saveOnLeave)
-  saveOnLeave()
+  if (stage.value !== 'run') return
+  commit(answeredCount.value, false)
+  clearSession('practice')
 })
 </script>
 

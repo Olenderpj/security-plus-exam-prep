@@ -2,8 +2,9 @@
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
+import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
@@ -62,14 +63,36 @@ function start() {
   idx.value = 0
   startedAt.value = Date.now()
   stage.value = 'run'
-  if (timed.value) {
-    remaining.value = minutes.value * 60
-    timer = setInterval(() => {
-      remaining.value = Math.max(0, minutes.value * 60 - Math.round((Date.now() - startedAt.value) / 1000))
-      if (remaining.value === 0) finish()
-    }, 1000)
-  }
+  runTimer()
 }
+
+function runTimer() {
+  if (!timed.value) return
+  remaining.value = Math.max(0, minutes.value * 60 - Math.round((Date.now() - startedAt.value) / 1000))
+  timer = setInterval(() => {
+    remaining.value = Math.max(0, minutes.value * 60 - Math.round((Date.now() - startedAt.value) / 1000))
+    if (remaining.value === 0) finish()
+  }, 1000)
+}
+
+// Resume an exam that was running when the page was refreshed or closed (the clock kept running).
+const saved = loadSession('exam')
+if (saved) {
+  questions.value = saved.questions
+  answers.value = saved.answers || []
+  flags.value = new Set(saved.flags || [])
+  idx.value = Math.min(saved.idx || 0, saved.questions.length - 1)
+  startedAt.value = saved.startedAt || Date.now()
+  timed.value = saved.timed !== false
+  length.value = saved.length || length.value
+  stage.value = 'run'
+  runTimer()
+  if (timed.value && remaining.value === 0) finish()
+}
+watch([stage, questions, answers, flags, idx], () => {
+  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, flags: [...flags.value], idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value })
+  else clearSession('exam')
+}, { deep: true })
 
 // Keyboard: ←/→ move between questions, F flags, A–D / 1–4 answer. Enter starts from the setup screen.
 function onKeys(e) {

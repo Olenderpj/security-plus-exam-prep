@@ -4,7 +4,7 @@ import { onBeforeUnmount, onMounted } from 'vue'
 import { sheetOpen } from '../lib/shortcuts.js'
 
 const groups = [
-  { title: 'Everywhere', rows: [[['/', 'Ctrl K'], 'Search and quick actions'], [['?'], 'This sheet'], [['Esc'], 'Close dialogs']] },
+  { title: 'Everywhere', rows: [[['/', 'Ctrl F', 'Ctrl K'], 'Search everything and quick actions'], [['?'], 'This sheet'], [['Esc'], 'Close dialogs']] },
   { title: 'Search', rows: [[['↑', '↓'], 'Move through results'], [['↵'], 'Open the highlighted result']] },
   { title: 'Practice', rows: [[['A–D', '1–4'], 'Choose an answer'], [['↵'], 'Check, then continue'], [['↵'], 'Start (on the setup screen)']] },
   { title: 'Exam', rows: [[['←', '→'], 'Previous / next question'], [['A–D', '1–4'], 'Choose an answer'], [['F'], 'Flag for review']] },

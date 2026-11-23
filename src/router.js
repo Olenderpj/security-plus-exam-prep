@@ -3,7 +3,8 @@ import Home from './views/Home.vue'
 
 export default createRouter({
   history: createWebHistory(),
-  scrollBehavior: () => ({ top: 0 }),
+  // Notes positions itself (it scrolls to the note being opened), so the router leaves scrolling to it.
+  scrollBehavior: (to) => (to.path === '/notes' ? false : { top: 0 }),
   routes: [
     { path: '/', component: Home },
     { path: '/practice', component: () => import('./views/Practice.vue') },

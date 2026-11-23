@@ -1,5 +1,6 @@
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { DOMAINS } from '../data/domains.js'
 import TITLES from '../data/messer.js'
 import { user } from '../lib/auth.js'
@@ -12,15 +13,68 @@ const domainPick = ref('')
 const flash = ref('')
 const editing = ref(null) // id of the section being edited; the others show formatted text
 
+const route = useRoute()
+const router = useRouter()
 const bodyEl = (s) => document.getElementById(`body-${s.id}`)
 
-async function startEditing(s) {
+// Where you were: the note being worked on, whether its editor was open, and the cursor. Kept in the URL
+// (?note=) and in this browser, so a refresh puts you back at the same note.
+const VIEW_KEY = 'secplus.notes.view'
+const flashId = ref(null)
+let lastCaret = 0
+function readView() {
+  try {
+    return JSON.parse(localStorage.getItem(VIEW_KEY)) || {}
+  } catch {
+    return {}
+  }
+}
+function writeView(patch) {
+  try {
+    localStorage.setItem(VIEW_KEY, JSON.stringify({ ...readView(), ...patch }))
+  } catch {}
+}
+function trackCaret(e) {
+  lastCaret = e.target.selectionStart
+  writeView({ caret: lastCaret })
+}
+
+async function startEditing(s, caret = null) {
   editing.value = s.id
+  writeView({ id: s.id, editing: true })
+  if (route.query.note !== s.id) router.replace({ query: { note: s.id } })
   await nextTick()
   const el = bodyEl(s)
   el?.focus()
-  el?.setSelectionRange(el.value.length, el.value.length)
+  const at = caret == null ? el?.value.length : Math.min(caret, el.value.length)
+  el?.setSelectionRange(at, at)
 }
+
+// Brings a note into view and highlights it briefly.
+async function reveal(id, { edit = false, caret = null } = {}) {
+  const s = notes.value.sections.find((x) => x.id === id)
+  if (!s) return false
+  await nextTick()
+  document.getElementById(`note-${id}`)?.scrollIntoView({ block: 'center' })
+  flashId.value = id
+  setTimeout(() => flashId.value === id && (flashId.value = null), 2200)
+  writeView({ id })
+  if (edit) startEditing(s, caret)
+  return true
+}
+// On arrival: ?note= (from search or a refresh) wins; otherwise go back to the note last worked on.
+function restore() {
+  const q = route.query.note
+  if (q) return reveal(String(q), { edit: readView().id === q && readView().editing, caret: readView().caret })
+  const v = readView()
+  if (!(v.id && notes.value.sections.some((x) => x.id === v.id))) return window.scrollTo(0, 0)
+  reveal(v.id, { edit: v.editing, caret: v.caret })
+}
+onMounted(restore)
+watch(() => route.query.note, (id) => id && reveal(String(id)))
+// Notes may load from the account after the page opens; restore once they arrive.
+watch(() => notes.value.sections.length, (n, old) => old === 0 && n > 0 && restore())
+onBeforeUnmount(() => writeView({}))
 
 async function add() {
   const s = addSection(newTitle.value.trim())
@@ -92,6 +146,7 @@ function tool(s, kind) {
 function onBlur(e) {
   if (document.activeElement === e.target) return
   editing.value = null
+  writeView({ editing: false })
 }
 
 const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
@@ -135,7 +190,7 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 
     <p v-if="!notes.sections.length" class="muted">No notes yet. Add a section above to get started.</p>
 
-    <div v-for="s in notes.sections" :key="s.id" class="card section">
+    <div v-for="s in notes.sections" :key="s.id" :id="`note-${s.id}`" class="card section" :class="{ flash: flashId === s.id }">
       <div class="head">
         <input
           v-model="s.title"
@@ -162,8 +217,10 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
         :value="s.body"
         :rows="rowsFor(s)"
         placeholder="Type notes — start a line with * for a bullet"
-        @input="onInput($event, s)"
+        @input="onInput($event, s); trackCaret($event)"
         @keydown="onKeydown($event, s)"
+        @keyup="trackCaret"
+        @click="trackCaret"
         @blur="onBlur"
       ></textarea>
       <div v-else class="view" tabindex="0" role="button" aria-label="Edit notes" @click="startEditing(s)" @keydown.enter.self="startEditing(s)">
@@ -198,6 +255,10 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 @media (max-width: 720px) { .add > * { flex: 1 1 100%; } }
 .hint { margin: 0; }
 code { background: var(--soft); border-radius: 4px; padding: 0 .3em; }
+
+/* The note a search result or refresh brought you to */
+.flash { animation: flash 2.2s ease-out; }
+@keyframes flash { 0%, 55% { background: var(--brand-soft); box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 
 /* Dense note cards */
 .section { display: grid; gap: .2rem; padding: .45rem .7rem .55rem; border-radius: 8px; }

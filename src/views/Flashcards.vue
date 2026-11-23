@@ -1,7 +1,8 @@
 <script setup>
 import { useFocusMode } from '../lib/focus.js'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
+import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import FLASHCARDS from '../data/flashcards.js'
 import ACRONYMS from '../data/acronyms.js'
 import { domainById } from '../data/domains.js'
@@ -30,6 +31,25 @@ const flipped = ref(false)
 const known = ref(0)
 const missed = ref([])
 const startedAt = ref(0)
+
+// Resume a deck that was in progress when the page was refreshed or closed.
+const saved = loadSession('flashcards', (s) => Array.isArray(s.deck) && s.deck.length)
+if (saved) {
+  deck.value = saved.deck
+  idx.value = Math.min(saved.idx || 0, saved.deck.length - 1)
+  flipped.value = Boolean(saved.flipped)
+  known.value = saved.known || 0
+  missed.value = saved.missed || []
+  startedAt.value = saved.startedAt || Date.now()
+  deckType.value = saved.deckType || deckType.value
+  domain.value = saved.domain ?? null
+  side.value = saved.side || side.value
+  stage.value = 'run'
+}
+watch([stage, deck, idx, flipped, known, missed], () => {
+  if (stage.value === 'run') saveSession('flashcards', { deck: deck.value, idx: idx.value, flipped: flipped.value, known: known.value, missed: missed.value, startedAt: startedAt.value, deckType: deckType.value, domain: domain.value, side: side.value })
+  else clearSession('flashcards')
+}, { deep: true })
 
 const counts = computed(() => {
   const c = { all: FLASHCARDS.length }
