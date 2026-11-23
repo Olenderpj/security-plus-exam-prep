@@ -3,7 +3,7 @@
 // The note is still stored as plain text — "**bold**" and "  • sub-bullet" lines — so search, sync and the
 // read-only view keep working; this component converts between that text and the editable page.
 import { nextTick, onMounted, ref, watch } from 'vue'
-import { MAX_LEVEL, bulletPrefix, glyphFor, parseLine, splitBold } from '../lib/richtext.js'
+import { MAX_LEVEL, bulletPrefix, glyphFor, isRule, parseLine, splitBold } from '../lib/richtext.js'
 
 const props = defineProps({ modelValue: { type: String, default: '' }, placeholder: { type: String, default: '' } })
 const emit = defineEmits(['update:modelValue', 'blur'])
@@ -14,15 +14,26 @@ let lastText = null
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 // ── text <-> DOM ──
-function lineEl(text) {
-  const p = parseLine(text)
+function lineEl(text, allowRule = true) {
   const el = document.createElement('div')
+  if (allowRule && isRule(text)) return ruleEl(el, text.trim().length)
+  const p = parseLine(text)
   el.className = 'ln'
   setLine(el, p.bullet, p.level)
   const html = splitBold(p.text).map((s) => (s.bold ? `<strong>${esc(s.text)}</strong>` : esc(s.text))).join('')
   el.innerHTML = html || '<br>'
   return el
 }
+// A horizontal rule line: not editable, stored as its hyphens ("---").
+function ruleEl(el, n) {
+  el.className = 'ln'
+  el.dataset.hr = String(Math.max(3, n))
+  el.contentEditable = 'false'
+  el.innerHTML = '<hr>'
+  return el
+}
+const isRuleEl = (el) => el.dataset.hr !== undefined
+
 function setLine(el, bullet, level = 0) {
   el.className = 'ln'
   el.style.setProperty('--lv', level)
@@ -76,6 +87,7 @@ function inline(node) {
 function toText() {
   return [...root.value.children]
     .map((el) => {
+      if (isRuleEl(el)) return '-'.repeat(Number(el.dataset.hr) || 3)
       const body = inline(el)
       return isBullet(el) ? bulletPrefix(levelOf(el)) + body : body
     })
@@ -98,6 +110,8 @@ function normalize() {
   }
   if (!r.firstChild) r.appendChild(lineEl(''))
   for (const el of r.children) {
+    if (isRuleEl(el)) continue
+    el.querySelectorAll('hr').forEach((h) => h.remove()) // a rule the browser merged into a text line
     if (isBullet(el)) setLine(el, true, Math.min(levelOf(el), MAX_LEVEL))
     else if (el.className !== 'ln') el.className = 'ln'
     if (!el.firstChild) el.innerHTML = '<br>'
@@ -202,6 +216,14 @@ function onKeydown(e) {
   if (!el) return
   if (e.key === 'Enter') {
     e.preventDefault()
+    if (!isBullet(el) && sel.isCollapsed && isRule(el.textContent)) {
+      // "---" followed by Enter becomes a horizontal rule, with a fresh line below it.
+      const next = lineEl('')
+      ruleEl(el, el.textContent.trim().length)
+      el.after(next)
+      placeCaret(next, 0)
+      return sync()
+    }
     if (isBullet(el) && sel.isCollapsed && !el.textContent.trim()) {
       // Enter on an empty bullet steps out one level, or leaves the list.
       return levelOf(el) > 0 ? setLevel(el, true, levelOf(el) - 1) : setLevel(el, false, 0)
@@ -212,6 +234,11 @@ function onKeydown(e) {
   if (e.key === 'Tab' && isBullet(el)) {
     e.preventDefault()
     return indent(e.shiftKey)
+  }
+  if (e.key === 'Backspace' && sel.isCollapsed && caretOffset(el) === 0 && el.previousElementSibling && isRuleEl(el.previousElementSibling)) {
+    e.preventDefault()
+    el.previousElementSibling.remove()
+    return sync()
   }
   if (e.key === 'Backspace' && sel.isCollapsed && isBullet(el) && caretOffset(el) === 0) {
     e.preventDefault()
@@ -248,7 +275,7 @@ function onPaste(e) {
   tail.setStart(range.endContainer, range.endOffset)
   tail.setEnd(el, el.childNodes.length)
   const rest = tail.extractContents()
-  const first = lineEl(parts[0])
+  const first = lineEl(parts[0], false)
   const firstBr = el.querySelector('br')
   if (firstBr && !el.textContent) firstBr.remove()
   if (!isBullet(el) && isBullet(first)) setLine(el, true, levelOf(first))
@@ -315,5 +342,7 @@ watch(
 .ed :deep(.ln) { position: relative; min-height: 1.4em; padding-left: calc(var(--lv, 0) * 1.1rem); }
 .ed :deep(.ln[data-b]) { padding-left: calc(var(--lv, 0) * 1.1rem + 1.25rem); }
 .ed :deep(.ln[data-b])::before { content: attr(data-g); position: absolute; left: calc(var(--lv, 0) * 1.1rem + .3rem); color: var(--muted); }
+.ed :deep(.ln[data-hr]) { padding: .45rem 0; user-select: none; }
+.ed :deep(hr) { border: 0; border-top: 1px solid var(--muted); margin: 0; }
 .ed :deep(strong), .ed :deep(b) { font-weight: 700; }
 </style>

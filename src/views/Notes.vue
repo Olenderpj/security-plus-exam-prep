@@ -227,19 +227,16 @@ function onBlur(e) {
         @click="trackCaret(s)"
         @blur="onBlur"
       />
-      <div v-else class="view" tabindex="0" role="button" aria-label="Edit notes" @click="startEditing(s)" @keydown.enter.self="startEditing(s)">
+      <div v-else class="view" tabindex="0" role="button" aria-label="Edit notes" @click="startEditing(s)" @keydown.enter.self.prevent="startEditing(s)">
         <p v-if="!s.body.trim()" class="muted empty">Click to add notes</p>
         <template v-else>
-          <div
-            v-for="(b, i) in rt.renderBlocks(s.body)"
-            :key="i"
-            class="ln"
-            :class="{ gap: !b.segments.length && !b.bullet }"
-            :style="b.level ? { paddingLeft: `${b.level * 1.1}rem` } : null"
-          >
-            <span v-if="b.bullet" class="glyph" aria-hidden="true">{{ b.glyph }}</span>
-            <span><template v-for="(p, j) in b.segments" :key="j"><strong v-if="p.bold">{{ p.text }}</strong><template v-else>{{ p.text }}</template></template></span>
-          </div>
+          <template v-for="(b, i) in rt.renderBlocks(s.body)" :key="i">
+            <hr v-if="b.rule" class="rule" />
+            <div v-else class="ln" :class="{ gap: !b.segments.length && !b.bullet }" :style="b.level ? { paddingLeft: `${b.level * 1.1}rem` } : null">
+              <span v-if="b.bullet" class="glyph" aria-hidden="true">{{ b.glyph }}</span>
+              <span><template v-for="(p, j) in b.segments" :key="j"><strong v-if="p.bold">{{ p.text }}</strong><template v-else>{{ p.text }}</template></template></span>
+            </div>
+          </template>
         </template>
       </div>
     </div>
@@ -286,6 +283,7 @@ code { background: var(--soft); border-radius: 4px; padding: 0 .3em; }
 .view:hover { background: var(--soft); }
 .view:focus-visible { outline: 2px solid var(--accent); }
 .empty { margin: 0; font-size: .85rem; }
+.rule { border: 0; border-top: 1px solid var(--muted); margin: .45rem 0; }
 .ln { display: flex; gap: .45rem; }
 .ln.gap { min-height: .6rem; }
 .glyph { color: var(--muted); flex: none; width: .8rem; text-align: center; }
