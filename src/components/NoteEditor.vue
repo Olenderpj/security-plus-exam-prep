@@ -3,6 +3,7 @@
 // The note is still stored as plain text — "**bold**" and "  • sub-bullet" lines — so search, sync and the
 // read-only view keep working; this component converts between that text and the editable page.
 import { nextTick, onMounted, ref, watch } from 'vue'
+import { NOTE_MIME, copyWithFormatting, inlineMarkup } from '../lib/noteMarkup.js'
 import { MAX_LEVEL, bulletPrefix, glyphFor, isRule, parseLine, splitBold } from '../lib/richtext.js'
 
 const props = defineProps({ modelValue: { type: String, default: '' }, placeholder: { type: String, default: '' } })
@@ -56,39 +57,11 @@ function render(text) {
   root.value.replaceChildren(frag)
 }
 
-// Text of a line with bold runs wrapped in **...** (weight is inherited down the tree unless an element sets it).
-function inline(node) {
-  const segs = []
-  const walk = (n, bold) => {
-    for (const c of n.childNodes) {
-      if (c.nodeType === 3) segs.push({ t: c.nodeValue.replace(/\u200b/g, ''), b: bold })
-      else if (c.nodeType === 1 && c.nodeName !== 'BR') {
-        const fw = c.style?.fontWeight
-        walk(c, c.nodeName === 'B' || c.nodeName === 'STRONG' ? true : fw ? /^(bold|[6-9]00)$/.test(fw) : bold)
-      }
-    }
-  }
-  walk(node, false)
-  const merged = []
-  for (const g of segs) {
-    const last = merged[merged.length - 1]
-    if (last && last.b === g.b) last.t += g.t
-    else merged.push({ ...g })
-  }
-  // Spaces at the edges of a bold run stay outside the markers ("a **b** c", never "a** b **c").
-  return merged
-    .map((g) => {
-      if (!g.b || !g.t.trim()) return g.t
-      const [, lead, core, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(g.t)
-      return `${lead}**${core}**${trail}`
-    })
-    .join('')
-}
 function toText() {
   return [...root.value.children]
     .map((el) => {
       if (isRuleEl(el)) return '-'.repeat(Number(el.dataset.hr) || 3)
-      const body = inline(el)
+      const body = inlineMarkup(el)
       return isBullet(el) ? bulletPrefix(levelOf(el)) + body : body
     })
     .join('\n')
@@ -258,10 +231,12 @@ function onInput(e) {
   sync()
 }
 
-// Pasting always goes in as plain text; "* " lines become bullets and **bold** becomes bold.
+// Pasting keeps the formatting of text copied from a note; other text goes in as plain text, where
+// "* " lines become bullets and **bold** becomes bold.
 function onPaste(e) {
   e.preventDefault()
-  const text = (e.clipboardData?.getData('text/plain') || '').replace(/\r\n?/g, '\n')
+  // Text copied from a note carries its formatting under NOTE_MIME; anything else pastes as plain text.
+  const text = (e.clipboardData?.getData(NOTE_MIME) || e.clipboardData?.getData('text/plain') || '').replace(/\r\n?/g, '\n')
   if (!text) return
   const sel = window.getSelection()
   if (!sel.rangeCount) return
@@ -296,6 +271,16 @@ function onPaste(e) {
   placeCaret(last, end)
 }
 
+// Copy/cut carry the selection's formatting (bold, bullets, rules) so it can be pasted into another note.
+function onCopy(e) {
+  copyWithFormatting(e)
+}
+function onCut(e) {
+  if (!copyWithFormatting(e)) return
+  document.execCommand('delete')
+  sync()
+}
+
 onMounted(() => {
   document.execCommand('defaultParagraphSeparator', false, 'div')
   render(props.modelValue)
@@ -328,6 +313,8 @@ watch(
     @input="onInput"
     @keydown="onKeydown"
     @paste="onPaste"
+    @copy="onCopy"
+    @cut="onCut"
     @blur="emit('blur', $event)"
   ></div>
 </template>

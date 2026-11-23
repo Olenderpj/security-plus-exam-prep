@@ -34,7 +34,7 @@ export function splitBold(s) {
 
 export const renderBlocks = (body) =>
   body.split('\n').map((line) => {
-    if (isRule(line)) return { rule: true, bullet: false, level: 0, glyph: '', segments: [] }
+    if (isRule(line)) return { rule: true, n: line.trim().length, bullet: false, level: 0, glyph: '', segments: [] }
     const p = parseLine(line)
     return { bullet: p.bullet, level: p.level, glyph: glyphFor(p.level), segments: splitBold(p.text) }
   })

@@ -7,6 +7,7 @@ import NoteEditor from '../components/NoteEditor.vue'
 import { user } from '../lib/auth.js'
 import { activeNoteId, addSection, addSections, jumpToNote, notes, removeSection, save, syncFailed, takeExternalOpen } from '../lib/notes.js'
 import * as rt from '../lib/richtext.js'
+import { copyWithFormatting } from '../lib/noteMarkup.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 const newTitle = ref('')
@@ -95,11 +96,13 @@ onMounted(() => {
   restore()
   spy()
   window.addEventListener('scroll', spy, { passive: true })
+  document.addEventListener('copy', copyWithFormatting) // copying from the formatted view keeps formatting too
   jumpToNote.value = (s) => reveal(s.id) // outline clicks scroll to the note without highlighting it
 })
 onBeforeUnmount(() => {
   alive = false
   window.removeEventListener('scroll', spy)
+  document.removeEventListener('copy', copyWithFormatting)
   cancelAnimationFrame(raf)
   jumpToNote.value = null
   activeNoteId.value = null
@@ -231,8 +234,8 @@ function onBlur(e) {
         <p v-if="!s.body.trim()" class="muted empty">Click to add notes</p>
         <template v-else>
           <template v-for="(b, i) in rt.renderBlocks(s.body)" :key="i">
-            <hr v-if="b.rule" class="rule" />
-            <div v-else class="ln" :class="{ gap: !b.segments.length && !b.bullet }" :style="b.level ? { paddingLeft: `${b.level * 1.1}rem` } : null">
+            <hr v-if="b.rule" class="rule" :data-hr="b.n" />
+            <div v-else class="ln" :class="{ gap: !b.segments.length && !b.bullet }" :data-b="b.bullet ? 1 : null" :data-level="b.level" :style="b.level ? { paddingLeft: `${b.level * 1.1}rem` } : null">
               <span v-if="b.bullet" class="glyph" aria-hidden="true">{{ b.glyph }}</span>
               <span><template v-for="(p, j) in b.segments" :key="j"><strong v-if="p.bold">{{ p.text }}</strong><template v-else>{{ p.text }}</template></template></span>
             </div>
