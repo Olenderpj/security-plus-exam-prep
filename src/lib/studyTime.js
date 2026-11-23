@@ -1,13 +1,15 @@
 // Study-time tracking: how long the learner has actively used the app, in total, per day, and per area.
 //
-// "Active" means the tab is visible and there was input (mouse, keys, touch, scroll) within the last
-// 3 minutes, so leaving the app open does not count. Time goes to the area of the page being viewed.
+// Time only counts while a study session is running (practice questions, an exam, or flashcards: see
+// useStudySession). Browsing, settings, notes and the setup/results screens do not count. Within a session
+// it is "active" while the tab is visible and there was input (mouse, keys, touch, scroll) within the last
+// 3 minutes, so leaving a session open does not count.
 //
 // Each device keeps its own monotonic counter and counters are merged per device (the larger value
 // wins), so studying on several devices adds up instead of one device overwriting another. It is
 // saved in this browser every few seconds and synced to the account (user profile) every few minutes
 // and when the page is hidden or closed.
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { supabase } from './supabase.js'
 import { user } from './auth.js'
 
@@ -30,6 +32,17 @@ export function areaOf(path = '') {
   if (path.startsWith('/flashcards')) return 'flashcards'
   if (path.startsWith('/notes')) return 'notes'
   return 'other'
+}
+
+// ── which session is running ──
+// The area ('practice' | 'exam' | 'flashcards') of the session in progress, or null when none is.
+export const studying = ref(null)
+// Call from a view with its stage ref: the clock runs only while stage === 'run'.
+export function useStudySession(stage, area) {
+  watch(stage, (s) => (studying.value = s === 'run' ? area : null), { immediate: true })
+  onBeforeUnmount(() => {
+    if (studying.value === area) studying.value = null
+  })
 }
 
 // ── state ──
@@ -155,7 +168,7 @@ watch(
 
 // ── the timer ──
 let started = false
-export function startStudyTimer(router) {
+export function startStudyTimer() {
   if (started || typeof window === 'undefined') return
   started = true
   let last = performance.now()
@@ -169,12 +182,12 @@ export function startStudyTimer(router) {
     const now = performance.now()
     const dt = Math.min(now - last, TICK_MS * 2) // ignore long gaps (sleep, throttled background timers)
     last = now
-    if (document.visibilityState !== 'visible' || now - lastActive > IDLE_MS) return
+    if (!studying.value || document.visibilityState !== 'visible' || now - lastActive > IDLE_MS) return
     carry += dt
     const whole = Math.floor(carry / 1000)
     if (!whole) return
     carry -= whole * 1000
-    add(areaOf(router.currentRoute.value.path), whole)
+    add(studying.value, whole)
   }
   setInterval(tick, TICK_MS)
   const leave = () => {

@@ -1,6 +1,7 @@
 <script setup>
 import { useFocusMode } from '../lib/focus.js'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useStudySession } from '../lib/studyTime.js'
 import FLASHCARDS from '../data/flashcards.js'
 import ACRONYMS from '../data/acronyms.js'
 import { domainById } from '../data/domains.js'
@@ -21,6 +22,7 @@ const SIDES = [
   { id: 'mixed', label: 'Mixed' }
 ]
 const stage = ref('setup')
+useStudySession(stage, 'flashcards')
 useFocusMode(stage)
 const deck = ref([])
 const idx = ref(0)

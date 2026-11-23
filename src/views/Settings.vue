@@ -60,6 +60,7 @@ const time = computed(() => summarize(study.value))
 const peakDay = computed(() => Math.max(1, ...time.value.days.map((d) => d.seconds)))
 const areaRows = computed(() =>
   Object.entries(AREAS)
+    .filter(([key]) => ['practice', 'exam', 'flashcards'].includes(key) || (time.value.areas[key] || 0) > 0) // notes/other: earlier versions only
     .map(([key, label]) => ({ key, label, seconds: time.value.areas[key] || 0 }))
     .sort((a, b) => b.seconds - a.seconds)
 )
@@ -140,7 +141,7 @@ function resetDifficulty() {
         </div>
       </div>
       <p class="muted small" style="margin: .5rem 0 0">
-        Counts time you are actively using the app: the tab is open and you have interacted in the last 3 minutes. Studying on several
+        Counts only time spent in a practice session, exam or flashcard deck, while the tab is open and you have interacted in the last 3 minutes. Browsing, notes and settings are not counted. Studying on several
         devices adds together when you are signed in.
       </p>
     </section>

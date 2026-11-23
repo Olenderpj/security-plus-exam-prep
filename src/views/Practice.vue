@@ -3,6 +3,7 @@ import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { useStudySession } from '../lib/studyTime.js'
 import { useRoute } from 'vue-router'
 import { missed, recordAnswer } from '../lib/missed.js'
 import { objectiveName } from '../data/domains.js'
@@ -59,6 +60,7 @@ function revealAcronym() {
 provide('acronymLookup', lookupAcronym)
 
 const stage = ref('setup')
+useStudySession(stage, 'practice')
 useFocusMode(stage)
 const adaptive = ref(null)
 const endedEarly = ref(0) // planned question count when the session was ended early, else 0

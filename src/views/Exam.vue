@@ -3,6 +3,7 @@ import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useStudySession } from '../lib/studyTime.js'
 import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
@@ -19,6 +20,7 @@ const missedTotal = computed(() => QUESTIONS.filter((q) => missed.value.has(q.id
 const timed = ref(true)
 const length = ref(EXAM.questions)
 const stage = ref('setup')
+useStudySession(stage, 'exam')
 useFocusMode(stage)
 const adaptive = ref(null)
 const questions = ref([])
