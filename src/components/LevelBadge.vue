@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue'
-import { overallLabel, state } from '../lib/level.js'
+import { overallLabel, overallLevel, state } from '../lib/level.js'
 
-const level = computed(() => state.value.g)
+const level = computed(() => overallLevel())
 </script>
 
 <template>

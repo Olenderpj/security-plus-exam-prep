@@ -4,12 +4,12 @@ import { DOMAINS, EXAM } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
-import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
+import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
 import { missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { formatDuration, study, summarize } from '../lib/studyTime.js'
 
-const level = computed(() => state.value.g)
+const level = computed(() => overallLevel())
 const answered = computed(() => state.value.n)
 const est = computed(() => estimate())
 const weak = computed(() => weakSections(3))

@@ -126,6 +126,14 @@ export function applyFeedback(kind, codes = []) {
 
 export const snapshot = () => state.value.g
 
+// The overall level shown in the UI: every sub-section weighted by its share of the real exam (a domain's official
+// weight split across its objectives), so it lines up with the per-section levels. Sections not started yet count at
+// the bottom of the scale, so the number only climbs as more of the exam is covered.
+export function overallLevel() {
+  const sum = OBJECTIVES.reduce((t, o) => t + o.w * ((state.value.o[o.code]?.[1] || 0) > 0 ? objectiveRating(o.code) : MIN), 0)
+  return sum / TOTAL_WEIGHT
+}
+
 // A level is only a measurement once there are answers behind it. Sections with none inherit the overall
 // level purely to pick starting difficulty, so they must never be labelled (e.g. "Proficient") in the UI.
 export const EVIDENCE_MIN = 5
@@ -136,8 +144,8 @@ export function sectionBadge(stat) {
   return { text: labelFor(stat.rating), tone: toneFor(stat.rating), measured: true }
 }
 // The overall label waits for enough answers too (the same threshold as the exam-score estimate).
-export const overallLabel = () => (state.value.n >= MIN_FOR_ESTIMATE ? labelFor(state.value.g) : 'Getting started')
-export const overallTone = () => (state.value.n >= MIN_FOR_ESTIMATE ? toneFor(state.value.g) : '')
+export const overallLabel = () => (state.value.n >= MIN_FOR_ESTIMATE ? labelFor(overallLevel()) : 'Getting started')
+export const overallTone = () => (state.value.n >= MIN_FOR_ESTIMATE ? toneFor(overallLevel()) : '')
 
 export function labelFor(rating) {
   return rating < 3 ? 'Foundational' : rating < 5 ? 'Developing' : rating < 6.5 ? 'Proficient' : rating < 8 ? 'Advanced' : 'Expert'
@@ -147,17 +155,23 @@ export function labelFor(rating) {
 const OBJECTIVES = DOMAINS.flatMap((d) => objectivesOf(d).map((o) => ({ code: o.code, w: d.weight / d.objectives.length })))
 const TOTAL_WEIGHT = OBJECTIVES.reduce((s, o) => s + o.w, 0)
 
-// Predicted accuracy on real-exam-difficulty questions, as a 100–900 score with a range. Only sub-sections the
-// learner has attempted are scored (weighted by their share of the exam); ones not started are left out rather
-// than assumed, and the result reports how much of the exam it covers. The range widens when coverage is low and
-// narrows as more answers are recorded. Returns null until there is enough data.
+// Predicted accuracy on real-exam-difficulty questions, as a 100–900 score with a range. All 28 sub-sections count,
+// weighted by their share of the real exam (domain weight split across its objectives). A sub-section that has not
+// been attempted is assumed to score only what guessing on a four-option question would (25%), so the estimate stays
+// low until the whole exam has been practiced. The range is widest when coverage is low and narrows with more answers.
+// Returns null until there is enough data.
+const GUESS = 0.25
 export function estimate() {
   const n = state.value.n
   if (n < MIN_FOR_ESTIMATE) return null
-  const started = OBJECTIVES.filter((o) => (state.value.o[o.code]?.[1] || 0) > 0)
-  if (!started.length) return null
-  const w = started.reduce((s, o) => s + o.w, 0)
-  const p = started.reduce((s, o) => s + o.w * expectedCorrect(objectiveRating(o.code), EXAM_REF), 0) / w
+  const startedList = OBJECTIVES.filter((o) => (state.value.o[o.code]?.[1] || 0) > 0)
+  if (!startedList.length) return null
+  const w = startedList.reduce((s, o) => s + o.w, 0)
+  const p =
+    OBJECTIVES.reduce((s, o) => {
+      const started = (state.value.o[o.code]?.[1] || 0) > 0
+      return s + o.w * (started ? expectedCorrect(objectiveRating(o.code), EXAM_REF) : GUESS)
+    }, 0) / TOTAL_WEIGHT
   const coverage = w / TOTAL_WEIGHT
   const scaled = Math.round(100 + 800 * p)
   const half = Math.round(((110 / Math.sqrt(1 + n / 40)) * (1 + 1.5 * (1 - coverage))) / 10) * 10
@@ -167,7 +181,7 @@ export function estimate() {
     high: Math.min(900, scaled + half),
     answers: n,
     coverage,
-    started: started.length,
+    started: startedList.length,
     sections: OBJECTIVES.length
   }
 }

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { DOMAINS, EXAM, objectiveName } from '../data/domains.js'
 import { isCorrect, score as scoreSession, breakdown } from '../lib/exam.js'
 import { rateSession } from '../lib/adaptive.js'
-import { coverageText, estimate, MIN_FOR_ESTIMATE, objectiveRating, overallLabel, state } from '../lib/level.js'
+import { coverageText, estimate, MIN_FOR_ESTIMATE, objectiveRating, overallLabel, overallLevel, state } from '../lib/level.js'
 import QuestionBody from './QuestionBody.vue'
 
 const props = defineProps({
@@ -31,7 +31,7 @@ const review = computed(() =>
 const fmt = (s) => `${Math.floor(s / 60)}m ${s % 60}s`
 
 // Adaptive difficulty: the level was already adjusted from the answers; feedback nudges it further.
-const level = computed(() => state.value.g)
+const level = computed(() => overallLevel())
 const delta = computed(() => (props.adaptive ? level.value - props.adaptive.before : 0))
 const est = computed(() => estimate())
 // Difficulty by section: the level shown is live, so it reflects any feedback given below.
@@ -120,7 +120,7 @@ function rate(kind) {
           <template v-if="est">
             <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
             <div class="small muted">likely {{ est.low }}–{{ est.high }} · from {{ est.answers }} answers</div>
-            <div v-if="est.coverage < 1" class="small muted">{{ coverageText(est) }}; unstarted sections are not counted</div>
+            <div v-if="est.coverage < 1" class="small muted">{{ coverageText(est) }}; unstarted sections are scored as guesses</div>
           </template>
           <template v-else>
             <div class="big muted">—</div>

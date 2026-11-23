@@ -5,7 +5,7 @@ import ShortcutsSheet from './components/ShortcutsSheet.vue'
 import { sheetOpen } from './lib/shortcuts.js'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
-import { overallLabel, overallTone, state, weakSections } from './lib/level.js'
+import { overallLabel, overallLevel, overallTone, state, weakSections } from './lib/level.js'
 import { missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
 import { formatDuration, study, summarize } from './lib/studyTime.js'
@@ -22,7 +22,7 @@ const settingsPaths = ['M4 21v-7', 'M4 10V3', 'M12 21v-9', 'M12 8V3', 'M20 21v-5
 const plusPaths = ['M12 5v14', 'M5 12h14']
 
 // Status shown at the bottom of the sidebar.
-const level = computed(() => state.value.g)
+const level = computed(() => overallLevel())
 const today = computed(() => summarize(study.value).today)
 const weakCount = computed(() => weakSections().length)
 const missedCount = computed(() => missed.value.size)

@@ -4,7 +4,7 @@ import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
-import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
+import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
 import { countInRange, servingWindow } from '../lib/serving.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
@@ -35,7 +35,7 @@ async function save() {
 }
 
 // ── difficulty ──
-const overall = computed(() => state.value.g)
+const overall = computed(() => overallLevel())
 const est = computed(() => estimate())
 const sections = computed(() =>
   DOMAINS.map((d) => ({
@@ -174,14 +174,14 @@ function resetDifficulty() {
         <div>
           <div class="label">Overall level</div>
           <div class="big num">{{ overall.toFixed(1) }} <span class="tag" :class="overallTone()">{{ overallLabel() }}</span></div>
-          <div class="muted small">{{ state.n }} answers recorded</div>
+          <div class="muted small">{{ state.n }} answers recorded · weighted by each section's share of the exam</div>
         </div>
         <div class="rightcol">
           <div class="label">Estimated exam score</div>
           <template v-if="est">
             <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
             <div class="muted small">likely {{ est.low }}–{{ est.high }} (pass: {{ EXAM.passScaled }})</div>
-            <div v-if="est.coverage < 1" class="muted small">Based on {{ coverageText(est) }}. Sections you have not started are not counted.</div>
+            <div v-if="est.coverage < 1" class="muted small">Based on {{ coverageText(est) }}. Sections you have not started are scored as guesses (25%), so the estimate rises as you cover more of the exam.</div>
           </template>
           <template v-else>
             <div class="big muted">—</div>
