@@ -3,6 +3,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
+import { tierFor } from '../lib/depth.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
 import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
 import { countInRange, servingWindow } from '../lib/serving.js'
@@ -48,7 +49,9 @@ const weak = computed(() => new Set(weakSections().map((s) => s.code)))
 // "rated 5.0–6.2 (14 available)", noting when the level is held at the easiest/hardest band the bank can serve.
 function serving(code) {
   const w = servingWindow(code)
-  return `serving questions rated ${w.lo.toFixed(1)}–${w.hi.toFixed(1)} (${countInRange(code)} available)${w.clamped ? `, the ${w.level < w.centre ? 'easiest' : 'hardest'} band the bank has` : ''}`
+  const t1 = tierFor(w.lo).name
+  const t2 = tierFor(w.hi).name
+  return `serving ${t1 === t2 ? t1 : `${t1} to ${t2}`} questions, rated ${w.lo.toFixed(1)}–${w.hi.toFixed(1)} (${countInRange(code)} available)${w.clamped ? `, the ${w.level < w.centre ? 'easiest' : 'hardest'} band the bank has` : ''}`
 }
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 // Level colour: building (amber) → proficient (blue) → strong (green).

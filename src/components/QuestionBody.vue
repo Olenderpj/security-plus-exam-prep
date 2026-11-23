@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { domainById, objectiveName } from '../data/domains.js'
 import { isCorrect, partsCorrect } from '../lib/exam.js'
+import { difficultyOf } from '../lib/difficulty.js'
+import { tierOf } from '../lib/depth.js'
 import AcronymText from './AcronymText.vue'
 
 const props = defineProps({
@@ -107,6 +109,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
   <div class="stack">
     <div class="meta">
       <span class="tag">{{ typeLabel }}</span>
+      <span class="tag" :title="`${tierOf(q).text} · level ${difficultyOf(q).toFixed(1)}`">{{ tierOf(q).name }}</span>
       <span class="tag mono" :title="`Domain ${q.domain}: ${domainById(q.domain).name}`">D{{ q.domain }} · {{ q.objective }}</span>
       <span class="muted small">{{ objectiveName(q.objective) }}</span>
     </div>

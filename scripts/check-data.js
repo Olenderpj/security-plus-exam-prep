@@ -5,8 +5,9 @@ let bad = 0
 const fail = (msg, q) => { console.log(msg, q.id, q.question.slice(0, 60)); bad++ }
 const seen = new Set()
 for (const q of QUESTIONS) {
-  if (seen.has(q.question)) fail('duplicate question', q)
-  seen.add(q.question)
+  const sig = `${q.question}|${q.exhibit || ''}`
+  if (seen.has(sig)) fail('duplicate question', q)
+  seen.add(sig)
   if (q.type === 'mc') {
     const multi = /Select (TWO|THREE)/.test(q.question)
     if (q.correct.some((c) => c < 0 || c >= q.options.length)) fail('bad index', q)
@@ -26,8 +27,9 @@ for (const id of Object.keys(VARIANTS)) if (!ids.has(id)) { console.log('variant
 for (const q of QUESTIONS) {
   for (const w of q.wordings.slice(1)) {
     if (/Select (TWO|THREE)/.test(w) !== /Select (TWO|THREE)/.test(q.question)) fail('variant select-count mismatch', q)
-    if (seen.has(w)) fail('variant duplicates a question', q)
-    seen.add(w)
+    const wk = `${w}|${q.exhibit || ''}`
+    if (seen.has(wk) || (!q.exhibit && seen.has(`${w}|`))) fail('variant duplicates a question', q)
+    seen.add(wk)
     if (q.type === 'mc') {
       for (const c of q.correct) {
         const ans = q.options[c].toLowerCase()
