@@ -5,6 +5,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { objectiveName } from '../data/domains.js'
+import { markExternalOpen } from '../lib/notes.js'
 import { search } from '../lib/search.js'
 import Hl from './Hl.vue'
 
@@ -57,7 +58,10 @@ function onNavKey(e) {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const target = flat.value[activeIdx.value]
-    if (target) router.push(target.to)
+    if (target) {
+      if (target.to?.query?.note) markExternalOpen(target.to.query.note)
+      router.push(target.to)
+    }
   }
 }
 
@@ -187,7 +191,7 @@ watch(() => route.fullPath, close)
 
             <div v-if="results.notes.length" class="group">
               <div class="gh">Notes · {{ results.notes.length }}</div>
-              <RouterLink v-for="n in results.notes" :key="n.id" :to="noteLink(n)" class="item" :class="{ active: activeKey === `n:${n.id}` }" @mousemove="activeIdx = flat.findIndex((f) => f.key === `n:${n.id}`)">
+              <RouterLink v-for="n in results.notes" :key="n.id" :to="noteLink(n)" @click="markExternalOpen(n.id)" class="item" :class="{ active: activeKey === `n:${n.id}` }" @mousemove="activeIdx = flat.findIndex((f) => f.key === `n:${n.id}`)">
                 <div class="main">
                   <strong><Hl :text="n.title || 'Untitled'" :terms="terms" /></strong>
                   <div v-for="(line, i) in n.lines" :key="i" class="small muted"><Hl :text="line" :terms="terms" /></div>

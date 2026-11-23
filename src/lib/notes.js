@@ -1,7 +1,9 @@
 // Study notes: a list of { id, title, body } sections, body being plain text.
 // Always saved in this browser; when signed in, also saved to the `notes` table
 // (one row per user). Last write wins between devices.
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { domainById } from '../data/domains.js'
+import TITLES from '../data/messer.js'
 import { supabase } from './supabase.js'
 import { user } from './auth.js'
 
@@ -86,4 +88,33 @@ export function addSections(titles) {
 export function removeSection(id) {
   notes.value.sections = notes.value.sections.filter((s) => s.id !== id)
   save()
+}
+
+// ── outline (shown in the sidebar on the Notes page) ──
+const domainOf = (s) => {
+  const t = s.title.trim().toLowerCase()
+  const known = TITLES.find((x) => x.title.toLowerCase() === t)
+  if (known) return known.domain
+  const m = /^([1-5])\.\d/.exec(t)
+  return m ? Number(m[1]) : 0
+}
+// Notes grouped by exam domain, in order, with "Other" last.
+export const treeGroups = computed(() => {
+  const by = {}
+  notes.value.sections.forEach((s) => (by[domainOf(s)] ||= []).push(s))
+  return [1, 2, 3, 4, 5, 0].filter((d) => by[d]).map((d) => ({ id: d, name: d ? `${d}.0 ${domainById(d).name}` : 'Other', items: by[d] }))
+})
+export const collapsedGroups = ref(new Set())
+export const activeNoteId = ref(null)
+// The Notes page registers how to scroll to a note, so the sidebar outline can use it.
+export const jumpToNote = ref(null)
+
+// A note opened from outside the page (a search result) is highlighted briefly; moving between notes
+// on the page, or reloading it, is not.
+let external = null
+export const markExternalOpen = (id) => (external = id)
+export const takeExternalOpen = (id) => {
+  const hit = external === id
+  external = null
+  return hit
 }

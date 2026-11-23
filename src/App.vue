@@ -5,6 +5,7 @@ import ShortcutsSheet from './components/ShortcutsSheet.vue'
 import { sheetOpen } from './lib/shortcuts.js'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
+import NotesTree from './components/NotesTree.vue'
 import { overallLabel, overallLevel, overallTone, state, weakSections } from './lib/level.js'
 import { missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
@@ -64,6 +65,7 @@ onBeforeUnmount(() => {
           <span>{{ l.label }}</span>
         </RouterLink>
       </nav>
+      <NotesTree v-if="$route.path === '/notes'" />
 
       <div class="review" aria-label="Review">
         <div class="label">Review</div>
@@ -107,7 +109,7 @@ onBeforeUnmount(() => {
   <ShortcutsSheet />
 
   <main class="page">
-    <div class="pagein" :class="{ wide: focusMode || $route.path === '/notes' }">
+    <div class="pagein" :class="{ wide: focusMode }">
       <SearchBar v-if="!focusMode" />
       <RouterView :key="$route.fullPath" />
     </div>
