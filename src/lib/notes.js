@@ -104,8 +104,18 @@ export const treeGroups = computed(() => {
   notes.value.sections.forEach((s) => (by[domainOf(s)] ||= []).push(s))
   return [1, 2, 3, 4, 5, 0].filter((d) => by[d]).map((d) => ({ id: d, name: d ? `${d}.0 ${domainById(d).name}` : 'Other', items: by[d] }))
 })
-export const collapsedGroups = ref(new Set())
 export const activeNoteId = ref(null)
+// Only the group holding the active note starts open. Clicking a group header overrides that until the
+// active note moves to a different group.
+export const activeGroupId = computed(() => treeGroups.value.find((g) => g.items.some((s) => s.id === activeNoteId.value))?.id ?? null)
+const manualOpen = ref(new Map())
+watch(activeGroupId, () => (manualOpen.value = new Map()))
+export const isGroupOpen = (id) => (manualOpen.value.has(id) ? manualOpen.value.get(id) : id === activeGroupId.value)
+export function toggleGroup(id) {
+  const m = new Map(manualOpen.value)
+  m.set(id, !isGroupOpen(id))
+  manualOpen.value = m
+}
 // The Notes page registers how to scroll to a note, so the sidebar outline can use it.
 export const jumpToNote = ref(null)
 

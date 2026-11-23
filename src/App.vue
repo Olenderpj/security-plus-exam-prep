@@ -60,12 +60,14 @@ onBeforeUnmount(() => {
       </RouterLink>
 
       <nav class="links" aria-label="Primary">
-        <RouterLink v-for="l in links" :key="l.to" :to="l.to">
-          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in l.paths" :key="d" :d="d" /></svg>
-          <span>{{ l.label }}</span>
-        </RouterLink>
+        <template v-for="l in links" :key="l.to">
+          <RouterLink :to="l.to">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in l.paths" :key="d" :d="d" /></svg>
+            <span>{{ l.label }}</span>
+          </RouterLink>
+          <NotesTree v-if="l.to === '/notes' && $route.path === '/notes'" />
+        </template>
       </nav>
-      <NotesTree v-if="$route.path === '/notes'" />
 
       <div class="review" aria-label="Review">
         <div class="label">Review</div>

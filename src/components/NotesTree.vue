@@ -1,23 +1,18 @@
 <script setup>
-// Outline of the notes, grouped by exam domain; lives in the left sidebar while on the Notes page.
-import { activeNoteId, collapsedGroups, jumpToNote, treeGroups } from '../lib/notes.js'
-
-function toggle(id) {
-  const c = new Set(collapsedGroups.value)
-  c.has(id) ? c.delete(id) : c.add(id)
-  collapsedGroups.value = c
-}
+// Outline of the notes, grouped by exam domain; lives in the left sidebar under the Notes tab while it is open.
+// Only the group holding the active note is expanded.
+import { activeNoteId, isGroupOpen, jumpToNote, toggleGroup, treeGroups } from '../lib/notes.js'
 </script>
 
 <template>
   <div v-if="treeGroups.length" class="tree" aria-label="Notes outline" role="navigation">
     <div v-for="g in treeGroups" :key="g.id" class="grp">
-      <button type="button" class="ghead" :aria-expanded="!collapsedGroups.has(g.id)" @click="toggle(g.id)">
-        <span class="chev" :class="{ open: !collapsedGroups.has(g.id) }" aria-hidden="true">›</span>
+      <button type="button" class="ghead" :aria-expanded="isGroupOpen(g.id)" @click="toggleGroup(g.id)">
+        <span class="chev" :class="{ open: isGroupOpen(g.id) }" aria-hidden="true">›</span>
         <span class="gname">{{ g.name }}</span>
         <span class="muted small">{{ g.items.length }}</span>
       </button>
-      <ul v-show="!collapsedGroups.has(g.id)">
+      <ul v-show="isGroupOpen(g.id)">
         <li v-for="s in g.items" :key="s.id">
           <a :href="`#note-${s.id}`" class="leaf" :class="{ on: activeNoteId === s.id, filled: s.body.trim() }" @click.prevent="jumpToNote?.(s)">
             <span class="dot" aria-hidden="true" />{{ s.title.trim() || 'Untitled' }}

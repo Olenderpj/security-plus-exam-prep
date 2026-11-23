@@ -93,6 +93,7 @@ function spy() {
 }
 onMounted(() => {
   restore()
+  spy()
   window.addEventListener('scroll', spy, { passive: true })
   jumpToNote.value = (s) => reveal(s.id) // outline clicks scroll to the note without highlighting it
 })
