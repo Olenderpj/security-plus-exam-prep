@@ -18,7 +18,7 @@ function buildIndex() {
     questions: QUESTIONS.map((q) => ({
       item: q,
       title: low(q.wordings.join(' ')),
-      body: low([...optionText(q), q.explanation, q.exhibit, q.objective, objectiveName(q.objective)].join(' '))
+      body: low([...optionText(q), q.explanation, q.exhibit, ...(q.panels || []).flatMap((p) => [p.name, p.role, ...p.s.flat()]), q.objective, objectiveName(q.objective)].join(' '))
     })),
     cards: FLASHCARDS.map((c) => ({
       item: c,

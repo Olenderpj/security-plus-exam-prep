@@ -5,6 +5,7 @@ import { isCorrect, partsCorrect } from '../lib/exam.js'
 import { difficultyOf } from '../lib/difficulty.js'
 import { tierOf } from '../lib/depth.js'
 import AcronymText from './AcronymText.vue'
+import SystemPanels from './SystemPanels.vue'
 
 const props = defineProps({
   question: { type: Object, required: true },
@@ -20,7 +21,8 @@ const letters = 'ABCDEFGH'
 const correct = computed(() => isCorrect(q.value, props.selected))
 const parts = computed(() => partsCorrect(q.value, props.selected))
 const typeLabel = computed(() =>
-  q.value.type === 'match' ? 'Performance-based · Matching'
+  q.value.panels ? 'Performance-based · System analysis'
+    : q.value.type === 'match' ? 'Performance-based · Matching'
     : q.value.type === 'order' ? 'Performance-based · Ordering'
     : q.value.exhibit ? 'Exhibit' : 'Multiple choice'
 )
@@ -114,7 +116,8 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
       <span class="muted small">{{ objectiveName(q.objective) }}</span>
     </div>
     <p class="q"><AcronymText :text="q.question" :objective="q.objective" :qid="q.id" :free="reveal" /></p>
-    <pre v-if="q.exhibit" class="exhibit">{{ q.exhibit }}</pre>
+    <pre v-if="q.exhibit" class="exhibit" :class="{ map: q.panels }">{{ q.exhibit }}</pre>
+    <SystemPanels v-if="q.panels" :panels="q.panels" />
 
     <!-- Multiple choice -->
     <div v-if="q.type === 'mc'" class="opts">
@@ -233,17 +236,19 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
   font: .82rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre;
 }
 .hint { margin: 0 0 .25rem; }
-.match { display: grid; gap: .5rem; }
+.match { display: grid; gap: .5rem; min-width: 0; }
 .match-row {
   display: flex; gap: .75rem; align-items: center; justify-content: space-between; flex-wrap: wrap;
   border: 1px solid var(--border); border-radius: 8px; padding: .6rem .8rem; background: var(--surface);
 }
+.match-row { min-width: 0; }
 .match-row.correct { border-color: var(--good); background: var(--good-bg); }
 .match-row.wrong { border-color: var(--bad); background: var(--bad-bg); }
 .match-label { flex: 1 1 16rem; }
+.exhibit.map { white-space: pre-wrap; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; white-space: pre; overflow-x: auto; }
-.match-pick { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-select { font-size: .92rem; padding-top: .45rem; padding-bottom: .45rem; min-width: 11rem; max-width: 100%; width: auto; }
+.match-pick { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; max-width: 100%; min-width: 0; }
+select { font-size: .92rem; padding-top: .45rem; padding-bottom: .45rem; min-width: min(11rem, 100%); max-width: 100%; width: auto; text-overflow: ellipsis; }
 select:hover { border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); }
 .empty { margin: 0; padding: .5rem 0; }
 .slots, .pool { display: grid; gap: .5rem; }
