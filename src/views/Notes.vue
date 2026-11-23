@@ -1,7 +1,7 @@
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { DOMAINS } from '../data/domains.js'
+import { DOMAINS, domainById } from '../data/domains.js'
 import TITLES from '../data/messer.js'
 import { user } from '../lib/auth.js'
 import { addSection, addSections, notes, removeSection, save, syncFailed } from '../lib/notes.js'
@@ -55,6 +55,10 @@ async function reveal(id, { edit = false, caret = null } = {}) {
   const s = notes.value.sections.find((x) => x.id === id)
   if (!s) return false
   await nextTick()
+  activeId.value = id
+  lockUntil = Date.now() + 900
+  activeId.value = id
+  lockUntil = Date.now() + 900
   document.getElementById(`note-${id}`)?.scrollIntoView({ block: 'center' })
   flashId.value = id
   setTimeout(() => flashId.value === id && (flashId.value = null), 2200)
@@ -71,6 +75,45 @@ function restore() {
   reveal(v.id, { edit: v.editing, caret: v.caret })
 }
 onMounted(restore)
+
+// ── outline tree (desktop): notes grouped by exam domain, for fast navigation ──
+const domainOf = (s) => {
+  const t = s.title.trim().toLowerCase()
+  const known = TITLES.find((x) => x.title.toLowerCase() === t)
+  if (known) return known.domain
+  const m = /^([1-5])\.\d/.exec(t)
+  return m ? Number(m[1]) : 0
+}
+const treeGroups = computed(() => {
+  const by = {}
+  notes.value.sections.forEach((s) => (by[domainOf(s)] ||= []).push(s))
+  return [1, 2, 3, 4, 5, 0].filter((d) => by[d]).map((d) => ({ id: d, name: d ? `${d}.0 ${domainById(d).name}` : 'Other', items: by[d] }))
+})
+const collapsed = ref(new Set())
+const toggleGroup = (id) => {
+  const c = new Set(collapsed.value)
+  c.has(id) ? c.delete(id) : c.add(id)
+  collapsed.value = c
+}
+const activeId = ref(null)
+let raf = 0
+let lockUntil = 0 // a click or search result has just chosen the active note; ignore the scroll it causes
+function spy() {
+  cancelAnimationFrame(raf)
+  raf = requestAnimationFrame(() => {
+    if (Date.now() < lockUntil) return
+    const s = notes.value.sections.find((x) => (document.getElementById(`note-${x.id}`)?.getBoundingClientRect().bottom || 0) > 140)
+    if (s) activeId.value = s.id
+  })
+}
+onMounted(() => window.addEventListener('scroll', spy, { passive: true }))
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', spy)
+  cancelAnimationFrame(raf)
+})
+function jump(s) {
+  reveal(s.id)
+}
 watch(() => route.query.note, (id) => id && reveal(String(id)))
 // Notes may load from the account after the page opens; restore once they arrive.
 watch(() => notes.value.sections.length, (n, old) => old === 0 && n > 0 && restore())
@@ -153,7 +196,25 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
 </script>
 
 <template>
-  <div class="stack">
+  <div class="layout">
+    <nav v-if="treeGroups.length" class="tree" aria-label="Notes outline">
+      <div class="label">Outline</div>
+      <div v-for="g in treeGroups" :key="g.id" class="grp">
+        <button type="button" class="ghead" :aria-expanded="!collapsed.has(g.id)" @click="toggleGroup(g.id)">
+          <span class="chev" :class="{ open: !collapsed.has(g.id) }" aria-hidden="true">›</span>
+          <span class="gname">{{ g.name }}</span>
+          <span class="muted small">{{ g.items.length }}</span>
+        </button>
+        <ul v-show="!collapsed.has(g.id)">
+          <li v-for="s in g.items" :key="s.id">
+            <a :href="`#note-${s.id}`" class="leaf" :class="{ on: activeId === s.id, filled: s.body.trim() }" @click.prevent="jump(s)">
+              <span class="dot" aria-hidden="true" />{{ s.title.trim() || 'Untitled' }}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  <div class="stack notes-main">
     <div>
       <h1>Notes</h1>
       <p class="muted small">
@@ -240,9 +301,32 @@ const rowsFor = (s) => Math.max(3, s.body.split('\n').length + 1)
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <style scoped>
+.layout { display: block; }
+.notes-main { min-width: 0; }
+.tree { display: none; }
+@media (min-width: 960px) {
+  .layout { display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .tree { display: block; position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto; padding-right: .25rem; font-size: .85rem; }
+  .tree .label { margin-bottom: .4rem; }
+}
+.grp { margin-bottom: .35rem; }
+.ghead { display: flex; align-items: center; gap: .3rem; width: 100%; font: inherit; font-weight: 600; font-size: .8rem; color: var(--text); background: none; border: 0; padding: .25rem .2rem; cursor: pointer; text-align: left; border-radius: 6px; }
+.ghead:hover { background: var(--soft); }
+.gname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chev { display: inline-block; width: .8rem; color: var(--muted); transition: transform .12s; }
+.chev.open { transform: rotate(90deg); }
+.tree ul { list-style: none; margin: 0 0 0 .55rem; padding: 0 0 0 .5rem; border-left: 1px solid var(--border); }
+.leaf { display: flex; align-items: baseline; gap: .4rem; padding: .22rem .4rem; border-radius: 6px; color: var(--muted); text-decoration: none; line-height: 1.3; }
+.leaf:hover { background: var(--soft); color: var(--text); }
+.leaf.filled { color: var(--text); }
+.leaf.on { background: var(--brand-soft); color: var(--text); font-weight: 600; }
+.dot { flex: none; width: .35rem; height: .35rem; border-radius: 50%; background: var(--border); transform: translateY(-.1rem); }
+.leaf.filled .dot { background: var(--accent); }
+
 .field {
   font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: .55rem .75rem; width: 100%;

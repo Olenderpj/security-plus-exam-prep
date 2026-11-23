@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
   <ShortcutsSheet />
 
   <main class="page">
-    <div class="pagein" :class="{ wide: focusMode }">
+    <div class="pagein" :class="{ wide: focusMode || $route.path === '/notes' }">
       <SearchBar v-if="!focusMode" />
       <RouterView :key="$route.fullPath" />
     </div>
