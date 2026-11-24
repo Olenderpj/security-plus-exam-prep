@@ -4,12 +4,12 @@
 import { rng, round, shuffle } from './util.js'
 import risk from './risk.js'
 import { cidr, fwrules } from './network.js'
-import { availability, backup } from './resilience.js'
+import { backup } from './resilience.js'
 import { entropy, keys } from './crypto.js'
 import cvss from './vuln.js'
 import logs from './logs.js'
 
-export const FAMILIES = [risk, cidr, fwrules, backup, availability, keys, entropy, cvss, logs]
+export const FAMILIES = [risk, cidr, fwrules, backup, keys, entropy, cvss, logs]
 const VARIANTS_PER_LEVEL = 3
 
 const used = new Set() // generated questions must not repeat one another

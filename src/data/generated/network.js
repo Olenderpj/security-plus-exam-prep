@@ -7,11 +7,13 @@ const maskOf = (p) => (p === 0 ? 0 : (~0 << (32 - p)) >>> 0)
 const netOf = (ip, p) => (toInt(ip) & maskOf(p)) >>> 0
 const sizeOf = (p) => 2 ** (32 - p)
 
+// Subnet maths is supporting knowledge only (reading CIDR in rules and ACLs); the exam does not test subnetting
+// calculations, so this family stops at level 6.5 and never reaches the harder tiers.
 export const cidr = {
   key: 'cidr',
   d: 3,
   o: '3.2',
-  levels: [4.5, 5.5, 6.5, 7.5, 8.5, 9.5],
+  levels: [4.5, 5.5, 6.5],
   make(L, r) {
     const a = pick(r, [10, 172, 192])
     const b = a === 10 ? int(r, 0, 250) : a === 172 ? int(r, 16, 31) : 168

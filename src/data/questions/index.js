@@ -14,6 +14,7 @@ import hard from './hard.js'
 import ladders from './ladders.js'
 import generated from '../generated/index.js'
 import scenarios from './scenarios.js'
+import resilience from './resilience.js'
 import v1 from './variants-d1.js'
 import v2 from './variants-d2.js'
 import v3 from './variants-d3.js'
@@ -61,6 +62,8 @@ export const QUESTIONS = [
   ...hard.map((q, i) => withWordings(normalize(q, q.d, `h-${i}`))),
   // System-analysis scenarios: several computers with logs and other evidence to investigate.
   ...scenarios.map((q, i) => withWordings(normalize(q, q.d, `s-${i}`))),
+  // Resilience, availability and recovery scenarios in the exam's style.
+  ...resilience.map((q, i) => withWordings(normalize(q, q.d, `r-${i}`))),
   // Generated families (calculations, rule and log analysis, vector reading) at every level from 4.5 to 9.5.
   ...generated.map((g) => withWordings(normalize(g, g.d, g.id))),
   // Ladders: the same concept at several difficulty rungs; `family` keeps a session to one rung per ladder.
