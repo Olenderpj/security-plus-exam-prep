@@ -73,19 +73,32 @@ function pickAdaptive(pool, n, mode, seen, boost = null) {
 export const matchesKind = (q, kind) =>
   kind === 'all' || (kind === 'pbq' ? isPBQ(q) || Boolean(q.exhibit) : !isPBQ(q) && !q.exhibit)
 
-// onlyIds: restrict to a set of question IDs (e.g. previously missed questions)
-// objective: restrict to one exam objective, e.g. "2.4"
-// sections: restrict to a set of objective codes (e.g. the learner's weak areas)
-export const practicePool = (domain, kind = 'all', onlyIds = null, objective = null, sections = null) =>
-  QUESTIONS.filter(
+// Practice pool. domain: one domain id, or null. kind: question type. onlyIds: restrict to a set of question ids
+// (e.g. missed questions). objective: one sub-section code, or several (array/Set). sections: restrict to a set
+// of objective codes (e.g. the learner's weak areas).
+// Questions come from near the learner's level in each sub-section (see serving.js). If that leaves fewer than
+// POOL_FLOOR questions, the range is widened step by step, finally to everything that matches the other
+// choices, so a selection never comes up empty while questions of that kind exist.
+const POOL_FLOOR = 10
+const asSet = (x) => (x == null ? null : x instanceof Set ? (x.size ? x : null) : [].concat(x).length ? new Set([].concat(x)) : null)
+export function practicePool(domain, kind = 'all', onlyIds = null, objective = null, sections = null) {
+  const objs = asSet(objective)
+  const base = QUESTIONS.filter(
     (q) =>
       (!domain || q.domain === Number(domain)) &&
       (!sections || sections.has(q.objective)) &&
-      inRange(q) &&
-      (!objective || q.objective === objective) &&
+      (!objs || objs.has(q.objective)) &&
       matchesKind(q, kind) &&
       (!onlyIds || onlyIds.has(q.id))
   )
+  const floor = Math.min(POOL_FLOOR, base.length)
+  let pool = []
+  for (const extra of [0, 0.1, 0.2, 0.35, Infinity]) {
+    pool = base.filter((q) => inRange(q, extra))
+    if (pool.length >= floor) break
+  }
+  return pool
+}
 
 export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null, sections = null) {
   const pool = practicePool(domain, kind, onlyIds, objective, sections)
@@ -108,11 +121,11 @@ export function domainTargets(total) {
   return rows.map(({ id, n }) => ({ id, n }))
 }
 
-// How big an exam can be built from the questions inside the learner's difficulty window. Questions are never
-// pulled from outside the window, so when a domain has too few eligible questions the exam is shortened
-// instead, to the largest size that still honours the official domain ratio.
+// How big an exam can be built from questions near the learner's level (each sub-section's range widens until it
+// has enough, see serving.js). If a domain still has too few eligible questions the exam is shortened, to the
+// largest size that still honours the official domain ratio.
 export function examPlan(requested = EXAM.questions) {
-  const pool = QUESTIONS.filter(inRange)
+  const pool = QUESTIONS.filter((q) => inRange(q))
   const avail = Object.fromEntries(DOMAINS.map((d) => [d.id, pool.filter((q) => q.domain === d.id).length]))
   const cap = Math.min(requested, pool.length)
   for (let total = cap; total >= 1; total--) {
@@ -127,10 +140,10 @@ export function examPlan(requested = EXAM.questions) {
 // toward their domain's share.
 export function examSet(total = EXAM.questions, onlyIds = null) {
   const seen = readSeen()
-  const eligible = QUESTIONS.filter(inRange)
+  const eligible = QUESTIONS.filter((q) => inRange(q))
   if (onlyIds) {
-    // Retest exam from a given set (e.g. missed questions), still limited to the difficulty window.
-    const picked = freshFirst(eligible.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
+    // Retest exam from a given set (e.g. missed questions): exactly those questions, at any difficulty.
+    const picked = freshFirst(QUESTIONS.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
     markSeen(picked)
     return applyWordings([...shuffle(picked.filter(isPBQ)), ...shuffle(picked.filter((q) => !isPBQ(q)))].map(shuffleQuestion))
   }

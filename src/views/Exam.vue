@@ -9,7 +9,6 @@ import { useRoute } from 'vue-router'
 import { QUESTIONS } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { examPlan, examSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
-import { inRange } from '../lib/serving.js'
 import { saveAttempt } from '../lib/progress.js'
 import { missed, recordResults } from '../lib/missed.js'
 import QuestionBody from '../components/QuestionBody.vue'
@@ -17,7 +16,7 @@ import Results from '../components/Results.vue'
 
 const route = useRoute()
 const source = ref(route.query.missed ? 'missed' : 'all') // all | missed
-const missedTotal = computed(() => QUESTIONS.filter((q) => missed.value.has(q.id) && inRange(q)).length)
+const missedTotal = computed(() => QUESTIONS.filter((q) => missed.value.has(q.id)).length)
 const timed = ref(true)
 const length = ref(EXAM.questions)
 const stage = ref('setup')
@@ -190,7 +189,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <button v-for="l in LENGTHS" :key="l.n" class="chip" :class="{ on: length === l.n }" @click="length = l.n">{{ l.label }}</button>
         </div>
         <p class="small muted" style="margin: .5rem 0 0">
-          Only questions within ±10% of your level are used ({{ plan.available }} available).
+          Questions are drawn from near your level in each section ({{ plan.available }} available).
           <template v-if="source !== 'missed' && plan.size < length">This exam will have <strong>{{ plan.size }}</strong> questions: the most that fit your range while keeping the official domain mix.</template>
           <template v-else-if="source !== 'missed'">Enough are available for the full length.</template>
         </p>
@@ -209,7 +208,7 @@ onBeforeUnmount(() => clearInterval(timer))
   <div v-else-if="stage === 'run'" class="run">
     <div class="stack main">
       <p v-if="shortened" class="small muted" style="margin: 0">
-        Shortened to {{ questions.length }} questions: that is how many fit within ±10% of your level while keeping the official domain mix.
+        Shortened to {{ questions.length }} questions: that is how many fit near your level while keeping the official domain mix.
       </p>
     <div class="row between small">
       <span class="muted">Question {{ idx + 1 }} of {{ questions.length }} · {{ answeredCount }} answered</span>

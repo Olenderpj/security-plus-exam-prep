@@ -22,16 +22,16 @@ import { markMany } from '../lib/marked.js'
 const route = useRoute()
 const domain = ref(route.query.domain ? Number(route.query.domain) : null)
 const count = ref(10)
-const objective = ref(route.query.objective || null)
+const objectives = ref(route.query.objective ? [].concat(route.query.objective) : []) // optional sub-sections
 const kind = ref('all')
 const source = ref(route.query.missed ? 'missed' : route.query.weak ? 'weak' : 'all') // all | missed | weak
 const onlyIds = computed(() => (source.value === 'missed' ? missed.value : null))
-const missedTotal = computed(() => practicePool(null, 'all', missed.value, objective.value).length)
+const missedTotal = computed(() => practicePool(null, 'all', missed.value, objectives.value).length)
 
 // Weak areas: sub-sections where your level is lowest (needs a few answers in a section to count).
 const weakList = computed(() => weakSections())
 const weakCodes = computed(() => (source.value === 'weak' ? new Set(weakList.value.map((s) => s.code)) : null))
-const weakTotal = computed(() => practicePool(null, 'all', null, objective.value, new Set(weakList.value.map((s) => s.code))).length)
+const weakTotal = computed(() => practicePool(null, 'all', null, objectives.value, new Set(weakList.value.map((s) => s.code))).length)
 const KINDS = [
   { id: 'all', label: 'All types' },
   { id: 'mc', label: 'Multiple choice' },
@@ -92,7 +92,7 @@ const persist = () => {
 watch([stage, questions, answers, idx, revealed], persist, { deep: true })
 
 const counts = computed(() => {
-  const pool = practicePool(null, kind.value, onlyIds.value, objective.value, weakCodes.value)
+  const pool = practicePool(null, kind.value, onlyIds.value, objectives.value, weakCodes.value)
   const c = { all: pool.length }
   pool.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
   return c
@@ -104,9 +104,9 @@ const objCounts = computed(() => {
   return c
 })
 watch(domain, (d) => {
-  if (d && objective.value && Number(objective.value.split('.')[0]) !== d) objective.value = null
+  if (d) objectives.value = objectives.value.filter((c) => Number(c.split('.')[0]) === d)
 })
-const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value, objective.value, weakCodes.value).length)
+const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value, objectives.value, weakCodes.value).length)
 // If fewer questions are in range than the chosen count, switch to "all" so the chip matches what will be served.
 watch(max, (m) => {
   if (count.value !== 'all' && count.value > m) count.value = 'all'
@@ -121,7 +121,7 @@ const runningCorrect = computed(() => questions.value.slice(0, idx.value + (reve
 function start() {
   // Snapshot the missed list so questions cleared mid-session stay in this session.
   const ids = onlyIds.value ? new Set(onlyIds.value) : null
-  questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objective.value, weakCodes.value)
+  questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objectives.value, weakCodes.value)
   counted.clear()
   committed = false
   endedEarly.value = 0
@@ -268,10 +268,10 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <DomainPicker v-model="domain" :counts="counts" />
-      <SubsectionPicker v-model="objective" :domain="domain" :counts="objCounts" noun="questions" />
+      <SubsectionPicker v-model="objectives" :domain="domain" :counts="objCounts" noun="questions" />
       <CountPicker v-model="count" :max="max" />
       <p class="rangenote small" :class="max ? 'muted' : 'warn'">
-        Only questions within ±10% of your level in each section are served: {{ max }} match this selection.
+        Questions come from near your level in each section (the range widens when needed so there is always something to study): {{ max }} match this selection.
         <template v-if="!max">Try another section, question type, or source.</template>
       </p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>

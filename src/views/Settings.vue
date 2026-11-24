@@ -51,7 +51,7 @@ function serving(code) {
   const w = servingWindow(code)
   const t1 = tierFor(w.lo).name
   const t2 = tierFor(w.hi).name
-  return `serving ${t1 === t2 ? t1 : `${t1} to ${t2}`} questions, rated ${w.lo.toFixed(1)}–${w.hi.toFixed(1)} (${countInRange(code)} available)${w.clamped ? `, the ${w.level < w.centre ? 'easiest' : 'hardest'} band the bank has` : ''}`
+  return `serving ${t1 === t2 ? t1 : `${t1} to ${t2}`} questions, rated ${w.lo.toFixed(1)}–${w.hi.toFixed(1)} (${countInRange(code)} available)${w.widened ? `, range widened to ±${Math.round(w.range * 100)}% to keep enough questions` : ''}${w.clamped ? `, the ${w.level < w.centre ? 'easiest' : 'hardest'} band the bank has` : ''}`
 }
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 // Level colour: building (amber) → proficient (blue) → strong (green).
@@ -170,7 +170,7 @@ function resetDifficulty() {
         </div>
       </div>
       <p class="muted small" style="margin: 0">
-        Questions are rated 1–10 and only served within ±10% of your level in each sub-section, so they get harder where you succeed and
+        Questions are rated 1–10 and served near your level in each sub-section (±10%, widened automatically when a sub-section has too few), so they get harder where you succeed and
         easier where you struggle. Levels update after every practice session and exam, and from the feedback you give.
       </p>
 
