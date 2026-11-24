@@ -1,4 +1,4 @@
-import { QUESTIONS, isPBQ } from '../data/questions/index.js'
+import { QUESTIONS, isGuide, isPBQ } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleQuestion } from './random.js'
 import { difficultyOf } from './difficulty.js'
@@ -81,9 +81,10 @@ export const matchesKind = (q, kind) =>
 // choices, so a selection never comes up empty while questions of that kind exist.
 const POOL_FLOOR = 10
 const asSet = (x) => (x == null ? null : x instanceof Set ? (x.size ? x : null) : [].concat(x).length ? new Set([].concat(x)) : null)
-export function practicePool(domain, kind = 'all', onlyIds = null, objective = null, sections = null) {
+// Everything matching the learner's choices, before any difficulty window is applied.
+function basePool(domain, kind, onlyIds, objective, sections) {
   const objs = asSet(objective)
-  const base = QUESTIONS.filter(
+  return QUESTIONS.filter(
     (q) =>
       (!domain || q.domain === Number(domain)) &&
       (!sections || sections.has(q.objective)) &&
@@ -91,19 +92,50 @@ export function practicePool(domain, kind = 'all', onlyIds = null, objective = n
       matchesKind(q, kind) &&
       (!onlyIds || onlyIds.has(q.id))
   )
-  const floor = Math.min(POOL_FLOOR, base.length)
+}
+// Narrowest window (see serving.js) that still yields `need` questions, widening step by step up to `ladder`'s end.
+function widenTo(base, need, ladder = [0, 0.1, 0.2, 0.35, Infinity]) {
+  const floor = Math.min(need, base.length)
   let pool = []
-  for (const extra of [0, 0.1, 0.2, 0.35, Infinity]) {
+  for (const extra of ladder) {
     pool = base.filter((q) => inRange(q, extra))
     if (pool.length >= floor) break
   }
   return pool
 }
+export function practicePool(domain, kind = 'all', onlyIds = null, objective = null, sections = null) {
+  return widenTo(basePool(domain, kind, onlyIds, objective, sections), POOL_FLOOR)
+}
+
+// About 80% of every practice set and exam comes from the questions adapted from the study guide; the rest come
+// from the app's own bank. Guide questions are still chosen near the learner's level, widening the range a little
+// (never past +35%) when too few fit, and if there still are not enough the other bank fills the gap.
+export const GUIDE_SHARE = 0.8
+const GUIDE_LADDER = [0, 0.1, 0.2, 0.35]
+function pickMix(guidePool, otherPool, n, mode, seen, boost) {
+  const want = Math.min(Math.round(n * GUIDE_SHARE), guidePool.length)
+  const g = pickAdaptive(guidePool, want, mode, seen, boost)
+  const used = new Set(g.map((q) => q.id))
+  const o = pickAdaptive(otherPool.filter((q) => !used.has(q.id)), n - g.length, mode, seen, boost)
+  const picked = [...g, ...o]
+  if (picked.length < n) {
+    o.forEach((q) => used.add(q.id))
+    picked.push(...pickAdaptive(guidePool.filter((q) => !used.has(q.id)), n - picked.length, mode, seen, boost))
+  }
+  return picked
+}
 
 export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null, sections = null) {
   const pool = practicePool(domain, kind, onlyIds, objective, sections)
-  // Retesting a chosen set (missed questions) uses exactly that set; otherwise difficulty adapts.
-  const picked = count === 'all' ? pool : onlyIds ? freshFirst(pool, readSeen()).slice(0, Number(count)) : pickAdaptive(pool, Number(count), 'practice', readSeen(), sections ? weakBoost : null)
+  let picked
+  if (count === 'all') picked = pool
+  // Retesting a chosen set (missed questions) uses exactly that set.
+  else if (onlyIds) picked = freshFirst(pool, readSeen()).slice(0, Number(count))
+  else {
+    const n = Number(count)
+    const guidePool = widenTo(basePool(domain, kind, null, objective, sections).filter(isGuide), Math.round(n * GUIDE_SHARE), GUIDE_LADDER)
+    picked = pickMix(guidePool, pool.filter((q) => !isGuide(q)), n, 'practice', readSeen(), sections ? weakBoost : null)
+  }
   markSeen(picked)
   return applyWordings(shuffle(picked).map(shuffleQuestion))
 }
@@ -124,8 +156,11 @@ export function domainTargets(total) {
 // How big an exam can be built from questions near the learner's level (each sub-section's range widens until it
 // has enough, see serving.js). If a domain still has too few eligible questions the exam is shortened, to the
 // largest size that still honours the official domain ratio.
+// Questions an exam may draw on: those near the learner's level, plus guide questions within a slightly wider range.
+const examEligible = () => QUESTIONS.filter((q) => inRange(q) || (isGuide(q) && inRange(q, GUIDE_LADDER[GUIDE_LADDER.length - 1])))
+
 export function examPlan(requested = EXAM.questions) {
-  const pool = QUESTIONS.filter((q) => inRange(q))
+  const pool = examEligible()
   const avail = Object.fromEntries(DOMAINS.map((d) => [d.id, pool.filter((q) => q.domain === d.id).length]))
   const cap = Math.min(requested, pool.length)
   for (let total = cap; total >= 1; total--) {
@@ -140,7 +175,7 @@ export function examPlan(requested = EXAM.questions) {
 // toward their domain's share.
 export function examSet(total = EXAM.questions, onlyIds = null) {
   const seen = readSeen()
-  const eligible = QUESTIONS.filter((q) => inRange(q))
+  const eligible = examEligible()
   if (onlyIds) {
     // Retest exam from a given set (e.g. missed questions): exactly those questions, at any difficulty.
     const picked = freshFirst(QUESTIONS.filter((q) => onlyIds.has(q.id)), seen).slice(0, total)
@@ -155,7 +190,9 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
   const pbqWanted = total ? Math.max(1, Math.round(total / 18)) : 0
   const allPbqs = eligible.filter(isPBQ)
   const pbqs = []
-  for (const q of pickAdaptive(allPbqs, allPbqs.length, 'exam', seen)) {
+  // Guide PBQs are tried first so the exam keeps its 80% guide share.
+  const pbqOrder = [...pickAdaptive(allPbqs.filter(isGuide), allPbqs.length, 'exam', seen), ...pickAdaptive(allPbqs.filter((q) => !isGuide(q)), allPbqs.length, 'exam', seen)]
+  for (const q of pbqOrder) {
     if (pbqs.length >= pbqWanted) break
     if (left[q.domain] > 0) {
       pbqs.push(q)
@@ -167,7 +204,11 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
   const rest = []
   for (const [id, n] of Object.entries(left)) {
     const domainPool = eligible.filter((q) => q.domain === Number(id))
-    const mc = pickAdaptive(domainPool.filter((q) => !isPBQ(q)), n, 'exam', seen)
+    const mcPool = domainPool.filter((q) => !isPBQ(q) && !used.has(q.id))
+    // Guide questions in this domain only need the wider range when the normal window has too few of them.
+    const guideNear = mcPool.filter((q) => isGuide(q) && inRange(q))
+    const guidePool = guideNear.length >= Math.round(n * GUIDE_SHARE) ? guideNear : mcPool.filter(isGuide)
+    const mc = pickMix(guidePool, mcPool.filter((q) => !isGuide(q) && inRange(q)), n, 'exam', seen)
     mc.forEach((q) => used.add(q.id))
     rest.push(...mc)
     // Same-domain top-up (extra PBQs) before anything else.

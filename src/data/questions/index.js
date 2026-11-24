@@ -15,6 +15,8 @@ import ladders from './ladders.js'
 import generated from '../generated/index.js'
 import scenarios from './scenarios.js'
 import resilience from './resilience.js'
+import guide from './guide.js'
+import guidePbq from './guide-pbq.js'
 import v1 from './variants-d1.js'
 import v2 from './variants-d2.js'
 import v3 from './variants-d3.js'
@@ -62,6 +64,9 @@ export const QUESTIONS = [
   ...hard.map((q, i) => withWordings(normalize(q, q.d, `h-${i}`))),
   // System-analysis scenarios: several computers with logs and other evidence to investigate.
   ...scenarios.map((q, i) => withWordings(normalize(q, q.d, `s-${i}`))),
+  // Questions adapted from the user's SY0-701 practice-exam study guide (served for about 80% of each set; see exam.js).
+  ...guide.map((q) => withWordings(normalize(q, q.d, `m-${q.id}`))),
+  ...guidePbq.map((q, i) => withWordings(normalize(q, q.d, `mp-${i}`))),
   // Resilience, availability and recovery scenarios in the exam's style.
   ...resilience.map((q, i) => withWordings(normalize(q, q.d, `r-${i}`))),
   // Generated families (calculations, rule and log analysis, vector reading) at every level from 4.5 to 9.5.
@@ -79,3 +84,5 @@ export const QUESTIONS = [
 // Performance-based = anything that isn't plain multiple choice.
 export const isPBQ = (q) => q.type !== 'mc'
 export const hasExhibit = (q) => Boolean(q.exhibit)
+// Questions derived from the study guide.
+export const isGuide = (q) => q.id.startsWith('m-') || q.id.startsWith('mp-')
