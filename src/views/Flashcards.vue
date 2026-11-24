@@ -10,11 +10,13 @@ import { shuffle } from '../lib/random.js'
 import { saveAttempt } from '../lib/progress.js'
 import { marked, toggleMarked, markMany } from '../lib/marked.js'
 import DomainPicker from '../components/DomainPicker.vue'
+import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
 
 const ALL = [...FLASHCARDS, ...ACRONYMS]
 const deckType = ref('concepts') // concepts | acronyms | marked
 const domain = ref(null)
+const objective = ref(null) // optional sub-section within the concept deck
 const count = ref(10)
 const side = ref('front') // which side to show first: front | back | mixed
 const SIDES = [
@@ -43,11 +45,12 @@ if (saved) {
   startedAt.value = saved.startedAt || Date.now()
   deckType.value = saved.deckType || deckType.value
   domain.value = saved.domain ?? null
+  objective.value = saved.objective ?? null
   side.value = saved.side || side.value
   stage.value = 'run'
 }
 watch([stage, deck, idx, flipped, known, missed], () => {
-  if (stage.value === 'run') saveSession('flashcards', { deck: deck.value, idx: idx.value, flipped: flipped.value, known: known.value, missed: missed.value, startedAt: startedAt.value, deckType: deckType.value, domain: domain.value, side: side.value })
+  if (stage.value === 'run') saveSession('flashcards', { deck: deck.value, idx: idx.value, flipped: flipped.value, known: known.value, missed: missed.value, startedAt: startedAt.value, deckType: deckType.value, domain: domain.value, objective: objective.value, side: side.value })
   else clearSession('flashcards')
 }, { deep: true })
 
@@ -56,11 +59,21 @@ const counts = computed(() => {
   FLASHCARDS.forEach((f) => (c[f.domain] = (c[f.domain] || 0) + 1))
   return c
 })
+// Cards per sub-section within the chosen domain (all domains when none is chosen).
+const objCounts = computed(() => {
+  const c = {}
+  FLASHCARDS.filter((f) => !domain.value || f.domain === domain.value).forEach((f) => (c[f.objective] = (c[f.objective] || 0) + 1))
+  return c
+})
+// Changing the domain clears a sub-section that no longer belongs to it.
+watch(domain, (d) => {
+  if (d && objective.value && Number(objective.value.split('.')[0]) !== d) objective.value = null
+})
 const markedCards = computed(() => ALL.filter((c) => marked.value.has(c.id)))
 const pool = computed(() => {
   if (deckType.value === 'acronyms') return ACRONYMS
   if (deckType.value === 'marked') return markedCards.value
-  return domain.value ? FLASHCARDS.filter((f) => f.domain === domain.value) : FLASHCARDS
+  return FLASHCARDS.filter((f) => (!domain.value || f.domain === domain.value) && (!objective.value || f.objective === objective.value))
 })
 const card = computed(() => deck.value[idx.value])
 const isAcronym = (c) => c.id.startsWith('a')
@@ -106,7 +119,7 @@ async function mark(gotIt) {
     correct: known.value,
     timed: false,
     duration_seconds: Math.round((Date.now() - startedAt.value) / 1000),
-    domain_breakdown: { deck: deckType.value }
+    domain_breakdown: { deck: deckType.value, ...(deckType.value === 'concepts' && objective.value ? { objective: objective.value } : {}) }
   })
 }
 
@@ -139,6 +152,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </div>
       </div>
       <DomainPicker v-if="deckType === 'concepts'" v-model="domain" :counts="counts" />
+      <SubsectionPicker v-if="deckType === 'concepts'" v-model="objective" :domain="domain" :counts="objCounts" noun="cards" />
       <div>
         <div class="label">Start with</div>
         <div class="row">

@@ -11,6 +11,7 @@ import { objectiveName } from '../data/domains.js'
 import { practiceSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
+import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
@@ -95,6 +96,15 @@ const counts = computed(() => {
   const c = { all: pool.length }
   pool.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
   return c
+})
+// Questions available per sub-section (within the chosen domain, type and source), for the optional sub-section picker.
+const objCounts = computed(() => {
+  const c = {}
+  practicePool(domain.value, kind.value, onlyIds.value, null, weakCodes.value).forEach((q) => (c[q.objective] = (c[q.objective] || 0) + 1))
+  return c
+})
+watch(domain, (d) => {
+  if (d && objective.value && Number(objective.value.split('.')[0]) !== d) objective.value = null
 })
 const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value, objective.value, weakCodes.value).length)
 // If fewer questions are in range than the chosen count, switch to "all" so the chip matches what will be served.
@@ -231,10 +241,6 @@ onBeforeUnmount(() => {
     <LevelBadge />
     <p class="muted">Instant feedback after each question. Questions and answer order are randomized every time.</p>
     <div class="card stack">
-      <div v-if="objective" class="row between objective">
-        <span><span class="label" style="margin: 0">Objective</span> {{ objective }} {{ objectiveName(objective) }}</span>
-        <button class="btn ghost small" @click="objective = null">Clear ✕</button>
-      </div>
       <div>
         <div class="label">Questions</div>
         <div class="row">
@@ -262,6 +268,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <DomainPicker v-model="domain" :counts="counts" />
+      <SubsectionPicker v-model="objective" :domain="domain" :counts="objCounts" noun="questions" />
       <CountPicker v-model="count" :max="max" />
       <p class="rangenote small" :class="max ? 'muted' : 'warn'">
         Only questions within ±10% of your level in each section are served: {{ max }} match this selection.
