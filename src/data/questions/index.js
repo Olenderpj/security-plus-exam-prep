@@ -86,3 +86,12 @@ export const isPBQ = (q) => q.type !== 'mc'
 export const hasExhibit = (q) => Boolean(q.exhibit)
 // Questions derived from the study guide.
 export const isGuide = (q) => q.id.startsWith('m-') || q.id.startsWith('mp-')
+// Where a guide question sits in the original practice exams: { exam: 'A' | 'B' | 'C', n: question number }.
+// MC ids carry it (m-B39); the 15 PBQs are Q1–Q5 of exams A, B and C in turn (mp-0 … mp-14).
+export const PRACTICE_EXAMS = ['A', 'B', 'C']
+export function guideRef(q) {
+  const m = /^m-([ABC])(\d+)$/.exec(q.id)
+  if (m) return { exam: m[1], n: Number(m[2]) }
+  const p = /^mp-(\d+)$/.exec(q.id)
+  return p ? { exam: PRACTICE_EXAMS[Math.floor(p[1] / 5)], n: (p[1] % 5) + 1 } : null
+}

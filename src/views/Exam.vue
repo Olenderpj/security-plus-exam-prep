@@ -6,16 +6,19 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
-import { QUESTIONS } from '../data/questions/index.js'
+import { PRACTICE_EXAMS, QUESTIONS, guideRef, isGuide } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
-import { examPlan, examSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
+import { examPlan, examSet, guideExamPlan, guideExamSet, practiceExamSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
 import { missed, recordResults } from '../lib/missed.js'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
 
 const route = useRoute()
-const source = ref(route.query.missed ? 'missed' : 'all') // all | missed
+const source = ref(route.query.missed ? 'missed' : 'all') // all | guide (practice-exam questions, shuffled) | A | B | C | missed
+const isOriginal = computed(() => PRACTICE_EXAMS.includes(source.value))
+const guideTotal = QUESTIONS.filter(isGuide).length
+const originalSize = Object.fromEntries(PRACTICE_EXAMS.map((x) => [x, QUESTIONS.filter((q) => guideRef(q)?.exam === x).length]))
 const missedTotal = computed(() => QUESTIONS.filter((q) => missed.value.has(q.id)).length)
 const timed = ref(true)
 const length = ref(EXAM.questions)
@@ -38,9 +41,9 @@ const LENGTHS = [
   { n: 25, min: 25, label: 'Quick · 25 questions' }
 ]
 // 1 minute per question, like the real exam.
-const plan = computed(() => examPlan(length.value))
-const plannedCount = computed(() => (source.value === 'missed' ? Math.min(length.value, missedTotal.value) : plan.value.size))
-const shortened = computed(() => source.value !== 'missed' && questions.value.length < length.value)
+const plan = computed(() => (source.value === 'guide' ? guideExamPlan(length.value) : examPlan(length.value)))
+const plannedCount = computed(() => (source.value === 'missed' ? Math.min(length.value, missedTotal.value) : isOriginal.value ? originalSize[source.value] : plan.value.size))
+const shortened = computed(() => (source.value === 'all' || source.value === 'guide') && questions.value.length < length.value)
 const minutes = computed(() => (stage.value === 'run' ? questions.value.length : plannedCount.value))
 const current = computed(() => questions.value[idx.value])
 const sel = computed({
@@ -55,7 +58,11 @@ const clock = computed(() => {
 })
 
 function start() {
-  questions.value = examSet(length.value, source.value === 'missed' ? new Set(missed.value) : null)
+  questions.value = isOriginal.value
+    ? practiceExamSet(source.value)
+    : source.value === 'guide'
+      ? guideExamSet(length.value)
+      : examSet(length.value, source.value === 'missed' ? new Set(missed.value) : null)
   answers.value = []
   adaptive.value = null
   flags.value = new Set()
@@ -84,12 +91,13 @@ if (saved) {
   startedAt.value = saved.startedAt || Date.now()
   timed.value = saved.timed !== false
   length.value = saved.length || length.value
+  source.value = saved.source || source.value
   stage.value = 'run'
   runTimer()
   if (timed.value && remaining.value === 0) finish()
 }
 watch([stage, questions, answers, flags, idx], () => {
-  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, flags: [...flags.value], idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value })
+  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, flags: [...flags.value], idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value, source: source.value })
   else clearSession('exam')
 }, { deep: true })
 
@@ -175,21 +183,33 @@ onBeforeUnmount(() => clearInterval(timer))
         <div class="label">Questions</div>
         <div class="row">
           <button class="chip" :class="{ on: source === 'all' }" @click="source = 'all'">Full question bank</button>
+          <button class="chip" :class="{ on: source === 'guide' }" @click="source = 'guide'">Practice-exam questions, shuffled · {{ guideTotal }}</button>
           <button class="chip" :class="{ on: source === 'missed' }" @click="source = 'missed'">Missed questions · {{ missedTotal }}</button>
         </div>
+        <div class="label sub">Original practice exams</div>
+        <div class="row">
+          <button v-for="x in PRACTICE_EXAMS" :key="x" class="chip" :class="{ on: source === x }" @click="source = x">Practice exam {{ x }} · {{ originalSize[x] }}</button>
+        </div>
+        <p v-if="source === 'guide'" class="muted small" style="margin: .5rem 0 0">
+          Only questions adapted from practice exams A, B and C, mixed together at every difficulty and weighted like the real exam. Wordings and answer order change each time.
+        </p>
+        <p v-else-if="isOriginal" class="muted small" style="margin: .5rem 0 0">
+          Practice exam {{ source }} as written: all {{ originalSize[source] }} questions in their original order (performance-based questions first), with the main wording and answer options in a fixed order.
+        </p>
         <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
           {{ missedTotal
             ? `An exam built from questions you've missed${missedTotal < length ? ` (${missedTotal} available)` : ''}. Correct answers come off the list.`
             : 'No missed questions yet. Wrong or unanswered exam and practice questions collect here.' }}
         </p>
       </div>
-      <div>
+      <div v-if="!isOriginal">
         <div class="label">Length</div>
         <div class="row">
           <button v-for="l in LENGTHS" :key="l.n" class="chip" :class="{ on: length === l.n }" @click="length = l.n">{{ l.label }}</button>
         </div>
         <p class="small muted" style="margin: .5rem 0 0">
-          Questions are drawn from near your level in each section ({{ plan.available }} available).
+          <template v-if="source === 'guide'">{{ plan.available }} practice-exam questions available, at every difficulty. </template>
+          <template v-else>Questions are drawn from near your level in each section ({{ plan.available }} available). </template>
           <template v-if="source !== 'missed' && plan.size < length">This exam will have <strong>{{ plan.size }}</strong> questions: the most that fit your range while keeping the official domain mix.</template>
           <template v-else-if="source !== 'missed'">Enough are available for the full length.</template>
         </p>
@@ -267,6 +287,7 @@ onBeforeUnmount(() => clearInterval(timer))
   position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
   background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
 }
+.label.sub { margin-top: .75rem; }
 .krow { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; }
 .krow .muted { margin-left: auto; }
 .keys { display: none; }

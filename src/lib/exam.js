@@ -1,4 +1,4 @@
-import { QUESTIONS, isGuide, isPBQ } from '../data/questions/index.js'
+import { QUESTIONS, guideRef, isGuide, isPBQ } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleQuestion } from './random.js'
 import { difficultyOf } from './difficulty.js'
@@ -221,6 +221,48 @@ export function examSet(total = EXAM.questions, onlyIds = null) {
   }
 
   const picked = [...shuffle(pbqs), ...shuffle(rest.filter(isPBQ)), ...shuffle(rest.filter((q) => !isPBQ(q)))]
+  markSeen(picked)
+  return applyWordings(picked.map(shuffleQuestion))
+}
+
+// One of the original practice exams (A, B or C), as written: its 90 questions in their original order, each in its
+// main wording with the answer options unshuffled. Every difficulty is included.
+export function practiceExamSet(letter) {
+  const picked = QUESTIONS.map((q) => ({ q, r: guideRef(q) }))
+    .filter(({ r }) => r?.exam === letter)
+    .sort((a, b) => a.r.n - b.r.n)
+    .map(({ q }) => ({ ...q, wording: 0 }))
+  markSeen(picked)
+  return picked
+}
+
+// A shuffled exam built only from the practice-exam questions, at any difficulty, weighted by the official domain
+// percentages. PBQs come first, as on test day; wordings and answer order vary like any other exam.
+export function guideExamPlan(requested = EXAM.questions) {
+  const pool = QUESTIONS.filter(isGuide)
+  const avail = Object.fromEntries(DOMAINS.map((d) => [d.id, pool.filter((q) => q.domain === d.id).length]))
+  for (let total = Math.min(requested, pool.length); total >= 1; total--) {
+    const targets = domainTargets(total)
+    if (targets.every((t) => t.n <= avail[t.id])) return { requested, size: total, available: pool.length, perDomain: avail, targets }
+  }
+  return { requested, size: 0, available: pool.length, perDomain: avail, targets: [] }
+}
+export function guideExamSet(total = EXAM.questions) {
+  const seen = readSeen()
+  const pool = QUESTIONS.filter(isGuide)
+  const plan = guideExamPlan(total)
+  const left = Object.fromEntries(plan.targets.map((t) => [t.id, t.n]))
+  const pbqWanted = plan.size ? Math.max(1, Math.round(plan.size / 18)) : 0
+  const pbqs = []
+  for (const q of freshFirst(pool.filter(isPBQ), seen)) {
+    if (pbqs.length >= pbqWanted) break
+    if (left[q.domain] > 0) {
+      pbqs.push(q)
+      left[q.domain]--
+    }
+  }
+  const rest = Object.entries(left).flatMap(([id, n]) => freshFirst(pool.filter((q) => q.domain === Number(id) && !isPBQ(q)), seen).slice(0, n))
+  const picked = [...shuffle(pbqs), ...shuffle(rest)]
   markSeen(picked)
   return applyWordings(picked.map(shuffleQuestion))
 }

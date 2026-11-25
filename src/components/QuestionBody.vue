@@ -4,7 +4,7 @@ import { domainById, objectiveName } from '../data/domains.js'
 import { isCorrect, partsCorrect } from '../lib/exam.js'
 import { difficultyOf } from '../lib/difficulty.js'
 import { tierOf } from '../lib/depth.js'
-import { isGuide } from '../data/questions/index.js'
+import { guideRef } from '../data/questions/index.js'
 import AcronymText from './AcronymText.vue'
 import SystemPanels from './SystemPanels.vue'
 
@@ -21,9 +21,8 @@ const q = computed(() => props.question)
 const letters = 'ABCDEFGH'
 // Marks questions adapted from the user's practice exams, e.g. "Practice exam A · Q6".
 const guideLabel = computed(() => {
-  if (!isGuide(q.value)) return ''
-  const m = /^m-([ABC])(\d+)$/.exec(q.value.id)
-  return m ? `Practice exam ${m[1]} · Q${m[2]}` : 'Practice exam PBQ'
+  const r = guideRef(q.value)
+  return r ? `Practice exam ${r.exam} · Q${r.n}` : ''
 })
 const correct = computed(() => isCorrect(q.value, props.selected))
 const parts = computed(() => partsCorrect(q.value, props.selected))
