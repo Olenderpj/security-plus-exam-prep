@@ -186,7 +186,7 @@ onBeforeUnmount(() => {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--border);
     background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   }
-  .links a { flex-direction: column; gap: .15rem; padding: .35rem .2rem; margin: 0 .15rem; font-size: .7rem; text-align: center; border-radius: 12px; }
+  .links a { flex-direction: column; gap: .15rem; padding: .35rem .2rem; margin: 0 .15rem; font-size: .76rem; text-align: center; border-radius: 12px; }
   .links .ico { width: 1.3rem; height: 1.3rem; }
 }
 

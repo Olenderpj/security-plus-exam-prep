@@ -259,7 +259,7 @@ watch(() => route.fullPath, close)
 @media (max-width: 720px) { .trigger .alt { display: none; } }
 .trigger .ph { flex: 1; }
 kbd {
-  font: inherit; font-size: .75rem; padding: .05rem .4rem; color: var(--muted);
+  font: inherit; font-size: .84rem; padding: .05rem .4rem; color: var(--muted);
   background: var(--soft); border: 1px solid var(--border); border-radius: 5px;
 }
 
@@ -286,7 +286,7 @@ kbd {
 }
 .sp-field input::placeholder { color: var(--muted); }
 .sp-esc {
-  flex: none; font: inherit; font-size: .8rem; color: var(--muted); cursor: pointer; padding: .45rem .7rem;
+  flex: none; font: inherit; font-size: .86rem; color: var(--muted); cursor: pointer; padding: .45rem .7rem;
   background: var(--soft); border: 1px solid var(--border); border-radius: 8px;
 }
 .sp-esc:hover { color: var(--text); }
@@ -297,7 +297,7 @@ kbd {
 .group + .group { margin-top: .6rem; }
 .gh {
   display: flex; align-items: center; gap: .4rem; padding: .3rem .55rem .35rem; color: var(--muted);
-  font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  font-size: .84rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
 }
 .recent { display: flex; align-items: center; gap: .6rem; padding: .5rem .55rem; border-radius: 8px; cursor: pointer; }
 .recent:hover, .recent:focus-visible { background: var(--surface); outline: 0; }
