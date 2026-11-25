@@ -86,6 +86,27 @@ export async function loadAttempt(id) {
   return rows.find((r) => r.id === id || `local-at-${r.created_at}` === id) || null
 }
 
+// Question details for several sessions at once ({ id, details } rows), used to count unique questions
+// solved in sessions saved before their ids were recorded in the summary.
+export async function loadDetails(ids) {
+  if (!ids.length) return []
+  const remote = ids.filter((id) => !String(id).startsWith('local-'))
+  const out = []
+  if (remote.length && user.value && supabase) {
+    for (let i = 0; i < remote.length; i += 25) {
+      const { data, error } = await supabase.from('attempts').select('id, details').in('id', remote.slice(i, i + 25))
+      if (error) { console.error('Could not load session details', error); break }
+      out.push(...(data || []))
+    }
+  }
+  const wanted = new Set(ids)
+  readLocal().forEach((r) => {
+    const id = r.id || `local-at-${r.created_at}`
+    if (wanted.has(id) && r.details) out.push({ id, details: r.details })
+  })
+  return out
+}
+
 export async function clearAttempts() {
   if (user.value && supabase) {
     await supabase.from('attempts').delete().eq('user_id', user.value.id)

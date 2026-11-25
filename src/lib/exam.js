@@ -348,9 +348,11 @@ export function score(questions, answers) {
 // Per-domain results keyed by domain id, plus per-objective results under
 // "objectives" (e.g. { "1": {...}, "objectives": { "1.4": {...} } }).
 export function breakdown(questions, answers) {
-  const out = { objectives: {} }
+  // q: ids answered fully correctly (c) and not (w), for counting unique questions solved.
+  const out = { objectives: {}, q: { c: [], w: [] } }
   questions.forEach((q, i) => {
     const ok = isCorrect(q, answers[i] || [])
+    out.q[ok ? 'c' : 'w'].push(q.id)
     for (const b of [(out[q.domain] ||= { correct: 0, total: 0 }), (out.objectives[q.objective] ||= { correct: 0, total: 0 })]) {
       b.total++
       if (ok) b.correct++

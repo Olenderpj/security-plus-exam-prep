@@ -2,10 +2,10 @@
 import { confirmDialog } from '../lib/dialog.js'
 import { computed, ref, watch } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
-import { loadAttempts } from '../lib/progress.js'
+import { loadAttempts, loadDetails } from '../lib/progress.js'
 import { attemptLabel } from '../lib/attemptLabel.js'
 import { scaledPct, scoreColor, scoreStyle } from '../lib/scoreColor.js'
-import { scaled } from '../lib/exam.js'
+import { isCorrect, scaled } from '../lib/exam.js'
 import { user, authReady } from '../lib/auth.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { QUESTIONS } from '../data/questions/index.js'
@@ -18,6 +18,29 @@ async function load() {
   loading.value = true
   attempts.value = await loadAttempts()
   loading.value = false
+  backfill(attempts.value)
+}
+
+// Which questions each session answered right and wrong. Newer sessions record this in their summary;
+// for sessions saved before that, it is worked out once from their saved details and cached here.
+const QCACHE = 'secplus.qresults'
+const qResults = ref({})
+async function backfill(list) {
+  let cache = {}
+  try { cache = JSON.parse(localStorage.getItem(QCACHE)) || {} } catch {}
+  const need = list.filter((a) => a.mode !== 'flashcards' && !a.domain_breakdown?.q && a.dv != null && !cache[a.id]).map((a) => a.id)
+  if (need.length) {
+    ;(await loadDetails(need)).forEach(({ id, details }) => {
+      if (!Array.isArray(details?.questions)) return
+      const r = { c: [], w: [] }
+      details.questions.forEach((q, i) => r[isCorrect(q, details.answers?.[i] || []) ? 'c' : 'w'].push(q.id))
+      cache[id] = r
+    })
+  }
+  const ids = new Set(list.map((a) => a.id))
+  cache = Object.fromEntries(Object.entries(cache).filter(([id]) => ids.has(id)))
+  try { localStorage.setItem(QCACHE, JSON.stringify(cache)) } catch {}
+  qResults.value = cache
 }
 watch([user, authReady], () => authReady.value && load(), { immediate: true })
 
@@ -40,7 +63,6 @@ const toggleDomain = (id) => {
   expanded.value = s
 }
 const pctColor = (pct) => (pct === null ? {} : { color: scoreColor(pct) })
-const barColor = (pct) => (pct === null ? {} : { background: scoreColor(pct) })
 
 const quizzes = computed(() => attempts.value.filter((a) => a.mode !== 'flashcards'))
 const exams = computed(() => attempts.value.filter((a) => a.mode === 'exam'))
@@ -52,7 +74,45 @@ const totals = computed(() => {
 const fullExams = computed(() => exams.value.filter((a) => a.domain_breakdown?.source !== 'missed'))
 const bestExam = computed(() => Math.max(0, ...fullExams.value.map((a) => scaled(a.correct, a.total))))
 
-// Domain accuracy from question-based attempts only.
+// Questions in the bank per domain and per objective.
+const QBY = new Map(QUESTIONS.map((q) => [q.id, q]))
+const bankSize = {}
+QUESTIONS.forEach((q) => {
+  bankSize[q.domain] = (bankSize[q.domain] || 0) + 1
+  bankSize[q.objective] = (bankSize[q.objective] || 0) + 1
+})
+// Unique questions solved (answered fully correctly at least once) and tried but not yet solved,
+// by domain id and objective code. Questions since retired from the bank are ignored.
+const coverage = computed(() => {
+  const solved = new Set()
+  const tried = new Set()
+  let unrecorded = 0
+  quizzes.value.forEach((a) => {
+    const r = a.domain_breakdown?.q || qResults.value[a.id]
+    if (!r) return unrecorded++
+    r.c.forEach((id) => solved.add(id))
+    r.w.forEach((id) => tried.add(id))
+  })
+  const by = {}
+  const add = (id, k) => {
+    const q = QBY.get(id)
+    if (!q) return
+    for (const key of [q.domain, q.objective]) (by[key] ||= { s: 0, t: 0 })[k]++
+  }
+  solved.forEach((id) => add(id, 's'))
+  tried.forEach((id) => !solved.has(id) && add(id, 't'))
+  return { by, unrecorded }
+})
+const share = (x, of) => (of ? (100 * x) / of : 0)
+// Whole percent, but never shows 0% once something is solved.
+const pctText = (x, of) => (x && share(x, of) < 1 ? '<1' : Math.round(share(x, of)))
+const withCoverage = (key) => {
+  const c = coverage.value.by[key] || { s: 0, t: 0 }
+  const of = bankSize[key] || 0
+  return { solved: c.s, tried: c.t, of, mastery: share(c.s, of), masteryText: pctText(c.s, of), triedPct: share(c.t, of) }
+}
+
+// Domain accuracy from question-based attempts only, alongside how much of the bank is solved.
 const domainStats = computed(() =>
   DOMAINS.map((d) => {
     let c = 0
@@ -68,11 +128,11 @@ const domainStats = computed(() =>
         const b = a.domain_breakdown?.objectives?.[o.code]
         if (b) { oc += b.correct; on += b.total }
       })
-      return { ...o, n: on, pct: on ? Math.round((100 * oc) / on) : null }
+      return { ...o, n: on, pct: on ? Math.round((100 * oc) / on) : null, ...withCoverage(o.code) }
     })
     // Weakest objective with enough data to be meaningful.
     const weakest = objectives.filter((o) => o.n >= 3).sort((a, b) => a.pct - b.pct)[0]
-    return { ...d, c, n, pct: n ? Math.round((100 * c) / n) : null, objectives, weakest: weakest?.pct < 85 ? weakest.code : null }
+    return { ...d, c, n, pct: n ? Math.round((100 * c) / n) : null, ...withCoverage(d.id), objectives, weakest: weakest?.pct < 85 ? weakest.code : null }
   })
 )
 
@@ -133,7 +193,9 @@ function confirmClearMissed() {
 
       <div class="card stack">
         <div class="label">Accuracy by domain</div>
-        <p class="muted small" style="margin: 0">Select a domain to see each exam objective. <span class="scale" aria-hidden="true">0% <i v-for="n in 8" :key="n" :style="{ background: `var(--s${n - 1})` }" /> 100%</span></p>
+        <p class="muted small" style="margin: 0">
+          Mastery (right) is the share of each section's questions you have answered correctly at least once; the lighter part of
+          the bar is questions tried but not yet solved. Select a domain to see each exam objective. <span class="scale" aria-hidden="true">0% <i v-for="n in 8" :key="n" :style="{ background: `var(--s${n - 1})` }" /> 100%</span></p>
         <div v-for="d in domainStats" :key="d.id" class="domain">
           <button class="domain-head" :aria-expanded="expanded.has(d.id)" @click="toggleDomain(d.id)">
             <span class="row between small">
@@ -141,10 +203,10 @@ function confirmClearMissed() {
               <span>
                 <span v-if="missedByDomain[d.id]" class="muted missed-link">{{ missedByDomain[d.id] }} missed</span>
                 <span v-if="d.pct === null" class="muted">No data</span>
-                <span v-else><span class="muted">{{ d.n }} answered · </span><strong class="pctv" :style="pctColor(d.pct)">{{ d.pct }}%</strong></span>
+                <span v-else><span class="muted">{{ d.solved }} of {{ d.of }} solved · {{ d.pct }}% accuracy · </span><strong class="pctv" :style="pctColor(d.mastery)">{{ d.masteryText }}%</strong></span>
               </span>
             </span>
-            <span class="bar"><span :style="{ width: (d.pct || 0) + '%', ...barColor(d.pct) }" /></span>
+            <span class="bar two" :style="{ '--c': scoreColor(d.mastery) }"><span :style="{ width: d.mastery + '%' }" /><span class="tried" :style="{ width: d.triedPct + '%' }" /></span>
           </button>
 
           <div v-if="expanded.has(d.id)" class="objectives">
@@ -155,9 +217,9 @@ function confirmClearMissed() {
                   <span v-if="o.code === d.weakest" class="tag">Weakest</span>
                 </span>
                 <span v-if="o.pct === null" class="muted">No data</span>
-                <span v-else><span class="muted">{{ o.n }} answered · </span><strong class="pctv" :style="pctColor(o.pct)">{{ o.pct }}%</strong></span>
+                <span v-else><span class="muted">{{ o.solved }} of {{ o.of }} solved · {{ o.pct }}% accuracy · </span><strong class="pctv" :style="pctColor(o.mastery)">{{ o.masteryText }}%</strong></span>
               </div>
-              <div class="bar thin"><span :style="{ width: (o.pct || 0) + '%', ...barColor(o.pct) }" /></div>
+              <div class="bar thin two" :style="{ '--c': scoreColor(o.mastery) }"><span :style="{ width: o.mastery + '%' }" /><span class="tried" :style="{ width: o.triedPct + '%' }" /></div>
               <div class="row small links">
                 <RouterLink :to="`/practice?domain=${d.id}&objective=${o.code}`">Practice</RouterLink>
                 <RouterLink v-if="missedByDomain[o.code]" :to="`/practice?missed=1&domain=${d.id}&objective=${o.code}`" class="bad">
@@ -170,6 +232,10 @@ function confirmClearMissed() {
             </p>
           </div>
         </div>
+        <p v-if="coverage.unrecorded" class="muted small" style="margin: 0">
+          {{ coverage.unrecorded }} older session{{ coverage.unrecorded === 1 ? '' : 's' }} saved only totals, so
+          {{ coverage.unrecorded === 1 ? 'it counts' : 'they count' }} toward accuracy but not toward questions solved.
+        </p>
       </div>
 
       <div class="card">
@@ -229,6 +295,11 @@ function confirmClearMissed() {
 .objectives { margin: .75rem 0 .25rem 1.1rem; display: grid; gap: .8rem; }
 .objective { display: grid; gap: .3rem; }
 .bar.thin { height: 4px; }
+/* Solved (full colour) then tried-but-unsolved (same colour, faint). */
+.bar.two { display: flex; }
+.bar.two > span { flex: none; border-radius: 0; background: var(--c); }
+.bar.two > span.tried { background: color-mix(in srgb, var(--c) 30%, var(--soft)); }
+.bar.two > span:first-child { border-radius: 99px 0 0 99px; }
 .links { gap: 1rem; }
 .links a { text-decoration: none; color: var(--muted); }
 .links a:hover { color: var(--text); text-decoration: underline; }
