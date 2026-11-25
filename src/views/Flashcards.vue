@@ -159,7 +159,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <button class="chip" :class="{ on: deckType === 'marked' }" @click="deckType = 'marked'">Marked for review · {{ markedCards.length }}</button>
         </div>
       </div>
-      <DomainPicker v-if="deckType === 'concepts'" v-model="domain" :counts="counts" />
+      <DomainPicker v-if="deckType === 'concepts'" v-model="domain" :counts="counts" noun="cards" />
       <SubsectionPicker v-if="deckType === 'concepts'" v-model="objectives" :domain="domain" :counts="objCounts" noun="cards" />
       <div>
         <div class="label">Start with</div>
@@ -189,6 +189,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <div class="bar"><span :style="{ width: (idx / deck.length) * 100 + '%' }" /></div>
     <div class="card flash" role="button" tabindex="0" :aria-label="flipped ? 'Flip back' : 'Flip card'" @click="flipped = !flipped">
       <span class="tag">{{ isAcronym(card) ? sideLabel(card, flipped) : `${cardLabel(card)} · ${sideLabel(card, flipped)}` }}</span>
+      <!-- Mark for review: a star in the card's corner (M on the keyboard). Doesn't flip the card. -->
+      <button
+        type="button"
+        class="star"
+        :class="{ on: marked.has(card.id) }"
+        :aria-pressed="marked.has(card.id)"
+        :aria-label="marked.has(card.id) ? 'Marked for review. Click to unmark.' : 'Mark for review'"
+        :title="marked.has(card.id) ? (autoMarked.has(card.id) ? 'Marked for review (added from a practice lookup)' : 'Marked for review') : 'Mark for review (M)'"
+        @click.stop="toggleMarked(card.id); $event.detail && $event.currentTarget.blur()"
+        @keydown.space.stop
+        @keydown.enter.stop
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" /></svg>
+      </button>
       <span v-if="!flipped" :key="'f' + idx" class="front">{{ frontText(card) }}</span>
       <span v-else :key="'b' + idx" class="back">
         <strong><AcronymText :text="backText(card)" free /></strong>
@@ -199,9 +213,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <div class="row between">
       <div class="row">
         <button class="btn ghost" @click="stage = 'setup'">Quit</button>
-        <button class="btn" :class="{ marked: marked.has(card.id) }" @click="toggleMarked(card.id)">
-          {{ marked.has(card.id) ? (autoMarked.has(card.id) ? '★ Marked (auto)' : '★ Marked') : '☆ Mark for review' }}
-        </button>
       </div>
       <div v-if="flipped" class="row">
         <button class="btn" @click="mark(false)"><span class="kbd" aria-hidden="true">←</span> Still learning</button>
@@ -260,6 +271,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 /* Start sits at the bottom of the setup card (not sticky to the window). */
 .startbar { padding-top: 1rem; border-top: 1px solid var(--border); }
+.star {
+  position: absolute; top: .7rem; right: .7rem; z-index: 2; display: grid; place-items: center; width: 2.2rem; height: 2.2rem;
+  padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; transition: color .15s, background .15s, transform .1s;
+}
+.star:hover { background: var(--soft); color: var(--text); }
+.star:active { transform: scale(.92); }
+.star svg { width: 1.35rem; height: 1.35rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.star.on { color: var(--warn); }
+.star.on svg { fill: currentColor; }
 .flash {
   min-height: 22rem; width: 100%; display: flex; flex-direction: column; justify-content: center; position: relative;
   align-items: center; text-align: center; gap: 1.25rem; font: inherit; color: var(--text); cursor: pointer; padding: 2.5rem 1.5rem 3rem;
@@ -277,5 +297,4 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .back strong { font-weight: 600; }
 .note { font-size: .95rem; }
 .big { font-size: 1.6rem; font-weight: 500; }
-.btn.marked { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); }
 </style>
