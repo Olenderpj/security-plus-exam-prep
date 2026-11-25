@@ -212,7 +212,6 @@ defineExpose({ quit })
         :aria-label="`${label(t)}: ${text(t)}${pairOf[t.key] ? `. ${locked(t.key) ? 'Matched' : `Pair ${pairOf[t.key].n}`}` : ''}`"
         @click="pick(t)"
       >
-        <span class="tlabel muted">{{ label(t) }}</span>
         <span v-if="pairOf[t.key]" class="badge num" aria-hidden="true">{{ locked(t.key) ? '✓' : pairOf[t.key].n }}</span>
         <span class="ttext">{{ text(t) }}</span>
       </button>
@@ -258,13 +257,12 @@ defineExpose({ quit })
 @media (min-width: 960px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; } }
 .tile {
   position: relative; display: flex; align-items: center; justify-content: center; min-height: 7.5rem;
-  padding: 1.7rem .75rem .8rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
+  padding: 1.8rem .9rem 1.2rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
   font: inherit; color: var(--text); text-align: center; cursor: pointer; overflow-wrap: anywhere;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .05); transition: border-color .15s, background .15s, box-shadow .15s, transform .1s;
 }
 .tile:hover:not(:disabled) { border-color: var(--muted); }
 .tile:active:not(:disabled) { transform: scale(.98); }
-.tlabel { position: absolute; top: .5rem; left: .7rem; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; }
 .front .ttext { font-weight: 600; font-size: 1rem; }
 .back .ttext { font-size: .88rem; line-height: 1.35; }
 .badge {
