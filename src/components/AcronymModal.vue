@@ -51,7 +51,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <div class="back">{{ info.entry.back }}</div>
           <p v-if="info.entry.note" class="note">{{ info.entry.note }}</p>
           <p class="muted small cost">
-            <template v-if="info.free">This question is already answered, so looking it up does not affect your score.</template>
+            <template v-if="info.where === 'flashcard'">Looking up acronyms on flashcards is free: it doesn't affect your level.</template>
+            <template v-else-if="info.free">This question is already answered, so looking it up does not affect your score.</template>
             <template v-else-if="info.repeat">You already looked this up for this question, so it costs nothing extra.</template>
             <template v-else>Counted slightly against {{ info.objective }} and added to your marked flashcards (Flashcards → Marked).</template>
           </p>

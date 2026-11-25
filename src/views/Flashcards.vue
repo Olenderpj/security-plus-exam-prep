@@ -1,6 +1,6 @@
 <script setup>
 import { useFocusMode } from '../lib/focus.js'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import ALL_CARDS, { isPortCard } from '../data/flashcards.js'
@@ -12,11 +12,16 @@ import { autoMarked, marked, toggleMarked, markMany, recordCard } from '../lib/m
 import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
+import AcronymText from '../components/AcronymText.vue'
+import AcronymModal from '../components/AcronymModal.vue'
 
 // Concept cards and the Ports deck are separate decks; marked/search see both.
 const FLASHCARDS = ALL_CARDS.filter((c) => !isPortCard(c))
 const PORTS = ALL_CARDS.filter(isPortCard)
 const ALL = [...ALL_CARDS, ...ACRONYMS]
+// Tap an acronym on the answer side of a card to see what it stands for. Free here: the answer is already showing.
+const lookupInfo = ref(null)
+provide('acronymLookup', (entry) => (lookupInfo.value = { entry, revealed: true, free: true, where: 'flashcard' }))
 const deckType = ref('concepts') // concepts | ports | acronyms | marked
 const domain = ref(null)
 const objectives = ref([]) // optional sub-sections within the concept deck
@@ -136,7 +141,8 @@ function onKey(e) {
     if (e.key === 'Enter' && e.target === document.body && pool.value.length) start()
     return
   }
-  if (stage.value !== 'run') return
+  if (stage.value !== 'run' || lookupInfo.value) return
+  if (e.target.closest?.('.acr')) return
   if (e.code === 'Space') { e.preventDefault(); flipped.value = !flipped.value }
   else if (e.key === 'm' || e.key === 'M') toggleMarked(card.value.id)
   else if (flipped.value && e.key === 'ArrowRight') mark(true)
@@ -196,15 +202,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <span>{{ known }} known</span>
     </div>
     <div class="bar"><span :style="{ width: (idx / deck.length) * 100 + '%' }" /></div>
-    <button class="card flash" @click="flipped = !flipped">
+    <div class="card flash" role="button" tabindex="0" :aria-label="flipped ? 'Flip back' : 'Flip card'" @click="flipped = !flipped">
       <span class="tag">{{ isAcronym(card) ? sideLabel(card, flipped) : `${cardLabel(card)} · ${sideLabel(card, flipped)}` }}</span>
       <span v-if="!flipped" :key="'f' + idx" class="front">{{ frontText(card) }}</span>
       <span v-else :key="'b' + idx" class="back">
-        <strong>{{ backText(card) }}</strong>
-        <span v-if="card.note" class="note muted">{{ card.note }}</span>
+        <strong><AcronymText :text="backText(card)" free /></strong>
+        <span v-if="card.note" class="note muted"><AcronymText :text="card.note" free /></span>
       </span>
-      <span class="muted small flip"><span class="kbd">Space</span> {{ flipped ? 'to flip back' : 'or tap to flip' }}</span>
-    </button>
+      <span class="muted small flip"><span class="kbd">Space</span> {{ flipped ? 'to flip back · tap an underlined acronym to look it up' : 'or tap to flip' }}</span>
+    </div>
     <div class="row between">
       <div class="row">
         <button class="btn ghost" @click="stage = 'setup'">Quit</button>
@@ -254,6 +260,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </div>
     </div>
   </div>
+  <AcronymModal :info="lookupInfo" @close="lookupInfo = null" />
 </template>
 
 <style scoped>
