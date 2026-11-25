@@ -23,7 +23,7 @@ const open = (p) => lookup(p.acr, { objective: props.objective, qid: props.qid, 
       role="button"
       tabindex="0"
       :aria-label="`Look up ${p.text}`"
-      @click.stop="open(p)"
+      @click.stop="open(p); $event.detail && $event.currentTarget.blur()"
       @keydown.enter.stop.prevent="open(p)"
       @keydown.space.stop.prevent="open(p)"
     >{{ p.text }}</span>
