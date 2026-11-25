@@ -19,7 +19,7 @@ const META = 'study_time'
 const TICK_MS = 5000
 const IDLE_MS = 3 * 60 * 1000
 const PUSH_MS = 3 * 60 * 1000
-const KEEP_DAYS = 21 // per-day history kept in the account copy
+const KEEP_DAYS = 92 // per-day history kept (about 3 months, for the Settings calendar); totals are kept forever
 
 export const AREAS = { practice: 'Practice', exam: 'Exams', flashcards: 'Flashcards', notes: 'Notes', other: 'Review & other' }
 
@@ -127,6 +127,14 @@ export function summarize(state, now = new Date()) {
     since: devs.map((d) => d.s).filter(Boolean).sort()[0] || null
   }
 }
+
+// Study seconds per day across all devices: { 'YYYY-MM-DD': seconds } (the last KEEP_DAYS days).
+export function dailyTotals(state) {
+  const out = {}
+  for (const dev of Object.values(state?.devs || {})) for (const [k, v] of Object.entries(dev.d || {})) out[k] = (out[k] || 0) + v
+  return out
+}
+export const HISTORY_DAYS = KEEP_DAYS
 
 export function formatDuration(seconds) {
   const s = Math.floor(seconds || 0)

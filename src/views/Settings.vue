@@ -5,6 +5,7 @@ import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
 import { tierFor } from '../lib/depth.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
+import StudyCalendar from '../components/StudyCalendar.vue'
 import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
 import { countInRange, servingWindow } from '../lib/serving.js'
 import { supabaseEnabled } from '../lib/supabase.js'
@@ -60,6 +61,23 @@ const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
 
 // ── study time ──
 const time = computed(() => summarize(study.value))
+// Week chart or month calendar, remembered per browser.
+const VIEW_KEY = 'secplus.studyView'
+const calendarView = ref((() => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'calendar'
+  } catch {
+    return false
+  }
+})())
+function toggleView() {
+  calendarView.value = !calendarView.value
+  try {
+    localStorage.setItem(VIEW_KEY, calendarView.value ? 'calendar' : 'week')
+  } catch {}
+}
+const calIcon = ['M8 2v4', 'M16 2v4', 'M3 10h18', 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z']
+const barsIcon = ['M18 20V10', 'M12 20V4', 'M6 20v-6']
 const peakDay = computed(() => Math.max(1, ...time.value.days.map((d) => d.seconds)))
 const areaRows = computed(() =>
   Object.entries(AREAS)
@@ -114,7 +132,19 @@ function resetDifficulty() {
     </p>
 
     <section class="card stack">
-      <div class="label">Study time</div>
+      <div class="row between studyhead">
+        <div class="label" style="margin: 0">Study time</div>
+        <button
+          type="button"
+          class="viewbtn"
+          :aria-pressed="calendarView"
+          :title="calendarView ? 'Show last 7 days' : 'Show calendar'"
+          :aria-label="calendarView ? 'Show last 7 days' : 'Show calendar'"
+          @click="toggleView"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in calendarView ? barsIcon : calIcon" :key="d" :d="d" /></svg>
+        </button>
+      </div>
       <div class="row between">
         <div>
           <div class="big">{{ formatDuration(time.total) }}</div>
@@ -126,7 +156,8 @@ function resetDifficulty() {
         </div>
       </div>
 
-      <div class="week" role="img" :aria-label="`Study time for the last 7 days: ${time.days.map((d) => `${d.label} ${formatDuration(d.seconds)}`).join(', ')}`">
+      <StudyCalendar v-if="calendarView" />
+      <div v-else class="week" role="img" :aria-label="`Study time for the last 7 days: ${time.days.map((d) => `${d.label} ${formatDuration(d.seconds)}`).join(', ')}`">
         <div v-for="d in time.days" :key="d.key" class="day" :title="`${d.label}: ${formatDuration(d.seconds)}`">
           <div class="amount small muted">{{ d.seconds ? formatDuration(d.seconds) : '' }}</div>
           <div class="col"><span :style="{ height: d.seconds ? Math.max(4, Math.round((d.seconds / peakDay) * 100)) + '%' : '0' }" /></div>
@@ -259,6 +290,14 @@ function resetDifficulty() {
   .subs { padding-left: 1.1rem; }
 }
 @media (max-width: 480px) { .stats { text-align: left; margin-left: 0; } }
+.studyhead { align-items: center; }
+.viewbtn {
+  display: inline-grid; place-items: center; width: 2.1rem; height: 2.1rem; padding: 0; border-radius: 10px; cursor: pointer;
+  background: none; border: 1px solid var(--border); color: var(--muted); transition: background .15s, color .15s;
+}
+.viewbtn:hover { background: var(--soft); color: var(--text); }
+.viewbtn[aria-pressed='true'] { color: var(--brand); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.viewbtn svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: .5rem; align-items: end; }
 .day { display: grid; gap: .25rem; text-align: center; }
 .amount { min-height: 1.2em; font-size: .7rem; font-variant-numeric: tabular-nums; }
