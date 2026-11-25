@@ -32,6 +32,7 @@ export function loadSession(kind, validate = (s) => Array.isArray(s.questions) &
 export async function sweepStaleSessions() {
   clearIfStale('exam')
   clearIfStale('flashcards')
+  clearIfStale('match')
   let s = null
   try {
     s = JSON.parse(localStorage.getItem(KEY('practice')))

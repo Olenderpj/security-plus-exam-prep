@@ -14,6 +14,7 @@ import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
 import AcronymText from '../components/AcronymText.vue'
 import AcronymModal from '../components/AcronymModal.vue'
+import MatchGame from '../components/MatchGame.vue'
 
 const ALL = [...FLASHCARDS, ...ACRONYMS]
 // Tap an acronym on the answer side of a card to see what it stands for. Free here: the answer is already showing.
@@ -29,9 +30,11 @@ const SIDES = [
   { id: 'back', label: 'Back' },
   { id: 'mixed', label: 'Mixed' }
 ]
-const stage = ref('setup')
-useStudySession(stage, 'flashcards')
-useFocusMode(stage)
+const stage = ref('setup') // setup | run | done | browse | match
+// The match game counts as studying (and hides the page search) just like a running deck.
+const activeStage = computed(() => (stage.value === 'match' ? 'run' : stage.value))
+useStudySession(activeStage, 'flashcards')
+useFocusMode(activeStage)
 const deck = ref([])
 const idx = ref(0)
 const flipped = ref(false)
@@ -53,6 +56,14 @@ if (saved) {
   objectives.value = saved.objectives ?? (saved.objective ? [saved.objective] : [])
   side.value = saved.side || side.value
   stage.value = 'run'
+}
+// …or a match game in progress.
+const matchResume = saved ? null : loadSession('match', (s) => Array.isArray(s.round) && s.round.length)
+if (matchResume) {
+  deckType.value = matchResume.deckType || deckType.value
+  domain.value = matchResume.domain ?? null
+  objectives.value = matchResume.objectives || []
+  stage.value = 'match'
 }
 watch([stage, deck, idx, flipped, known, missed], () => {
   if (stage.value === 'run') saveSession('flashcards', { deck: deck.value, idx: idx.value, flipped: flipped.value, known: known.value, missed: missed.value, startedAt: startedAt.value, deckType: deckType.value, domain: domain.value, objectives: objectives.value, side: side.value })
@@ -81,6 +92,17 @@ const pool = computed(() => {
   return FLASHCARDS.filter((f) => (!domain.value || f.domain === domain.value) && (!objectives.value.length || objectives.value.includes(f.objective)))
 })
 const card = computed(() => deck.value[idx.value])
+
+// Match game: plays from the chosen deck (all of it, dealt a set at a time).
+const matchCards = ref(matchResume ? pool.value : [])
+const matchKey = ref(0)
+function startMatch() {
+  matchCards.value = [...pool.value]
+  matchKey.value++
+  stage.value = 'match'
+  window.scrollTo(0, 0)
+}
+const matchMeta = computed(() => ({ deckType: deckType.value, domain: domain.value, objectives: objectives.value }))
 const isAcronym = (c) => c.id.startsWith('a')
 // Each card in a deck carries `flip` (true = show its back side first).
 const frontText = (c) => (c.flip ? c.back : c.front)
@@ -163,7 +185,7 @@ function toggleAnswers() {
   showAnswers.value = !showAnswers.value
   browseFlips.value = new Set()
 }
-watch(stage, (st) => (widePage.value = st === 'browse'), { immediate: true })
+watch(stage, (st) => (widePage.value = st === 'browse' || st === 'match'), { immediate: true })
 onBeforeUnmount(() => (widePage.value = false))
 
 onMounted(() => window.addEventListener('keydown', onKey))
@@ -201,6 +223,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <CountPicker v-if="pool.length" v-model="count" :max="pool.length" />
       <div class="startbar row">
         <button class="btn primary" :disabled="!pool.length" @click="start">Start deck <span class="kbd" aria-hidden="true">↵</span></button>
+        <button class="btn" :disabled="pool.length < 2" @click="startMatch">Match game</button>
         <button class="btn" :disabled="!pool.length" @click="browse">View all · {{ pool.length }}</button>
       </div>
     </div>
@@ -266,6 +289,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </div>
     </aside>
   </div>
+
+  <MatchGame
+    v-else-if="stage === 'match'"
+    :key="matchKey"
+    :cards="matchCards"
+    :meta="matchMeta"
+    :resume="matchKey === 0 ? matchResume : null"
+    @quit="stage = 'setup'"
+  />
 
   <div v-else-if="stage === 'browse'" class="stack">
     <div class="row between browsehead">
