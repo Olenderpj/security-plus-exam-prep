@@ -117,6 +117,8 @@ p { margin: 0 0 1rem; }
 .btn:hover:not(:disabled) { background: var(--soft); border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: var(--surface); }
+.btn.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--bad) 88%, #000); border-color: color-mix(in srgb, var(--bad) 88%, #000); }
 .btn.small { padding: .35rem .85rem; font-size: .85rem; }
 .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .btn.primary:hover:not(:disabled) { opacity: .88; background: var(--accent); border-color: var(--accent); }

@@ -1,4 +1,5 @@
 <script setup>
+import { closeDialog, confirmDialog } from '../lib/dialog.js'
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
 import LevelBadge from '../components/LevelBadge.vue'
@@ -129,14 +130,20 @@ function onKeys(e) {
 onMounted(() => window.addEventListener('keydown', onKeys))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeys))
 
-function confirmFinish() {
+async function confirmFinish() {
   const left = questions.value.length - answeredCount.value
-  const msg = left ? `You have ${left} unanswered question(s). Submit the exam?` : 'Submit the exam?'
-  if (window.confirm(msg)) finish()
+  const ok = await confirmDialog({
+    title: 'Submit exam?',
+    message: left ? `You have ${left} unanswered question${left === 1 ? '' : 's'}. Unanswered questions are scored as incorrect.` : 'All questions are answered.',
+    confirmText: 'Submit exam',
+    cancelText: 'Keep working'
+  })
+  if (ok) finish()
 }
 
 async function finish() {
   if (stage.value !== 'run') return
+  closeDialog(false) // e.g. time ran out while the submit dialog was open
   clearInterval(timer)
   seconds.value = Math.round((Date.now() - startedAt.value) / 1000)
   stage.value = 'done'
@@ -155,8 +162,9 @@ async function finish() {
   })
 }
 
-function quit() {
-  if (window.confirm('Quit this exam? Your answers will not be saved.')) {
+async function quit() {
+  const ok = await confirmDialog({ title: 'Quit this exam?', message: 'Your answers will not be saved.', confirmText: 'Quit exam', cancelText: 'Keep working', danger: true })
+  if (ok && stage.value === 'run') {
     clearInterval(timer)
     stage.value = 'setup'
   }

@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog } from '../lib/dialog.js'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { DOMAINS } from '../data/domains.js'
@@ -131,8 +132,8 @@ function addDomain() {
   domainPick.value = ''
 }
 
-function remove(s) {
-  if (s.body.trim() && !window.confirm(`Delete “${s.title || 'Untitled'}” and its notes?`)) return
+async function remove(s) {
+  if (s.body.trim() && !(await confirmDialog({ title: `Delete “${s.title || 'Untitled'}”?`, message: 'This note and everything in it will be deleted.', confirmText: 'Delete', danger: true }))) return
   removeSection(s.id)
 }
 

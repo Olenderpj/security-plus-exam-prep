@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import SearchBar from './components/SearchBar.vue'
 import ShortcutsSheet from './components/ShortcutsSheet.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
 import { sheetOpen } from './lib/shortcuts.js'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
@@ -123,6 +124,7 @@ onBeforeUnmount(() => {
   </button>
 
   <ShortcutsSheet />
+  <ConfirmDialog />
 
   <main class="page">
     <div class="pagein" :class="{ wide: focusMode || $route.path === '/objectives' }">

@@ -1,6 +1,7 @@
 <script setup>
 // Google Docs-style comments for the exam objectives page: a thread for the selected line,
 // or every comment grouped by the line it's on.
+import { confirmDialog } from '../lib/dialog.js'
 import { computed, nextTick, ref, watch } from 'vue'
 import { anchorLabel, anchorOrder } from '../lib/objectives.js'
 import { comments, activeAnchor, addComment, editComment, deleteComment, setResolved } from '../lib/comments.js'
@@ -57,7 +58,8 @@ const saveEdit = (id) => editText.value.trim() && run(async () => {
   await editComment(id, editText.value)
   editing.value = null
 })
-const remove = (c) => window.confirm('Delete this comment?') && run(() => deleteComment(c.id))
+const remove = async (c) =>
+  (await confirmDialog({ title: 'Delete this comment?', confirmText: 'Delete', danger: true })) && run(() => deleteComment(c.id))
 const when = (s) => new Date(s).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 </script>
 

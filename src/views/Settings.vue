@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog } from '../lib/dialog.js'
 import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
@@ -93,13 +94,28 @@ const sinceText = computed(() => {
 // ── reset progress ──
 const progressCleared = ref(false)
 async function resetProgress() {
-  if (!window.confirm('Delete all saved progress (scores and session history)? This cannot be undone.')) return
+  const ok = await confirmDialog({
+    title: 'Reset progress?',
+    message: 'Deletes all your scores and session history. This cannot be undone.',
+    confirmText: 'Reset progress',
+    danger: true
+  })
+  if (!ok) return
   await clearAttempts()
   progressCleared.value = true
 }
 
-function resetDifficulty() {
-  if (window.confirm('Reset your difficulty level for every section? Your scores and missed questions are not affected.')) reset()
+const levelsCleared = ref(false)
+async function resetDifficulty() {
+  const ok = await confirmDialog({
+    title: 'Reset levels?',
+    message: 'Every section goes back to the starting difficulty. This cannot be undone.',
+    confirmText: 'Reset levels',
+    danger: true
+  })
+  if (!ok) return
+  reset()
+  levelsCleared.value = true
 }
 </script>
 
@@ -180,24 +196,11 @@ function resetDifficulty() {
       </p>
     </section>
 
-    <section class="card stack">
-      <div class="label">Your data</div>
-      <p class="muted small" style="margin: 0">
-        Deletes your saved scores and session history, including the history charts on the Progress page. Your missed-questions list,
-        notes and difficulty levels are not affected.
-      </p>
-      <div class="row">
-        <button class="btn" @click="resetProgress">Reset progress</button>
-        <span v-if="progressCleared" class="good small" role="status">Progress reset.</span>
-      </div>
-    </section>
-
     <section class="stack">
       <div class="row between">
         <h2 style="margin: 0">Difficulty</h2>
         <div class="row">
           <RouterLink v-if="weak.size" to="/practice?weak=1" class="btn small">Practice weak areas</RouterLink>
-          <button class="btn ghost small" @click="resetDifficulty">Reset levels</button>
         </div>
       </div>
       <p class="muted small" style="margin: 0">
@@ -256,6 +259,31 @@ function resetDifficulty() {
         </details>
       </div>
     </section>
+
+    <!-- Data reset: always last on the page. -->
+    <section class="card stack resets" aria-labelledby="reset-title">
+      <div id="reset-title" class="label" style="margin: 0">Reset</div>
+      <div class="resetrow">
+        <div>
+          <strong>Reset progress</strong>
+          <p class="muted small">Deletes your scores and session history. Missed questions, notes and levels are kept.</p>
+        </div>
+        <div class="resetact">
+          <span v-if="progressCleared" class="good small" role="status">Done</span>
+          <button type="button" class="btn danger" @click="resetProgress">Reset progress</button>
+        </div>
+      </div>
+      <div class="resetrow">
+        <div>
+          <strong>Reset levels</strong>
+          <p class="muted small">Sets every section back to the starting difficulty. Scores and missed questions are kept.</p>
+        </div>
+        <div class="resetact">
+          <span v-if="levelsCleared" class="good small" role="status">Done</span>
+          <button type="button" class="btn danger" @click="resetDifficulty">Reset levels</button>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -291,6 +319,12 @@ function resetDifficulty() {
 }
 @media (max-width: 480px) { .stats { text-align: left; margin-left: 0; } }
 .studyhead { align-items: center; }
+.resets { gap: 0; }
+.resetrow { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 0; border-top: 1px solid var(--border); }
+.resetrow:first-of-type { border-top: 0; }
+.resetrow p { margin: .15rem 0 0; }
+.resetact { display: flex; align-items: center; gap: .6rem; flex: none; }
+@media (max-width: 560px) { .resetrow { flex-direction: column; align-items: stretch; } .resetact { justify-content: flex-end; } }
 .viewbtn {
   display: inline-grid; place-items: center; width: 2.1rem; height: 2.1rem; padding: 0; border-radius: 10px; cursor: pointer;
   background: none; border: 1px solid var(--border); color: var(--muted); transition: background .15s, color .15s;

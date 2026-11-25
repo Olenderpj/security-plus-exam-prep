@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog } from '../lib/dialog.js'
 import { computed, ref, watch } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { loadAttempts } from '../lib/progress.js'
@@ -89,7 +90,7 @@ const win = computed(() => {
 const date = (s) => new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 
 function confirmClearMissed() {
-  if (window.confirm('Clear your missed-questions list?')) clearMissed()
+  confirmDialog({ title: 'Clear missed questions?', message: 'Every question will be removed from your missed list.', confirmText: 'Clear list', danger: true }).then((ok) => ok && clearMissed())
 }
 
 </script>
