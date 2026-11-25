@@ -4,7 +4,7 @@ import SearchBar from './components/SearchBar.vue'
 import ShortcutsSheet from './components/ShortcutsSheet.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { sheetOpen } from './lib/shortcuts.js'
-import { focusMode } from './lib/focus.js'
+import { focusMode, widePage } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
 import NotesTree from './components/NotesTree.vue'
 import { defineAsyncComponent } from 'vue'
@@ -127,7 +127,7 @@ onBeforeUnmount(() => {
   <ConfirmDialog />
 
   <main class="page">
-    <div class="pagein" :class="{ wide: focusMode || $route.path === '/objectives' }">
+    <div class="pagein" :class="{ wide: focusMode || widePage || $route.path === '/objectives' }">
       <SearchBar v-if="!focusMode" />
       <RouterView :key="$route.fullPath" />
     </div>

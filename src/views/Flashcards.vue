@@ -1,5 +1,5 @@
 <script setup>
-import { useFocusMode } from '../lib/focus.js'
+import { useFocusMode, widePage } from '../lib/focus.js'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
@@ -143,6 +143,29 @@ function onKey(e) {
   else if (flipped.value && e.key === 'ArrowRight') mark(true)
   else if (flipped.value && e.key === 'ArrowLeft') mark(false)
 }
+// ── View all: every card in the chosen deck as a grid (1 column on phones, 4 on desktop). Tap a card to flip it.
+const showAnswers = ref(false) // flips every card at once
+const browseFlips = ref(new Set()) // cards flipped individually (relative to showAnswers)
+const browseCards = computed(() => pool.value)
+const isBrowseFlipped = (c) => showAnswers.value !== browseFlips.value.has(c.id)
+function flipBrowse(c) {
+  const s = new Set(browseFlips.value)
+  s.has(c.id) ? s.delete(c.id) : s.add(c.id)
+  browseFlips.value = s
+}
+function browse() {
+  showAnswers.value = false
+  browseFlips.value = new Set()
+  stage.value = 'browse'
+  window.scrollTo(0, 0)
+}
+function toggleAnswers() {
+  showAnswers.value = !showAnswers.value
+  browseFlips.value = new Set()
+}
+watch(stage, (st) => (widePage.value = st === 'browse'), { immediate: true })
+onBeforeUnmount(() => (widePage.value = false))
+
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
@@ -176,7 +199,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         No cards marked yet.
       </p>
       <CountPicker v-if="pool.length" v-model="count" :max="pool.length" />
-      <div class="startbar"><button class="btn primary" :disabled="!pool.length" @click="start">Start deck <span class="kbd" aria-hidden="true">↵</span></button></div>
+      <div class="startbar row">
+        <button class="btn primary" :disabled="!pool.length" @click="start">Start deck <span class="kbd" aria-hidden="true">↵</span></button>
+        <button class="btn" :disabled="!pool.length" @click="browse">View all · {{ pool.length }}</button>
+      </div>
     </div>
   </div>
 
@@ -241,6 +267,53 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </aside>
   </div>
 
+  <div v-else-if="stage === 'browse'" class="stack">
+    <div class="row between browsehead">
+      <div>
+        <h1 style="margin: 0">{{ deckType === 'acronyms' ? 'Acronyms' : deckType === 'marked' ? 'Marked for review' : domain ? `${domain}.0 ${domainById(domain).name}` : 'All flashcards' }}</h1>
+        <p class="muted small" style="margin: .25rem 0 0">{{ browseCards.length }} cards · tap a card to flip it</p>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" :aria-pressed="showAnswers" @click="toggleAnswers">{{ showAnswers ? 'Hide answers' : 'Show answers' }}</button>
+        <button type="button" class="btn ghost" @click="stage = 'setup'">‹ Back</button>
+      </div>
+    </div>
+    <div class="cardgrid">
+      <div
+        v-for="c in browseCards"
+        :key="c.id"
+        class="card gcard"
+        :class="{ flipped: isBrowseFlipped(c) }"
+        role="button"
+        tabindex="0"
+        :aria-label="`${c.front}: ${isBrowseFlipped(c) ? 'showing answer' : 'showing term'}. Flip card`"
+        @click="flipBrowse(c)"
+        @keydown.enter.prevent="flipBrowse(c)"
+        @keydown.space.prevent="flipBrowse(c)"
+      >
+        <span class="gtag muted small">{{ isAcronym(c) ? 'Acronym' : `${c.domain}.0` }}</span>
+        <button
+          type="button"
+          class="star"
+          :class="{ on: marked.has(c.id) }"
+          :aria-pressed="marked.has(c.id)"
+          :aria-label="marked.has(c.id) ? 'Marked for review. Click to unmark.' : 'Mark for review'"
+          :title="marked.has(c.id) ? 'Marked for review' : 'Mark for review'"
+          @click.stop="toggleMarked(c.id); $event.detail && $event.currentTarget.blur()"
+          @keydown.enter.stop
+          @keydown.space.stop
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" /></svg>
+        </button>
+        <strong v-if="!isBrowseFlipped(c)" class="gfront">{{ c.front }}</strong>
+        <span v-else class="gback">
+          <AcronymText :text="c.back" free />
+          <span v-if="c.note" class="muted small gnote"><AcronymText :text="c.note" free /></span>
+        </span>
+      </div>
+    </div>
+  </div>
+
   <div v-else class="stack">
     <div class="card stack">
       <div class="label">Deck complete</div>
@@ -271,6 +344,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 /* Start sits at the bottom of the setup card (not sticky to the window). */
 .startbar { padding-top: 1rem; border-top: 1px solid var(--border); }
+.browsehead { align-items: flex-end; flex-wrap: wrap; gap: .75rem; }
+/* View all grid: 1 column on phones, 2 on tablets, 4 on desktop. */
+.cardgrid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+@media (min-width: 600px) { .cardgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 960px) { .cardgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.gcard {
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: .35rem; min-height: 9.5rem;
+  padding: 2.1rem 1rem 1rem; cursor: pointer; text-align: center; transition: border-color .15s, background .15s;
+}
+.gcard:hover { border-color: var(--muted); }
+.gcard.flipped { background: color-mix(in srgb, var(--brand) 5%, var(--surface)); }
+.gcard .star { top: .4rem; right: .4rem; width: 1.9rem; height: 1.9rem; }
+.gcard .star svg { width: 1.1rem; height: 1.1rem; }
+.gtag { position: absolute; top: .65rem; left: .8rem; font-variant-numeric: tabular-nums; }
+.gfront { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.gback { display: grid; gap: .35rem; font-size: .93rem; overflow-wrap: anywhere; }
+.gnote { display: block; }
 .star {
   position: absolute; top: .7rem; right: .7rem; z-index: 2; display: grid; place-items: center; width: 2.2rem; height: 2.2rem;
   padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; transition: color .15s, background .15s, transform .1s;
