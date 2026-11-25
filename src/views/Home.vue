@@ -5,7 +5,7 @@ import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
 import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
-import { missed } from '../lib/missed.js'
+import { flagged, missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { formatDuration, study, summarize } from '../lib/studyTime.js'
 
@@ -98,12 +98,13 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
 
     <div class="cols">
     <!-- What to work on next -->
-    <div v-if="weak.length || missed.size" class="card stack">
+    <div v-if="weak.length || missed.size || flagged.size" class="card stack">
       <div class="row between">
         <div class="label" style="margin: 0">Worth practicing next</div>
         <div class="row">
           <RouterLink v-if="weak.length" to="/practice?weak=1" class="btn small primary">Practice weak areas</RouterLink>
           <RouterLink v-if="missed.size" to="/practice?missed=1" class="btn small">Missed · {{ missed.size }}</RouterLink>
+          <RouterLink v-if="flagged.size" to="/practice?flagged=1" class="btn small">Flagged · {{ flagged.size }}</RouterLink>
         </div>
       </div>
       <div v-for="s in weak" :key="s.code" class="focus">

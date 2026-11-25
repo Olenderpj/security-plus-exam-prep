@@ -7,7 +7,7 @@ import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
 import NotesTree from './components/NotesTree.vue'
 import { overallLabel, overallLevel, overallTone, state, weakSections } from './lib/level.js'
-import { missed } from './lib/missed.js'
+import { flagged, missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
 import { formatDuration, study, summarize } from './lib/studyTime.js'
 
@@ -27,6 +27,7 @@ const level = computed(() => overallLevel())
 const today = computed(() => summarize(study.value).today)
 const weakCount = computed(() => weakSections().length)
 const missedCount = computed(() => missed.value.size)
+const flaggedCount = computed(() => flagged.value.size)
 const levelTone = computed(() => overallTone())
 const levelLabel = computed(() => overallLabel())
 
@@ -73,6 +74,7 @@ onBeforeUnmount(() => {
         <div class="label">Review</div>
         <RouterLink to="/practice?weak=1" class="rlink"><span>Weak areas</span><span class="tag" :class="weakCount ? 'warn' : ''">{{ weakCount }}</span></RouterLink>
         <RouterLink to="/practice?missed=1" class="rlink"><span>Missed questions</span><span class="tag" :class="missedCount ? 'bad' : ''">{{ missedCount }}</span></RouterLink>
+        <RouterLink to="/practice?flagged=1" class="rlink"><span>Flagged</span><span class="tag" :class="flaggedCount ? 'warn' : ''">{{ flaggedCount }}</span></RouterLink>
       </div>
 
       <div class="sidefoot" aria-label="Study status">

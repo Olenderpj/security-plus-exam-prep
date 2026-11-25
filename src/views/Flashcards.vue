@@ -8,7 +8,7 @@ import ACRONYMS from '../data/acronyms.js'
 import { domainById } from '../data/domains.js'
 import { shuffle } from '../lib/random.js'
 import { saveAttempt } from '../lib/progress.js'
-import { marked, toggleMarked, markMany } from '../lib/marked.js'
+import { autoMarked, marked, toggleMarked, markMany, recordCard } from '../lib/marked.js'
 import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
@@ -111,6 +111,7 @@ function start() {
 }
 
 async function mark(gotIt) {
+  recordCard(card.value.id, gotIt)
   if (gotIt) known.value++
   else missed.value.push(card.value)
   if (idx.value < deck.value.length - 1) {
@@ -179,6 +180,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <p v-if="deckType === 'marked' && !markedCards.length" class="muted small" style="margin: 0">
         No cards marked yet. While studying, tap "Mark for review" (or press M) on any card.
       </p>
+      <p v-else-if="deckType === 'marked'" class="muted small" style="margin: 0">
+        Cards you mark yourself stay until you unmark them.<template v-if="markedCards.some((c) => autoMarked.has(c.id))">
+        Acronyms added automatically from practice lookups ({{ markedCards.filter((c) => autoMarked.has(c.id)).length }}) come off once your last 4 attempts at them average 75% or better.</template>
+      </p>
       <CountPicker v-if="pool.length" v-model="count" :max="pool.length" />
       <div class="startbar"><button class="btn primary" :disabled="!pool.length" @click="start">Start deck <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
@@ -204,7 +209,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <div class="row">
         <button class="btn ghost" @click="stage = 'setup'">Quit</button>
         <button class="btn" :class="{ marked: marked.has(card.id) }" @click="toggleMarked(card.id)">
-          {{ marked.has(card.id) ? '★ Marked' : '☆ Mark for review' }}
+          {{ marked.has(card.id) ? (autoMarked.has(card.id) ? '★ Marked (auto)' : '★ Marked') : '☆ Mark for review' }}
         </button>
       </div>
       <div v-if="flipped" class="row">

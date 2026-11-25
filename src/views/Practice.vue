@@ -6,7 +6,8 @@ import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
-import { missed, recordAnswer } from '../lib/missed.js'
+import { flagged, missed, onReviewList, recordAnswer, toggleFlag } from '../lib/missed.js'
+import { CLEAR_AVG, CLEAR_WINDOW, reviewProgress } from '../lib/reviewHistory.js'
 import { objectiveName } from '../data/domains.js'
 import { practiceSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
@@ -17,16 +18,30 @@ import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
 import AcronymModal from '../components/AcronymModal.vue'
 import { applyLookup, weakSections } from '../lib/level.js'
-import { markMany } from '../lib/marked.js'
+import { markAuto } from '../lib/marked.js'
 
 const route = useRoute()
 const domain = ref(route.query.domain ? Number(route.query.domain) : null)
 const count = ref(10)
 const objectives = ref(route.query.objective ? [].concat(route.query.objective) : []) // optional sub-sections
 const kind = ref('all')
-const source = ref(route.query.missed ? 'missed' : route.query.weak ? 'weak' : 'all') // all | missed | weak
-const onlyIds = computed(() => (source.value === 'missed' ? missed.value : null))
+const source = ref(route.query.missed ? 'missed' : route.query.flagged ? 'flagged' : route.query.weak ? 'weak' : 'all') // all | missed | flagged | weak
+const onlyIds = computed(() => (source.value === 'missed' ? missed.value : source.value === 'flagged' ? flagged.value : null))
 const missedTotal = computed(() => practicePool(null, 'all', missed.value, objectives.value).length)
+const flaggedTotal = computed(() => practicePool(null, 'all', flagged.value, objectives.value).length)
+const RULE = `It comes off the list once your last ${CLEAR_WINDOW} attempts average ${CLEAR_AVG * 100}% or better.`
+
+// Flag the current question for extra practice (and its section as a weak area). Shown after answering:
+// where a question on a review list stands against the clearing rule.
+const isFlaggedNow = computed(() => current.value && flagged.value.has(current.value.id))
+const reviewNote = computed(() => {
+  const q = current.value
+  if (!revealed.value || !q) return null
+  const p = reviewProgress(q.id)
+  if (!onReviewList(q.id)) return null
+  const lists = [missed.value.has(q.id) && 'missed', flagged.value.has(q.id) && 'flagged'].filter(Boolean).join(' and ')
+  return { lists, ...p }
+})
 
 // Weak areas: sub-sections where your level is lowest (needs a few answers in a section to count).
 const weakList = computed(() => weakSections())
@@ -57,7 +72,7 @@ function revealAcronym() {
   if (!info || info.revealed) return
   counted.add(`${info.qid}:${info.entry.front}`)
   if (info.objective) applyLookup(info.objective)
-  markMany([info.entry.id])
+  markAuto([info.entry.id])
   lookupInfo.value = { ...info, revealed: true }
 }
 provide('acronymLookup', lookupAcronym)
@@ -124,6 +139,7 @@ function start() {
   const ids = onlyIds.value ? new Set(onlyIds.value) : null
   questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objectives.value, weakCodes.value)
   counted.clear()
+  cleared.value = new Set()
   committed = false
   endedEarly.value = 0
   answers.value = []
@@ -134,9 +150,13 @@ function start() {
   stage.value = 'run'
 }
 
+const cleared = ref(new Set()) // questions that came off a review list during this session
 function check() {
   revealed.value = true
+  const id = current.value.id
+  const was = onReviewList(id)
   recordAnswer(current.value, sel.value)
+  if (was && !onReviewList(id)) cleared.value = new Set([...cleared.value, id])
 }
 
 // Questions answered so far: every earlier one (you must check an answer to move on), plus this one once checked.
@@ -247,19 +267,24 @@ onBeforeUnmount(() => {
         <div class="row">
           <button class="chip" :class="{ on: source === 'all' }" @click="source = 'all'">All questions</button>
           <button class="chip" :class="{ on: source === 'missed' }" @click="source = 'missed'">Missed questions · {{ missedTotal }}</button>
+          <button class="chip" :class="{ on: source === 'flagged' }" @click="source = 'flagged'">Flagged · {{ flaggedTotal }}</button>
           <button class="chip" :class="{ on: source === 'weak' }" :disabled="!weakList.length" @click="source = 'weak'">Weak areas · {{ weakTotal }}</button>
         </div>
         <p v-if="!weakList.length" class="muted small" style="margin: .5rem 0 0">
           Weak areas appear once you have answered a few questions in some sections.
         </p>
         <div v-else-if="source === 'weak'" class="small" style="margin: .5rem 0 0">
-          <div class="muted">Focusing on the sections where your level is lowest:</div>
+          <div class="muted">Focusing on sections with flagged questions and the sections where your level is lowest:</div>
           <div class="weakchips">
-            <span v-for="s in weakList" :key="s.code" class="tag brand wrap">{{ s.code }} {{ s.name }} · {{ s.rating.toFixed(1) }}</span>
+            <span v-for="s in weakList" :key="s.code" class="tag brand wrap">
+              <svg v-if="s.flagged" class="fl" viewBox="0 0 24 24" aria-label="Flagged"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ s.code }} {{ s.name }} · {{ s.rating.toFixed(1) }}</span>
           </div>
         </div>
         <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
-          {{ missedTotal ? 'Questions you got wrong in practice or exams. Answer one correctly and it comes off the list.' : 'No missed questions right now — they\'ll collect here as you practice.' }}
+          {{ missedTotal ? `Questions you got wrong in practice or exams. ${RULE}` : 'No missed questions right now — they\'ll collect here as you practice.' }}
+        </p>
+        <p v-if="source === 'flagged'" class="muted small" style="margin: .5rem 0 0">
+          {{ flaggedTotal ? `Questions you flagged for extra practice; their sections also count as weak areas. ${RULE} You can unflag one at any time.` : 'Nothing flagged yet. While practicing, tap the flag on a question to add it here.' }}
         </p>
       </div>
       <div>
@@ -286,8 +311,29 @@ onBeforeUnmount(() => {
       <span>{{ runningCorrect }} correct</span>
     </div>
     <div class="bar"><span :style="{ width: ((idx + (revealed ? 1 : 0)) / questions.length) * 100 + '%' }" /></div>
-    <div class="card">
+    <div class="card qcard">
+      <button
+        type="button"
+        class="flagbtn"
+        :class="{ on: isFlaggedNow }"
+        data-noshortcut
+        :aria-pressed="isFlaggedNow"
+        :title="isFlaggedNow ? 'Flagged for extra practice. Click to unflag.' : 'Flag for extra practice (adds its section to your weak areas)'"
+        @click="toggleFlag(current.id); $event.detail && $event.currentTarget.blur()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>
+        <span>{{ isFlaggedNow ? 'Flagged' : 'Flag' }}</span>
+      </button>
       <QuestionBody v-model:selected="sel" :question="current" :reveal="revealed" />
+      <p v-if="reviewNote" class="revnote small">
+        On your {{ reviewNote.lists }} list · last {{ reviewNote.n }} attempt{{ reviewNote.n === 1 ? '' : 's' }}:
+        <span v-for="(x, i) in reviewNote.scores" :key="i" class="pip" :class="x >= 1 ? 'ok' : x > 0 ? 'part' : 'no'" />
+        <strong>{{ Math.round(reviewNote.avg * 100) }}%</strong>.
+        Needs {{ CLEAR_AVG * 100 }}% or better over {{ CLEAR_WINDOW }} attempts to come off<template v-if="reviewNote.n < CLEAR_WINDOW"> ({{ CLEAR_WINDOW - reviewNote.n }} more to go)</template>.
+      </p>
+      <p v-else-if="revealed && cleared.has(current.id)" class="revnote small good">
+        Cleared from your review lists: your last {{ CLEAR_WINDOW }} attempts averaged {{ CLEAR_AVG * 100 }}% or better.
+      </p>
     </div>
     <div class="row between actions">
       <button class="btn ghost" data-noshortcut :title="answeredCount ? 'Ends the session and scores the questions you answered' : ''" @click="quit">
@@ -329,6 +375,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .rangenote { margin: 0; }
+.qcard { position: relative; }
+.qcard :deep(.meta) { padding-right: 6.5rem; }
+.flagbtn {
+  position: absolute; top: .75rem; right: .75rem; z-index: 2; display: inline-flex; align-items: center; gap: .3rem;
+  font: inherit; font-size: .78rem; font-weight: 600; color: var(--muted); background: var(--surface); cursor: pointer;
+  border: 1px solid var(--border); border-radius: 999px; padding: .25rem .6rem .25rem .5rem; transition: color .15s, border-color .15s, background .15s;
+}
+.flagbtn:hover { color: var(--text); border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); }
+.flagbtn svg, .fl { width: .9rem; height: .9rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.flagbtn.on { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: var(--warn-bg); }
+.flagbtn.on svg { fill: currentColor; }
+.fl { vertical-align: -2px; margin-right: .25rem; fill: currentColor; }
+.revnote { margin: 1rem 0 0; padding-top: .75rem; border-top: 1px solid var(--border); color: var(--muted); }
+.revnote.good { color: var(--good); }
+.pip { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin: 0 .12rem; vertical-align: 0; }
+.pip.ok { background: var(--good); } .pip.no { background: var(--bad); } .pip.part { background: var(--warn); }
 .run { display: block; }
 .rail { display: none; }
 .weakchips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
