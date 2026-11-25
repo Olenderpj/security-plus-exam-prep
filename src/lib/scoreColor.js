@@ -7,3 +7,13 @@ export function scoreStyle(pct) {
   const c = `var(--s${scoreBand(pct)})`
   return { color: c, background: `color-mix(in srgb, ${c} 13%, var(--surface))`, borderColor: `color-mix(in srgb, ${c} 30%, transparent)` }
 }
+
+// Plain colour (text, bars) for a percentage, using the same 8 bands.
+export const scoreColor = (pct) => `var(--s${scoreBand(pct)})`
+
+// Levels (1–10) and scaled exam scores (100–900) on the same bands, so every rating in the app reads alike.
+export const levelPct = (rating) => ((Number(rating) - 1) / 9) * 100
+export const scaledPct = (scaled) => ((Number(scaled) - 100) / 800) * 100
+
+// Pill styles for a level; pass measured=false for 'Early' / 'Not started' to keep the neutral grey.
+export const levelStyle = (rating, measured = true) => (measured ? scoreStyle(levelPct(rating)) : {})

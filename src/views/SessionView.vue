@@ -1,6 +1,7 @@
 <script setup>
 // A past session reopened from Progress → Recent activity: its full results (questions as they were shown and
 // your answers) when they were saved, or the saved summary for older sessions.
+import { scoreColor } from '../lib/scoreColor.js'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { DOMAINS } from '../data/domains.js'
@@ -85,7 +86,7 @@ const cardsKnown = computed(() => (d.value?.cards || []).filter((c) => c.known))
       <!-- Sessions saved before details were recorded -->
       <div v-else class="card stack">
         <div class="label">Score</div>
-        <div class="hero num">{{ pct(attempt) }}<span class="unit">%</span></div>
+        <div class="hero num" :style="{ color: scoreColor(pct(attempt)) }">{{ pct(attempt) }}<span class="unit">%</span></div>
         <div class="muted">
           {{ attempt.correct }} of {{ attempt.total }} {{ attempt.mode === 'flashcards' ? 'known' : 'correct' }}
           <template v-if="attempt.mode === 'exam'"> · scaled {{ scaled(attempt.correct, attempt.total) }}</template>
@@ -95,9 +96,9 @@ const cardsKnown = computed(() => (d.value?.cards || []).filter((c) => c.known))
           <div v-for="dm in byDomain" :key="dm.id">
             <div class="row between small">
               <span>{{ dm.id }}.0 {{ dm.name }}</span>
-              <span class="muted">{{ attempt.domain_breakdown[dm.id].correct }}/{{ attempt.domain_breakdown[dm.id].total }}</span>
+              <span><span class="muted">{{ attempt.domain_breakdown[dm.id].correct }}/{{ attempt.domain_breakdown[dm.id].total }} · </span><strong :style="{ color: scoreColor(pct(attempt.domain_breakdown[dm.id])) }">{{ pct(attempt.domain_breakdown[dm.id]) }}%</strong></span>
             </div>
-            <div class="bar"><span :style="{ width: (100 * attempt.domain_breakdown[dm.id].correct) / attempt.domain_breakdown[dm.id].total + '%' }" /></div>
+            <div class="bar"><span :style="{ width: pct(attempt.domain_breakdown[dm.id]) + '%', background: scoreColor(pct(attempt.domain_breakdown[dm.id])) }" /></div>
           </div>
         </div>
         <p class="muted small" style="margin: 0">

@@ -1,5 +1,5 @@
 <script setup>
-import { scoreStyle } from '../lib/scoreColor.js'
+import { scaledPct, scoreColor, scoreStyle } from '../lib/scoreColor.js'
 import { confirmDialog } from '../lib/dialog.js'
 import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
@@ -65,7 +65,6 @@ const overallPill = computed(() =>
   state.value.n >= MIN_FOR_ESTIMATE ? { text: overallLabel(), style: levelColor(overall.value) } : { text: overallLabel(), style: {} }
 )
 // Level colour: building (amber) → proficient (blue) → strong (green).
-const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
 
 // ── study time ──
@@ -226,7 +225,7 @@ async function resetDifficulty() {
         <div class="rightcol">
           <div class="label">Estimated exam score</div>
           <template v-if="est">
-            <div class="big num" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
+            <div class="big num" :style="{ color: scoreColor(scaledPct(est.scaled)) }">{{ est.scaled }}</div>
             <div class="muted small">likely {{ est.low }}–{{ est.high }} · pass {{ EXAM.passScaled }}</div>
             <div v-if="est.coverage < 1" class="muted small">Based on {{ coverageText(est) }}; unstarted sections count as guesses.</div>
           </template>

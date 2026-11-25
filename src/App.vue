@@ -10,7 +10,8 @@ import NotesTree from './components/NotesTree.vue'
 import { defineAsyncComponent } from 'vue'
 // Loaded with the Objectives page so the objectives data stays out of the main bundle.
 const ObjectivesTree = defineAsyncComponent(() => import('./components/ObjectivesTree.vue'))
-import { overallLabel, overallLevel, overallTone, state, weakSections } from './lib/level.js'
+import { MIN_FOR_ESTIMATE, overallLabel, overallLevel, state, weakSections } from './lib/level.js'
+import { levelStyle } from './lib/scoreColor.js'
 import { flagged, missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
 import { searchRequest } from './lib/search.js'
@@ -35,7 +36,7 @@ const today = computed(() => summarize(study.value).today)
 const weakCount = computed(() => weakSections().length)
 const missedCount = computed(() => missed.value.size)
 const flaggedCount = computed(() => flagged.value.size)
-const levelTone = computed(() => overallTone())
+const levelPill = computed(() => levelStyle(overallLevel(), state.value.n >= MIN_FOR_ESTIMATE))
 const levelLabel = computed(() => overallLabel())
 
 // The search box is hidden while a session is running (practice, exam, flashcards).
@@ -86,7 +87,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="sidefoot" aria-label="Study status">
-        <div class="statline"><span class="muted small">Level</span><span class="tag" :class="levelTone">{{ level.toFixed(1) }} · {{ levelLabel }}</span></div>
+        <div class="statline"><span class="muted small">Level</span><span class="tag" :style="levelPill">{{ level.toFixed(1) }} · {{ levelLabel }}</span></div>
         <div class="statline"><span class="muted small">Studied today</span><span class="num small">{{ formatDuration(today) }}</span></div>
       </div>
 

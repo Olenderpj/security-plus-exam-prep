@@ -1,10 +1,11 @@
 <script setup>
+import { levelPct, levelStyle, scaledPct, scoreColor } from '../lib/scoreColor.js'
 import { computed } from 'vue'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import FLASHCARDS from '../data/flashcards.js'
 import { user } from '../lib/auth.js'
-import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, sectionBadge, state, weakSections } from '../lib/level.js'
+import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallLevel, sectionBadge, state, weakSections } from '../lib/level.js'
 import { flagged, missed } from '../lib/missed.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 import { formatDuration, study, summarize } from '../lib/studyTime.js'
@@ -31,7 +32,6 @@ const actions = [
   { to: '/flashcards', title: 'Flashcards', text: 'Concepts and acronyms, reshuffled.', paths: ['M12 2 2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
   { to: '/progress', title: 'Progress', text: 'Scores and accuracy by domain.', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] }
 ]
-const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
 const domains = computed(() => DOMAINS.map((d) => ({ ...d, stat: domainStats(d.id) })))
 const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}% correct`)
 </script>
@@ -64,11 +64,11 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
       <div class="card stat">
         <div class="label">Your level</div>
         <div class="big num">{{ level.toFixed(1) }}</div>
-        <div class="small"><span class="tag" :class="overallTone()">{{ overallLabel() }}</span> <span class="muted">· {{ answered }} answered</span></div>
+        <div class="small"><span class="tag" :style="levelStyle(level, state.n >= MIN_FOR_ESTIMATE)">{{ overallLabel() }}</span> <span class="muted">· {{ answered }} answered</span></div>
       </div>
       <div class="card stat">
         <div class="label">Est. exam score</div>
-        <div class="big" :class="est && est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est ? est.scaled : '—' }}</div>
+        <div class="big" :style="est ? { color: scoreColor(scaledPct(est.scaled)) } : {}">{{ est ? est.scaled : '—' }}</div>
         <div class="muted small">{{ est ? `likely ${est.low}–${est.high} · pass ${EXAM.passScaled}${est.coverage < 1 ? ` · ${est.started}/${est.sections} sections` : ''}` : `needs ${MIN_FOR_ESTIMATE}+ answers` }}</div>
       </div>
       <div class="card stat">
@@ -110,8 +110,8 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
       <div v-for="s in weak" :key="s.code" class="focus">
         <span class="code">{{ s.code }}</span>
         <span class="grow">{{ s.name }}</span>
+        <span class="tag" :style="levelStyle(s.rating)">{{ s.rating.toFixed(1) }}</span>
         <span class="muted small">{{ pct(s.accuracy) }}</span>
-        <span class="tag" :class="tone(s.rating)">{{ s.rating.toFixed(1) }}</span>
       </div>
     </div>
 
@@ -121,8 +121,8 @@ const pct = (x) => (x === null || x === undefined ? '' : `${Math.round(x * 100)}
       <div v-for="d in domains" :key="d.id" class="dom">
         <span class="num">{{ d.id }}.0</span>
         <span class="grow">{{ d.name }} <span class="muted small">· {{ d.weight }}% of exam</span></span>
-        <span class="track" aria-hidden="true"><span :style="{ width: d.stat.answered ? Math.round(((d.stat.rating - 1) / 9) * 100) + '%' : '0' }" /></span>
-        <span class="tag" :class="sectionBadge(d.stat).tone" :title="sectionBadge(d.stat).measured ? '' : 'Not enough answers yet to rate this domain'">{{ d.stat.answered ? d.stat.rating.toFixed(1) : '—' }}</span>
+        <span class="track" aria-hidden="true"><span :style="{ width: d.stat.answered ? Math.round(levelPct(d.stat.rating)) + '%' : '0', background: sectionBadge(d.stat).measured ? scoreColor(levelPct(d.stat.rating)) : 'var(--muted)' }" /></span>
+        <span class="tag" :style="levelStyle(d.stat.rating, sectionBadge(d.stat).measured)" :title="sectionBadge(d.stat).measured ? '' : 'Not enough answers yet to rate this domain'">{{ d.stat.answered ? d.stat.rating.toFixed(1) : '—' }}</span>
       </div>
     </div>
     </div>

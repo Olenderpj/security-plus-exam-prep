@@ -1,4 +1,5 @@
 <script setup>
+import { levelPct, scaledPct, scoreColor } from '../lib/scoreColor.js'
 import { computed, ref } from 'vue'
 import { DOMAINS, EXAM, objectiveName } from '../data/domains.js'
 import { isCorrect, score as scoreSession, breakdown } from '../lib/exam.js'
@@ -17,6 +18,7 @@ const props = defineProps({
   history: { type: Boolean, default: false }
 })
 defineEmits(['restart'])
+const dPct = (b) => Math.round((100 * b.correct) / Math.max(b.total, 1))
 
 const correct = computed(() => props.questions.filter((q, i) => isCorrect(q, props.answers[i] || [])).length)
 const result = computed(() => scoreSession(props.questions, props.answers))
@@ -65,14 +67,14 @@ function rate(kind) {
       <div class="row between">
         <div>
           <div class="label">Score</div>
-          <div class="hero num">{{ pct }}<span class="unit">%</span></div>
+          <div class="hero num" :style="{ color: scoreColor(pct) }">{{ pct }}<span class="unit">%</span></div>
           <div class="muted">{{ pts }} of {{ questions.length }} correct</div>
           <div class="small verdict">{{ pct >= 85 ? 'Excellent. You are performing at exam level.' : pct >= 70 ? 'Solid. Review the misses below to lock it in.' : pct >= 55 ? 'Getting there. Retest the questions you missed.' : 'Worth another pass. Retesting your misses is the fastest gain.' }}</div>
           <div v-if="pts !== correct" class="muted small">{{ correct }} fully correct · partial credit on performance-based items</div>
         </div>
         <div v-if="exam" class="rightcol">
           <div class="label">Scaled score (100–900)</div>
-          <div class="big" :class="result.pass ? 'good' : 'bad'">{{ result.scaled }}</div>
+          <div class="big" :style="{ color: scoreColor(scaledPct(result.scaled)) }">{{ result.scaled }}</div>
           <div class="small" :class="result.pass ? 'good' : 'bad'">
             {{ result.pass ? 'Pass' : 'Below passing' }} (750 ≈ {{ passPct }}%)
           </div>
@@ -87,9 +89,9 @@ function rate(kind) {
         <div v-for="d in DOMAINS.filter((d) => byDomain[d.id])" :key="d.id">
           <div class="row between small">
             <span>{{ d.id }}.0 {{ d.name }}</span>
-            <span class="muted">{{ byDomain[d.id].correct }}/{{ byDomain[d.id].total }}</span>
+            <span><span class="muted">{{ byDomain[d.id].correct }}/{{ byDomain[d.id].total }} · </span><strong :style="{ color: scoreColor(dPct(byDomain[d.id])) }">{{ dPct(byDomain[d.id]) }}%</strong></span>
           </div>
-          <div class="bar"><span :style="{ width: (100 * byDomain[d.id].correct) / byDomain[d.id].total + '%' }" /></div>
+          <div class="bar"><span :style="{ width: dPct(byDomain[d.id]) + '%', background: scoreColor(dPct(byDomain[d.id])) }" /></div>
         </div>
       </div>
       <p v-if="correct < questions.length && !history" class="muted small" style="margin: 0">
@@ -161,7 +163,7 @@ function rate(kind) {
             <span class="muted">{{ Math.round(s.points * 10) / 10 }}/{{ s.n }} correct</span>
           </div>
           <div class="track" role="img" :aria-label="`Level ${s.now.toFixed(1)}, questions averaged ${s.avgDifficulty}`">
-            <span class="level" :style="{ width: barPct(s.now) }" />
+            <span class="level" :style="{ width: barPct(s.now), background: scoreColor(levelPct(s.now)) }" />
             <span class="mark" :style="{ left: barPct(s.avgDifficulty) }" />
           </div>
           <div class="row between small muted">

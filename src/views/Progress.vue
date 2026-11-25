@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { loadAttempts } from '../lib/progress.js'
 import { attemptLabel } from '../lib/attemptLabel.js'
-import { scoreStyle } from '../lib/scoreColor.js'
+import { scaledPct, scoreColor, scoreStyle } from '../lib/scoreColor.js'
 import { scaled } from '../lib/exam.js'
 import { user, authReady } from '../lib/auth.js'
 import { supabaseEnabled } from '../lib/supabase.js'
@@ -39,7 +39,8 @@ const toggleDomain = (id) => {
   s.has(id) ? s.delete(id) : s.add(id)
   expanded.value = s
 }
-const pctClass = (pct) => (pct === null ? 'muted' : pct >= 85 ? 'good' : pct < 70 ? 'bad' : '')
+const pctColor = (pct) => (pct === null ? {} : { color: scoreColor(pct) })
+const barColor = (pct) => (pct === null ? {} : { background: scoreColor(pct) })
 
 const quizzes = computed(() => attempts.value.filter((a) => a.mode !== 'flashcards'))
 const exams = computed(() => attempts.value.filter((a) => a.mode === 'exam'))
@@ -111,7 +112,7 @@ function confirmClearMissed() {
         <div class="card"><div class="label">Overall accuracy</div><div class="big">{{ totals.pct }}%</div></div>
         <div class="card">
           <div class="label">Best exam (est.)</div>
-          <div class="big" :class="bestExam >= EXAM.passScaled ? 'good' : ''">{{ fullExams.length ? bestExam : '—' }}</div>
+          <div class="big" :style="fullExams.length ? { color: scoreColor(scaledPct(bestExam)) } : {}">{{ fullExams.length ? bestExam : '—' }}</div>
         </div>
       </div>
 
@@ -132,7 +133,7 @@ function confirmClearMissed() {
 
       <div class="card stack">
         <div class="label">Accuracy by domain</div>
-        <p class="muted small" style="margin: 0">Select a domain to see each exam objective. <span class="lg"><i class="sw g" /> 85%+</span> <span class="lg"><i class="sw r" /> under 70%</span></p>
+        <p class="muted small" style="margin: 0">Select a domain to see each exam objective. <span class="scale" aria-hidden="true">0% <i v-for="n in 8" :key="n" :style="{ background: `var(--s${n - 1})` }" /> 100%</span></p>
         <div v-for="d in domainStats" :key="d.id" class="domain">
           <button class="domain-head" :aria-expanded="expanded.has(d.id)" @click="toggleDomain(d.id)">
             <span class="row between small">
@@ -140,10 +141,10 @@ function confirmClearMissed() {
               <span>
                 <span v-if="missedByDomain[d.id]" class="muted missed-link">{{ missedByDomain[d.id] }} missed</span>
                 <span v-if="d.pct === null" class="muted">No data</span>
-                <span v-else><span class="muted">{{ d.n }} answered · </span><strong class="pctv" :class="pctClass(d.pct)">{{ d.pct }}%</strong></span>
+                <span v-else><span class="muted">{{ d.n }} answered · </span><strong class="pctv" :style="pctColor(d.pct)">{{ d.pct }}%</strong></span>
               </span>
             </span>
-            <span class="bar" :class="pctClass(d.pct)"><span :style="{ width: (d.pct || 0) + '%' }" /></span>
+            <span class="bar"><span :style="{ width: (d.pct || 0) + '%', ...barColor(d.pct) }" /></span>
           </button>
 
           <div v-if="expanded.has(d.id)" class="objectives">
@@ -154,9 +155,9 @@ function confirmClearMissed() {
                   <span v-if="o.code === d.weakest" class="tag">Weakest</span>
                 </span>
                 <span v-if="o.pct === null" class="muted">No data</span>
-                <span v-else><span class="muted">{{ o.n }} answered · </span><strong class="pctv" :class="pctClass(o.pct)">{{ o.pct }}%</strong></span>
+                <span v-else><span class="muted">{{ o.n }} answered · </span><strong class="pctv" :style="pctColor(o.pct)">{{ o.pct }}%</strong></span>
               </div>
-              <div class="bar thin" :class="pctClass(o.pct)"><span :style="{ width: (o.pct || 0) + '%' }" /></div>
+              <div class="bar thin"><span :style="{ width: (o.pct || 0) + '%', ...barColor(o.pct) }" /></div>
               <div class="row small links">
                 <RouterLink :to="`/practice?domain=${d.id}&objective=${o.code}`">Practice</RouterLink>
                 <RouterLink v-if="missedByDomain[o.code]" :to="`/practice?missed=1&domain=${d.id}&objective=${o.code}`" class="bad">
@@ -247,4 +248,8 @@ function confirmClearMissed() {
 }
 .pctv { font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) { .item { grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; } .adate { text-align: right; } }
+.scale { display: inline-flex; align-items: center; gap: 2px; margin-left: .5rem; white-space: nowrap; }
+.scale i { display: inline-block; width: .7rem; height: .55rem; border-radius: 2px; }
+.scale i:first-of-type { margin-left: .25rem; }
+.scale i:last-of-type { margin-right: .25rem; }
 </style>
