@@ -13,7 +13,9 @@ const props = defineProps({
   selected: { type: Array, required: true },
   reveal: { type: Boolean, default: false },
   // Read-only view of a question with its answers shown (no right/wrong verdict).
-  review: { type: Boolean, default: false }
+  review: { type: Boolean, default: false },
+  // Exams: no tags (source, type, tier, section) above the question, as on the real exam.
+  hideMeta: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:selected'])
 
@@ -115,7 +117,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
 
 <template>
   <div class="stack">
-    <div class="meta">
+    <div v-if="!hideMeta" class="meta">
       <span v-if="guideLabel" class="tag guide" title="Adapted from your SY0-701 practice exams">{{ guideLabel }}</span>
       <span class="tag">{{ typeLabel }}</span>
       <span class="tag" :title="`${tierOf(q).text} · level ${difficultyOf(q).toFixed(1)}`">{{ tierOf(q).name }}</span>

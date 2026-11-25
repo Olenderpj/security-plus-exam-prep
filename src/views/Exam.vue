@@ -28,7 +28,6 @@ useFocusMode(stage)
 const adaptive = ref(null)
 const questions = ref([])
 const answers = ref([])
-const flags = ref(new Set())
 const idx = ref(0)
 const remaining = ref(0)
 const startedAt = ref(0)
@@ -65,7 +64,6 @@ function start() {
       : examSet(length.value, source.value === 'missed' ? new Set(missed.value) : null)
   answers.value = []
   adaptive.value = null
-  flags.value = new Set()
   idx.value = 0
   startedAt.value = Date.now()
   stage.value = 'run'
@@ -86,7 +84,6 @@ const saved = loadSession('exam')
 if (saved) {
   questions.value = saved.questions
   answers.value = saved.answers || []
-  flags.value = new Set(saved.flags || [])
   idx.value = Math.min(saved.idx || 0, saved.questions.length - 1)
   startedAt.value = saved.startedAt || Date.now()
   timed.value = saved.timed !== false
@@ -96,12 +93,12 @@ if (saved) {
   runTimer()
   if (timed.value && remaining.value === 0) finish()
 }
-watch([stage, questions, answers, flags, idx], () => {
-  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, flags: [...flags.value], idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value, source: source.value })
+watch([stage, questions, answers, idx], () => {
+  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value, source: source.value })
   else clearSession('exam')
 }, { deep: true })
 
-// Keyboard: ←/→ move between questions, F flags, A–D / 1–4 answer. Enter starts from the setup screen.
+// Keyboard: ←/→ move between questions, A–D / 1–4 answer. Enter starts from the setup screen.
 function onKeys(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   const t = e.target
@@ -113,7 +110,6 @@ function onKeys(e) {
   if (stage.value !== 'run') return
   if (e.key === 'ArrowLeft' && idx.value > 0) { e.preventDefault(); idx.value-- }
   else if (e.key === 'ArrowRight' && idx.value < questions.value.length - 1) { e.preventDefault(); idx.value++ }
-  else if (e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFlag() }
   else if (current.value.type === 'mc') {
     const q = current.value
     const k = e.key.toLowerCase()
@@ -126,12 +122,6 @@ function onKeys(e) {
 }
 onMounted(() => window.addEventListener('keydown', onKeys))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeys))
-
-function toggleFlag() {
-  const f = new Set(flags.value)
-  f.has(idx.value) ? f.delete(idx.value) : f.add(idx.value)
-  flags.value = f
-}
 
 function confirmFinish() {
   const left = questions.value.length - answeredCount.value
@@ -176,7 +166,7 @@ onBeforeUnmount(() => clearInterval(timer))
     </p>
     <p class="muted">
       Questions are drawn from every domain using the official SY0-701 weightings. No feedback until you submit —
-      just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back. Flag questions to revisit before submitting.
+      just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back.
     </p>
     <div class="card stack">
       <div>
@@ -235,7 +225,7 @@ onBeforeUnmount(() => clearInterval(timer))
       <span v-if="timed" class="clock mono" :class="{ low: remaining < 300 }" title="Time remaining">{{ clock }}</span>
     </div>
     <div class="card">
-      <QuestionBody v-model:selected="sel" :question="current" />
+      <QuestionBody v-model:selected="sel" :question="current" hide-meta />
     </div>
     <div class="row between">
       <div class="row">
@@ -243,7 +233,6 @@ onBeforeUnmount(() => clearInterval(timer))
         <button class="btn" :disabled="idx === questions.length - 1" @click="idx++">Next <span class="kbd" aria-hidden="true">→</span></button>
       </div>
       <div class="row">
-        <button class="btn" @click="toggleFlag">{{ flags.has(idx) ? 'Unflag' : 'Flag for review' }} <span class="kbd" aria-hidden="true">F</span></button>
         <button class="btn primary" @click="confirmFinish">Submit exam</button>
       </div>
     </div>
@@ -258,13 +247,12 @@ onBeforeUnmount(() => clearInterval(timer))
           v-for="(q, i) in questions"
           :key="q.id"
           class="cell"
-          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), flagged: flags.has(i), pbq: q.type !== 'mc' }"
+          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), pbq: q.type !== 'mc' }"
           @click="idx = i"
         >{{ i + 1 }}</button>
       </div>
       <div class="row small muted legend">
         <span><i class="sw answered" /> Answered</span>
-        <span><i class="sw flagged" /> Flagged</span>
         <span><i class="sw dot" /> Performance-based</span>
       </div>
     </div>
@@ -272,7 +260,6 @@ onBeforeUnmount(() => clearInterval(timer))
         <div class="label">Shortcuts</div>
         <div class="krow"><span class="kbd">←</span><span class="kbd">→</span><span class="muted small">Previous / next</span></div>
         <div class="krow"><span><span class="kbd">A</span>–<span class="kbd">D</span> <span class="kbd">1</span>–<span class="kbd">4</span></span><span class="muted small">Answer</span></div>
-        <div class="krow"><span class="kbd">F</span><span class="muted small">Flag for review</span></div>
       </div>
     </aside>
   </div>
@@ -310,13 +297,11 @@ onBeforeUnmount(() => clearInterval(timer))
 .cell:hover { border-color: var(--muted); }
 .cell.answered { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .cell.partial { background: var(--soft); color: var(--text); border-style: dashed; }
-.cell.flagged { box-shadow: 0 0 0 2px var(--warn); }
 .cell.pbq::after { content: ''; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--brand); }
 .cell.current { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); color: var(--text); }
 .cell.current.answered { color: var(--accent-text); }
 .legend { margin-top: .75rem; gap: 1rem; }
 .sw { display: inline-block; width: .85rem; height: .85rem; border-radius: 4px; border: 1px solid var(--border); vertical-align: -2px; margin-right: .3rem; }
 .sw.answered { background: var(--accent); border-color: var(--accent); }
-.sw.flagged { box-shadow: 0 0 0 2px var(--warn); }
 .sw.dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--brand); border: 0; vertical-align: 1px; }
 </style>
