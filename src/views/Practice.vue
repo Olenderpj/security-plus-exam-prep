@@ -9,7 +9,8 @@ import { useRoute } from 'vue-router'
 import { flagged, missed, onReviewList, recordAnswer, toggleFlag } from '../lib/missed.js'
 import { CLEAR_AVG, CLEAR_WINDOW, reviewProgress } from '../lib/reviewHistory.js'
 import { objectiveName } from '../data/domains.js'
-import { practiceSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
+import { practiceSet, practiceMixSet, practicePool, minPerCategory, isCorrect, isComplete, breakdown } from '../lib/exam.js'
+import { QUESTIONS, isPortQuestion } from '../data/questions/index.js'
 import { saveAttempt } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
@@ -25,10 +26,24 @@ const domain = ref(route.query.domain ? Number(route.query.domain) : null)
 const count = ref(10)
 const objectives = ref(route.query.objective ? [].concat(route.query.objective) : []) // optional sub-sections
 const kind = ref('all')
-const source = ref(route.query.missed ? 'missed' : route.query.flagged ? 'flagged' : route.query.weak ? 'weak' : 'all') // all | missed | flagged | weak
-const onlyIds = computed(() => (source.value === 'missed' ? missed.value : source.value === 'flagged' ? flagged.value : null))
-const missedTotal = computed(() => practicePool(null, 'all', missed.value, objectives.value).length)
-const flaggedTotal = computed(() => practicePool(null, 'all', flagged.value, objectives.value).length)
+// Practice categories: pick any number (none = all questions). Each is a question set; with several, the
+// session mixes them (every category gets at least 10% of the questions, the rest are drawn at random).
+const CATS = ['missed', 'flagged', 'weak', 'ports']
+const cats = ref(CATS.filter((c) => route.query[c]))
+const has = (c) => cats.value.includes(c)
+const toggleCat = (c) => (cats.value = has(c) ? cats.value.filter((x) => x !== c) : [...cats.value, c])
+const PORT_IDS = new Set(QUESTIONS.filter(isPortQuestion).map((q) => q.id))
+const weakSet = computed(() => new Set(weakList.value.map((s) => s.code)))
+const catDef = (c) => (c === 'missed' ? { onlyIds: missed.value } : c === 'flagged' ? { onlyIds: flagged.value } : c === 'weak' ? { sections: weakSet.value } : { onlyIds: PORT_IDS })
+// Everything the chosen categories (union) offer within a domain / sub-sections, for the current question type.
+function poolOf(dom, objs) {
+  if (!cats.value.length) return practicePool(dom, kind.value, null, objs, null)
+  const all = new Map()
+  cats.value.map(catDef).forEach((c) => practicePool(dom, kind.value, c.onlyIds || null, objs, c.sections || null).forEach((q) => all.set(q.id, q)))
+  return [...all.values()]
+}
+const catTotal = (c) => practicePool(null, 'all', catDef(c).onlyIds || null, objectives.value, catDef(c).sections || null).length
+const minShare = computed(() => minPerCategory(count.value === 'all' ? max.value : Math.min(count.value, max.value)))
 const RULE = `It comes off the list once your last ${CLEAR_WINDOW} attempts average ${CLEAR_AVG * 100}% or better.`
 
 // Flag the current question for extra practice (and its section as a weak area). Shown after answering:
@@ -45,13 +60,10 @@ const reviewNote = computed(() => {
 
 // Weak areas: sub-sections where your level is lowest (needs a few answers in a section to count).
 const weakList = computed(() => weakSections())
-const weakCodes = computed(() => (source.value === 'weak' ? new Set(weakList.value.map((s) => s.code)) : null))
-const weakTotal = computed(() => practicePool(null, 'all', null, objectives.value, new Set(weakList.value.map((s) => s.code))).length)
 const KINDS = [
   { id: 'all', label: 'All types' },
   { id: 'mc', label: 'Multiple choice' },
-  { id: 'pbq', label: 'Performance-based & exhibits' },
-  { id: 'ports', label: 'Port drill' }
+  { id: 'pbq', label: 'Performance-based & exhibits' }
 ]
 // ── acronym lookups (practice only) ──
 // Clicking an acronym asks first; only when the learner chooses to see the definition does it count
@@ -108,7 +120,7 @@ const persist = () => {
 watch([stage, questions, answers, idx, revealed], persist, { deep: true })
 
 const counts = computed(() => {
-  const pool = practicePool(null, kind.value, onlyIds.value, objectives.value, weakCodes.value)
+  const pool = poolOf(null, objectives.value)
   const c = { all: pool.length }
   pool.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
   return c
@@ -116,13 +128,13 @@ const counts = computed(() => {
 // Questions available per sub-section (within the chosen domain, type and source), for the optional sub-section picker.
 const objCounts = computed(() => {
   const c = {}
-  practicePool(domain.value, kind.value, onlyIds.value, null, weakCodes.value).forEach((q) => (c[q.objective] = (c[q.objective] || 0) + 1))
+  poolOf(domain.value, null).forEach((q) => (c[q.objective] = (c[q.objective] || 0) + 1))
   return c
 })
 watch(domain, (d) => {
   if (d) objectives.value = objectives.value.filter((c) => Number(c.split('.')[0]) === d)
 })
-const max = computed(() => practicePool(domain.value, kind.value, onlyIds.value, objectives.value, weakCodes.value).length)
+const max = computed(() => poolOf(domain.value, objectives.value).length)
 // If fewer questions are in range than the chosen count, switch to "all" so the chip matches what will be served.
 watch(max, (m) => {
   if (count.value !== 'all' && count.value > m) count.value = 'all'
@@ -135,9 +147,12 @@ const sel = computed({
 const runningCorrect = computed(() => questions.value.slice(0, idx.value + (revealed.value ? 1 : 0)).filter((q, i) => isCorrect(q, answers.value[i] || [])).length)
 
 function start() {
-  // Snapshot the missed list so questions cleared mid-session stay in this session.
-  const ids = onlyIds.value ? new Set(onlyIds.value) : null
-  questions.value = practiceSet(domain.value, count.value === 'all' || count.value <= max.value ? count.value : 'all', kind.value, ids, objectives.value, weakCodes.value)
+  // Snapshot the lists so questions cleared mid-session stay in this session.
+  const defs = cats.value.map(catDef).map((c) => ({ onlyIds: c.onlyIds ? new Set(c.onlyIds) : null, sections: c.sections || null }))
+  const n = count.value === 'all' || count.value <= max.value ? count.value : 'all'
+  questions.value = defs.length > 1
+    ? practiceMixSet(defs, domain.value, n, kind.value, objectives.value)
+    : practiceSet(domain.value, n, kind.value, defs[0]?.onlyIds || null, objectives.value, defs[0]?.sections || null)
   counted.clear()
   cleared.value = new Set()
   committed = false
@@ -263,28 +278,36 @@ onBeforeUnmount(() => {
     <p class="muted">Instant feedback after each question. Questions and answer order are randomized every time.</p>
     <div class="card stack">
       <div>
-        <div class="label">Questions</div>
+        <div class="label">Questions <span class="muted small">(pick any number of categories)</span></div>
         <div class="row">
-          <button class="chip" :class="{ on: source === 'all' }" @click="source = 'all'">All questions</button>
-          <button class="chip" :class="{ on: source === 'missed' }" @click="source = 'missed'">Missed questions · {{ missedTotal }}</button>
-          <button class="chip" :class="{ on: source === 'flagged' }" @click="source = 'flagged'">Flagged · {{ flaggedTotal }}</button>
-          <button class="chip" :class="{ on: source === 'weak' }" :disabled="!weakList.length" @click="source = 'weak'">Weak areas · {{ weakTotal }}</button>
+          <button class="chip" :class="{ on: !cats.length }" @click="cats = []">All questions</button>
+          <button class="chip" :class="{ on: has('missed') }" :aria-pressed="has('missed')" @click="toggleCat('missed')">Missed questions · {{ catTotal('missed') }}</button>
+          <button class="chip" :class="{ on: has('flagged') }" :aria-pressed="has('flagged')" @click="toggleCat('flagged')">Flagged · {{ catTotal('flagged') }}</button>
+          <button class="chip" :class="{ on: has('weak') }" :aria-pressed="has('weak')" :disabled="!weakList.length" @click="toggleCat('weak')">Weak areas · {{ catTotal('weak') }}</button>
+          <button class="chip" :class="{ on: has('ports') }" :aria-pressed="has('ports')" @click="toggleCat('ports')">Port drill · {{ catTotal('ports') }}</button>
         </div>
+        <p v-if="cats.length > 1" class="muted small" style="margin: .5rem 0 0">
+          <template v-if="count === 'all'">Mixed session: every question from the {{ cats.length }} categories.</template>
+          <template v-else>Mixed session: each of the {{ cats.length }} categories gets at least {{ minShare }} question{{ minShare === 1 ? '' : 's' }} (10%) when it has them; the rest are drawn at random from all of them.</template>
+        </p>
         <p v-if="!weakList.length" class="muted small" style="margin: .5rem 0 0">
           Weak areas appear once you have answered a few questions in some sections.
         </p>
-        <div v-else-if="source === 'weak'" class="small" style="margin: .5rem 0 0">
-          <div class="muted">Focusing on sections with flagged questions and the sections where your level is lowest:</div>
+        <div v-else-if="has('weak')" class="small" style="margin: .5rem 0 0">
+          <div class="muted">Weak areas: sections with flagged questions and the sections where your level is lowest:</div>
           <div class="weakchips">
             <span v-for="s in weakList" :key="s.code" class="tag brand wrap">
               <svg v-if="s.flagged" class="fl" viewBox="0 0 24 24" aria-label="Flagged"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ s.code }} {{ s.name }} · {{ s.rating.toFixed(1) }}</span>
           </div>
         </div>
-        <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
-          {{ missedTotal ? `Questions you got wrong in practice or exams. ${RULE}` : 'No missed questions right now — they\'ll collect here as you practice.' }}
+        <p v-if="has('missed')" class="muted small" style="margin: .5rem 0 0">
+          {{ catTotal('missed') ? `Missed: questions you got wrong in practice or exams. ${RULE}` : 'No missed questions right now — they\'ll collect here as you practice.' }}
         </p>
-        <p v-if="source === 'flagged'" class="muted small" style="margin: .5rem 0 0">
-          {{ flaggedTotal ? `Questions you flagged for extra practice; their sections also count as weak areas. ${RULE} You can unflag one at any time.` : 'Nothing flagged yet. While practicing, tap the flag on a question to add it here.' }}
+        <p v-if="has('flagged')" class="muted small" style="margin: .5rem 0 0">
+          {{ catTotal('flagged') ? `Flagged: questions you flagged for extra practice; their sections also count as weak areas. ${RULE} You can unflag one at any time.` : 'Nothing flagged yet. While practicing, tap the flag on a question to add it here.' }}
+        </p>
+        <p v-if="has('ports')" class="muted small" style="margin: .5rem 0 0">
+          Port drill: port numbers and protocols, from recall up to firewall logs and hardening a scanned server.
         </p>
       </div>
       <div>
@@ -298,7 +321,7 @@ onBeforeUnmount(() => {
       <CountPicker v-model="count" :max="max" />
       <p class="rangenote small" :class="max ? 'muted' : 'warn'">
         Questions come from near your level in each section (the range widens when needed so there is always something to study): {{ max }} match this selection.
-        <template v-if="!max">Try another section, question type, or source.</template>
+        <template v-if="!max">Try another section, question type, or category.</template>
       </p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
