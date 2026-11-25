@@ -183,6 +183,20 @@ onBeforeUnmount(() => {
 
 /* Phones: navigation becomes a bottom tab bar */
 @media (max-width: 959px) {
+  /* Top bar glass: the blur lives on a ::before layer behind the content. A backdrop-filter on .top itself would
+     make it the containing block of the fixed tab bar inside it (see note above), so the tab bar would stop floating. */
+  .top { background: transparent; border-bottom-color: color-mix(in srgb, var(--text) 9%, transparent); padding-top: env(safe-area-inset-top); }
+  .top::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .top::before { background: var(--surface); }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .top::before { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  }
   .links a.deskonly { display: none; }
   .brandname .muted { display: none; }
   .name, .caret { display: none; }
