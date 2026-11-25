@@ -63,6 +63,8 @@ function start() {
       ? guideExamSet(length.value)
       : examSet(length.value, source.value === 'missed' ? new Set(missed.value) : null)
   answers.value = []
+  examFlags.value = new Set()
+  alreadyFlagged.value = new Set()
   adaptive.value = null
   idx.value = 0
   startedAt.value = Date.now()
@@ -80,10 +82,15 @@ function runTimer() {
 }
 
 // Resume an exam that was running when the page was refreshed or closed (the clock kept running).
+// Flags made in this exam (see toggleExamFlag).
+const examFlags = ref(new Set())
+const alreadyFlagged = ref(new Set()) // flagged before this exam flagged them, so unflagging here leaves them on the list
 const saved = loadSession('exam')
 if (saved) {
   questions.value = saved.questions
   answers.value = saved.answers || []
+  examFlags.value = new Set(saved.flags || [])
+  alreadyFlagged.value = new Set(saved.preFlagged || [])
   idx.value = Math.min(saved.idx || 0, saved.questions.length - 1)
   startedAt.value = saved.startedAt || Date.now()
   timed.value = saved.timed !== false
@@ -93,14 +100,29 @@ if (saved) {
   runTimer()
   if (timed.value && remaining.value === 0) finish()
 }
-watch([stage, questions, answers, idx], () => {
-  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value, source: source.value })
+watch([stage, questions, answers, idx, examFlags, alreadyFlagged], () => {
+  if (stage.value === 'run') saveSession('exam', { questions: questions.value, answers: answers.value, flags: [...examFlags.value], preFlagged: [...alreadyFlagged.value], idx: idx.value, startedAt: startedAt.value, timed: timed.value, length: length.value, source: source.value })
   else clearSession('exam')
 }, { deep: true })
 
 // Flag the current question for extra practice, the same Flagged list as in Practice (it also makes the
 // question's section a weak area). Flags show in the navigator, so they double as a revisit-before-submit marker.
-const isFlaggedNow = computed(() => current.value && flagged.value.has(current.value.id))
+// Flags shown in an exam are only the ones made during this exam (questions flagged earlier aren't marked).
+// Flagging still adds the question to the Flagged list for later review; unflagging in the same exam takes it
+// off again only if this exam added it.
+function toggleExamFlag(id) {
+  const f = new Set(examFlags.value)
+  if (f.has(id)) {
+    f.delete(id)
+    if (!alreadyFlagged.value.has(id) && flagged.value.has(id)) toggleFlag(id)
+  } else {
+    f.add(id)
+    if (flagged.value.has(id)) alreadyFlagged.value = new Set([...alreadyFlagged.value, id])
+    else toggleFlag(id)
+  }
+  examFlags.value = f
+}
+const isFlaggedNow = computed(() => current.value && examFlags.value.has(current.value.id))
 
 // Keyboard: ←/→ move between questions, A–D / 1–4 answer, F flags (unless the question has an option F,
 // which F then selects). Enter starts from the setup screen.
@@ -115,7 +137,7 @@ function onKeys(e) {
   if (stage.value !== 'run') return
   if (e.key === 'ArrowLeft' && idx.value > 0) { e.preventDefault(); idx.value-- }
   else if (e.key === 'ArrowRight' && idx.value < questions.value.length - 1) { e.preventDefault(); idx.value++ }
-  else if (e.key.toLowerCase() === 'f' && !(current.value.type === 'mc' && current.value.options.length > 5)) { e.preventDefault(); toggleFlag(current.value.id) }
+  else if (e.key.toLowerCase() === 'f' && !(current.value.type === 'mc' && current.value.options.length > 5)) { e.preventDefault(); toggleExamFlag(current.value.id) }
   else if (current.value.type === 'mc') {
     const q = current.value
     const k = e.key.toLowerCase()
@@ -223,8 +245,8 @@ onBeforeUnmount(() => clearInterval(timer))
         :class="{ on: isFlaggedNow }"
         data-noshortcut
         :aria-pressed="isFlaggedNow"
-        :title="isFlaggedNow ? 'Flagged for extra practice. Click to unflag.' : 'Flag for extra practice (adds its section to your weak areas)'"
-        @click="toggleFlag(current.id); $event.detail && $event.currentTarget.blur()"
+        :title="isFlaggedNow ? 'Flagged for later review. Click to unflag.' : 'Flag for later review (F)'"
+        @click="toggleExamFlag(current.id); $event.detail && $event.currentTarget.blur()"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>
         <span>{{ isFlaggedNow ? 'Flagged' : 'Flag' }}</span>
@@ -251,10 +273,10 @@ onBeforeUnmount(() => clearInterval(timer))
           v-for="(q, i) in questions"
           :key="q.id"
           class="cell"
-          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), pbq: q.type !== 'mc', flagged: flagged.has(q.id) }"
-          :aria-label="`Question ${i + 1}${flagged.has(q.id) ? ', flagged' : ''}`"
+          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), pbq: q.type !== 'mc', flagged: examFlags.has(q.id) }"
+          :aria-label="`Question ${i + 1}${examFlags.has(q.id) ? ', flagged' : ''}`"
           @click="idx = i"
-        ><svg v-if="flagged.has(q.id)" class="cflag" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ i + 1 }}</button>
+        ><svg v-if="examFlags.has(q.id)" class="cflag" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ i + 1 }}</button>
       </div>
       <div class="row small muted legend">
         <span><i class="sw answered" /> Answered</span>
