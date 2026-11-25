@@ -198,7 +198,7 @@ onBeforeUnmount(() => clearInterval(timer))
         </p>
         <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
           {{ missedTotal
-            ? `An exam built from questions you've missed${missedTotal < length ? ` (${missedTotal} available)` : ''}. Correct answers come off the list.`
+            ? `An exam built from questions you've missed${missedTotal < length ? ` (${missedTotal} available)` : ''}. A question comes off the list once your last 4 attempts average 75% or better.`
             : 'No missed questions yet. Wrong or unanswered exam and practice questions collect here.' }}
         </p>
       </div>

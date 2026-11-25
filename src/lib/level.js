@@ -4,6 +4,7 @@
 // scale, so "rating ≈ difficulty" means roughly a 50% chance of answering correctly.
 import { syncedValue } from './syncedValue.js'
 import { DOMAINS, objectivesOf } from '../data/domains.js'
+import { flaggedSections } from './flagged.js'
 
 export const START = 4
 const MIN = 1
@@ -95,14 +96,15 @@ export function applyLookup(code) {
   save()
 }
 
-// Sub-sections to focus on: the ones where the level is lowest, using only sections with some evidence
-// (at least 3 answers). Prefers sections clearly below the overall level; otherwise the three lowest.
+// Sub-sections to focus on: every section holding a question you flagged (always included, `flagged` = how
+// many), then the ones where the level is lowest, using only sections with some evidence (at least 3 answers).
+// Prefers sections clearly below the overall level; otherwise the three lowest.
 export function weakSections(limit = 5) {
-  const rows = DOMAINS.flatMap((d) => objectivesOf(d).map((o) => ({ code: o.code, name: o.name, ...stats(o.code) })))
-    .filter((r) => r.answered >= 3)
-    .sort((a, b) => a.rating - b.rating)
+  const all = DOMAINS.flatMap((d) => objectivesOf(d).map((o) => ({ code: o.code, name: o.name, ...stats(o.code), flagged: flaggedSections.value[o.code] || 0 })))
+  const flaggedRows = all.filter((r) => r.flagged).sort((a, b) => b.flagged - a.flagged || a.rating - b.rating)
+  const rows = all.filter((r) => r.answered >= 3 && !r.flagged).sort((a, b) => a.rating - b.rating)
   const below = rows.filter((r) => r.rating < state.value.g - 0.15)
-  return (below.length ? below : rows.slice(0, 3)).slice(0, limit)
+  return [...flaggedRows, ...(below.length ? below : rows.slice(0, 3)).slice(0, Math.max(0, limit - flaggedRows.length))]
 }
 
 // Practice weighting: questions in sections further below your overall level are favoured (up to 2x).
