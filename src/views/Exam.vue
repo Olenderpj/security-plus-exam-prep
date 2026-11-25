@@ -10,7 +10,7 @@ import { PRACTICE_EXAMS, QUESTIONS, guideRef, isGuide } from '../data/questions/
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { examPlan, examSet, guideExamPlan, guideExamSet, practiceExamSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
 import { saveAttempt } from '../lib/progress.js'
-import { missed, recordResults } from '../lib/missed.js'
+import { flagged, missed, recordResults, toggleFlag } from '../lib/missed.js'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
 
@@ -98,7 +98,12 @@ watch([stage, questions, answers, idx], () => {
   else clearSession('exam')
 }, { deep: true })
 
-// Keyboard: ←/→ move between questions, A–D / 1–4 answer. Enter starts from the setup screen.
+// Flag the current question for extra practice, the same Flagged list as in Practice (it also makes the
+// question's section a weak area). Flags show in the navigator, so they double as a revisit-before-submit marker.
+const isFlaggedNow = computed(() => current.value && flagged.value.has(current.value.id))
+
+// Keyboard: ←/→ move between questions, A–D / 1–4 answer, F flags (unless the question has an option F,
+// which F then selects). Enter starts from the setup screen.
 function onKeys(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return
   const t = e.target
@@ -110,6 +115,7 @@ function onKeys(e) {
   if (stage.value !== 'run') return
   if (e.key === 'ArrowLeft' && idx.value > 0) { e.preventDefault(); idx.value-- }
   else if (e.key === 'ArrowRight' && idx.value < questions.value.length - 1) { e.preventDefault(); idx.value++ }
+  else if (e.key.toLowerCase() === 'f' && !(current.value.type === 'mc' && current.value.options.length > 5)) { e.preventDefault(); toggleFlag(current.value.id) }
   else if (current.value.type === 'mc') {
     const q = current.value
     const k = e.key.toLowerCase()
@@ -167,6 +173,7 @@ onBeforeUnmount(() => clearInterval(timer))
     <p class="muted">
       Questions are drawn from every domain using the official SY0-701 weightings. No feedback until you submit —
       just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back.
+      Flag any question to revisit it from the navigator before submitting; flags also add it to your Flagged practice list.
     </p>
     <div class="card stack">
       <div>
@@ -224,7 +231,19 @@ onBeforeUnmount(() => clearInterval(timer))
       <span class="muted">Question {{ idx + 1 }} of {{ questions.length }} · {{ answeredCount }} answered</span>
       <span v-if="timed" class="clock mono" :class="{ low: remaining < 300 }" title="Time remaining">{{ clock }}</span>
     </div>
-    <div class="card">
+    <div class="card qcard">
+      <button
+        type="button"
+        class="flagbtn"
+        :class="{ on: isFlaggedNow }"
+        data-noshortcut
+        :aria-pressed="isFlaggedNow"
+        :title="isFlaggedNow ? 'Flagged for extra practice. Click to unflag.' : 'Flag for extra practice (adds its section to your weak areas)'"
+        @click="toggleFlag(current.id); $event.detail && $event.currentTarget.blur()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>
+        <span>{{ isFlaggedNow ? 'Flagged' : 'Flag' }}</span>
+      </button>
       <QuestionBody v-model:selected="sel" :question="current" hide-meta />
     </div>
     <div class="row between">
@@ -247,19 +266,22 @@ onBeforeUnmount(() => clearInterval(timer))
           v-for="(q, i) in questions"
           :key="q.id"
           class="cell"
-          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), pbq: q.type !== 'mc' }"
+          :class="{ current: i === idx, answered: isComplete(q, answers[i] || []), partial: !isComplete(q, answers[i] || []) && isStarted(answers[i] || []), pbq: q.type !== 'mc', flagged: flagged.has(q.id) }"
+          :aria-label="`Question ${i + 1}${flagged.has(q.id) ? ', flagged' : ''}`"
           @click="idx = i"
-        >{{ i + 1 }}</button>
+        ><svg v-if="flagged.has(q.id)" class="cflag" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ i + 1 }}</button>
       </div>
       <div class="row small muted legend">
         <span><i class="sw answered" /> Answered</span>
         <span><i class="sw dot" /> Performance-based</span>
+        <span><svg class="swflag" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg> Flagged</span>
       </div>
     </div>
       <div class="card keys">
         <div class="label">Shortcuts</div>
         <div class="krow"><span class="kbd">←</span><span class="kbd">→</span><span class="muted small">Previous / next</span></div>
         <div class="krow"><span><span class="kbd">A</span>–<span class="kbd">D</span> <span class="kbd">1</span>–<span class="kbd">4</span></span><span class="muted small">Answer</span></div>
+        <div class="krow"><span class="kbd">F</span><span class="muted small">Flag question</span></div>
       </div>
     </aside>
   </div>
@@ -303,5 +325,24 @@ onBeforeUnmount(() => clearInterval(timer))
 .legend { margin-top: .75rem; gap: 1rem; }
 .sw { display: inline-block; width: .85rem; height: .85rem; border-radius: 4px; border: 1px solid var(--border); vertical-align: -2px; margin-right: .3rem; }
 .sw.answered { background: var(--accent); border-color: var(--accent); }
+.qcard { position: relative; }
+.flagbtn {
+  position: absolute; top: .75rem; right: .75rem; z-index: 2; display: inline-flex; align-items: center; gap: .3rem;
+  font: inherit; font-size: .78rem; font-weight: 600; color: var(--muted); background: var(--surface); cursor: pointer;
+  border: 1px solid var(--border); border-radius: 999px; padding: .25rem .6rem .25rem .5rem; transition: color .15s, border-color .15s, background .15s;
+}
+.flagbtn:hover { color: var(--text); border-color: color-mix(in srgb, var(--muted) 55%, var(--border)); }
+.flagbtn svg, .swflag { width: .9rem; height: .9rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.flagbtn.on { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: var(--warn-bg); }
+.flagbtn.on svg { fill: currentColor; }
+/* Keep the first line of the question clear of the flag button. */
+.qcard :deep(.stack > :first-child) { padding-right: 6rem; }
+.cflag {
+  position: absolute; top: 3px; left: 3px; width: .62rem; height: .62rem; color: var(--warn); fill: var(--warn);
+  stroke: currentColor; stroke-width: 2; stroke-linejoin: round;
+}
+.cell.flagged { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
+.cell.flagged.answered .cflag { color: var(--accent-text); fill: var(--accent-text); }
+.swflag { vertical-align: -2px; margin-right: .2rem; color: var(--warn); fill: var(--warn); }
 .sw.dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--brand); border: 0; vertical-align: 1px; }
 </style>

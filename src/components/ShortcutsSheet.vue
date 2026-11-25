@@ -7,7 +7,7 @@ const groups = [
   { title: 'Everywhere', rows: [[['/', 'Ctrl F', 'Ctrl K'], 'Search everything and quick actions'], [['?'], 'This sheet'], [['Esc'], 'Close dialogs']] },
   { title: 'Search', rows: [[['↑', '↓'], 'Move through results'], [['↵'], 'Open the highlighted result']] },
   { title: 'Practice', rows: [[['A–D', '1–4'], 'Choose an answer'], [['↵'], 'Check, then continue'], [['↵'], 'Start (on the setup screen)']] },
-  { title: 'Exam', rows: [[['←', '→'], 'Previous / next question'], [['A–D', '1–4'], 'Choose an answer'], [['F'], 'Flag for review']] },
+  { title: 'Exam', rows: [[['←', '→'], 'Previous / next question'], [['A–D', '1–4'], 'Choose an answer'], [['F'], 'Flag question (selects option F when there is one)']] },
   { title: 'Flashcards', rows: [[['Space'], 'Flip the card'], [['→'], 'Got it'], [['←'], 'Still learning'], [['M'], 'Mark for review']] },
   { title: 'Notes', rows: [[['* ', '- '], 'Start a bullet'], [['Tab', 'Shift Tab'], 'Indent / outdent'], [['Ctrl B'], 'Bold selection']] }
 ]
