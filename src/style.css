@@ -17,6 +17,8 @@
   --bad: #b42318;
   --bad-bg: #fdf1ef;
   --warn: #a15c07;
+  /* Score bands (lib/scoreColor.js): red → orange → yellow → green in 8 steps of 12.5%; text-safe on light tints. */
+  --s0: #b42318; --s1: #b93a0c; --s2: #a84604; --s3: #9a5a00; --s4: #7f6600; --s5: #5e7012; --s6: #376d23; --s7: #1b6c3d;
   --highlight: #fdf1d4;
   --warn-bg: #fdf4e3;
   --info: #2457c5;
@@ -46,6 +48,7 @@
     --bad: #ff8a80;
     --bad-bg: #331c1a;
     --warn: #f0b45a;
+    --s0: #ff8a80; --s1: #ff9a6b; --s2: #ffad5c; --s3: #f6c04f; --s4: #e6d24c; --s5: #c4d65a; --s6: #93d46b; --s7: #5fd08b;
     --highlight: #3d3015;
     --warn-bg: #33270f;
     --info: #8db1ff;
