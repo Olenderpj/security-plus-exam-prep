@@ -4,6 +4,7 @@ import { domainById, objectiveName } from '../data/domains.js'
 import { isCorrect, partsCorrect } from '../lib/exam.js'
 import { difficultyOf } from '../lib/difficulty.js'
 import { tierOf } from '../lib/depth.js'
+import { isGuide } from '../data/questions/index.js'
 import AcronymText from './AcronymText.vue'
 import SystemPanels from './SystemPanels.vue'
 
@@ -18,6 +19,12 @@ const emit = defineEmits(['update:selected'])
 
 const q = computed(() => props.question)
 const letters = 'ABCDEFGH'
+// Marks questions adapted from the user's practice exams, e.g. "Practice exam A · Q6".
+const guideLabel = computed(() => {
+  if (!isGuide(q.value)) return ''
+  const m = /^m-([ABC])(\d+)$/.exec(q.value.id)
+  return m ? `Practice exam ${m[1]} · Q${m[2]}` : 'Practice exam PBQ'
+})
 const correct = computed(() => isCorrect(q.value, props.selected))
 const parts = computed(() => partsCorrect(q.value, props.selected))
 const typeLabel = computed(() =>
@@ -110,6 +117,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
 <template>
   <div class="stack">
     <div class="meta">
+      <span v-if="guideLabel" class="tag guide" title="Adapted from your SY0-701 practice exams">{{ guideLabel }}</span>
       <span class="tag">{{ typeLabel }}</span>
       <span class="tag" :title="`${tierOf(q).text} · level ${difficultyOf(q).toFixed(1)}`">{{ tierOf(q).name }}</span>
       <span class="tag mono" :title="`Domain ${q.domain}: ${domainById(q.domain).name}`">D{{ q.domain }} · {{ q.objective }}</span>
@@ -225,6 +233,7 @@ const orderState = (pos) => (!props.reveal ? '' : props.selected[pos] === q.valu
 
 <style scoped>
 .q { font-size: 1.2rem; font-weight: 500; line-height: 1.5; margin: 0; letter-spacing: -.005em; }
+.tag.guide { background: var(--brand-soft); color: var(--text); border-color: color-mix(in srgb, var(--brand) 35%, var(--border)); font-weight: 600; }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .5rem; margin-bottom: .6rem; }
 .letter { flex: none; margin-top: .1rem; }
 .grow { flex: 1; min-width: 0; }
