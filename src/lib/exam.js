@@ -125,16 +125,50 @@ function pickMix(guidePool, otherPool, n, mode, seen, boost) {
   return picked
 }
 
-export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null, sections = null) {
+// The questions one practice selection would serve, best first (before marking them seen or picking wordings).
+function pickPractice(domain, count, kind, onlyIds, objective, sections, seen) {
   const pool = practicePool(domain, kind, onlyIds, objective, sections)
-  let picked
-  if (count === 'all') picked = pool
+  if (count === 'all') return pool
   // Retesting a chosen set (missed questions) uses exactly that set.
-  else if (onlyIds) picked = freshFirst(pool, readSeen()).slice(0, Number(count))
+  if (onlyIds) return freshFirst(pool, seen).slice(0, Number(count))
+  const n = Number(count)
+  const guidePool = widenTo(basePool(domain, kind, null, objective, sections).filter(isGuide), Math.round(n * GUIDE_SHARE), GUIDE_LADDER)
+  return pickMix(guidePool, pool.filter((q) => !isGuide(q)), n, 'practice', seen, sections ? weakBoost : null)
+}
+
+export function practiceSet(domain, count, kind = 'all', onlyIds = null, objective = null, sections = null) {
+  const picked = pickPractice(domain, count, kind, onlyIds, objective, sections, readSeen())
+  markSeen(picked)
+  return applyWordings(shuffle(picked).map(shuffleQuestion))
+}
+
+// Several practice categories at once (e.g. missed + flagged + weak areas). cats: [{ onlyIds?, sections? }].
+// Every category gets at least MIN_CATEGORY_SHARE of the session (when it has that many questions); the rest is
+// a random draw from all the categories' candidates, so the split varies from session to session.
+export const MIN_CATEGORY_SHARE = 0.1
+export const minPerCategory = (n) => Math.max(1, Math.ceil(n * MIN_CATEGORY_SHARE))
+export function practiceMixSet(cats, domain, count, kind = 'all', objective = null) {
+  const seen = readSeen()
+  const lists = cats.map((c) => pickPractice(domain, count, kind, c.onlyIds || null, objective, c.sections || null, seen))
+  const used = new Set()
+  const picked = []
+  const take = (q) => !used.has(q.id) && (used.add(q.id), picked.push(q))
+  if (count === 'all') lists.flat().forEach(take)
   else {
     const n = Number(count)
-    const guidePool = widenTo(basePool(domain, kind, null, objective, sections).filter(isGuide), Math.round(n * GUIDE_SHARE), GUIDE_LADDER)
-    picked = pickMix(guidePool, pool.filter((q) => !isGuide(q)), n, 'practice', readSeen(), sections ? weakBoost : null)
+    const m = minPerCategory(n)
+    // Guaranteed share first, categories in random order so overlaps don't always favour the same one.
+    for (const list of shuffle(lists)) {
+      let got = 0
+      for (const q of list) {
+        if (got >= m || picked.length >= n) break
+        if (take(q)) got++
+      }
+    }
+    for (const q of shuffle(lists.flat())) {
+      if (picked.length >= n) break
+      take(q)
+    }
   }
   markSeen(picked)
   return applyWordings(shuffle(picked).map(shuffleQuestion))
