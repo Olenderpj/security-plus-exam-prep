@@ -39,12 +39,12 @@ export function syncedValue(localKey, metadataKey, blank) {
     push()
   }
 
-  let lastUserId
+  // Re-checked on every profile change (sign-in, and the fresh profile fetched on load and tab focus —
+  // see auth.js), not just sign-in: the saved session's copy can be stale, and pushing local state
+  // against it could overwrite newer changes made on another device. Timestamps decide which wins.
   watch(
     user,
     (u) => {
-      if (u?.id === lastUserId && lastUserId !== undefined) return
-      lastUserId = u?.id ?? null
       const remote = u?.user_metadata?.[metadataKey]
       if (remote && typeof remote === 'object' && (remote.u || 0) > (state.value.u || 0)) {
         state.value = { ...blank(), ...remote }

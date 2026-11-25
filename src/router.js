@@ -13,6 +13,7 @@ export default createRouter({
     { path: '/question/:id', component: () => import('./views/QuestionView.vue') },
     { path: '/card/:id', component: () => import('./views/CardView.vue') },
     { path: '/notes', component: () => import('./views/Notes.vue') },
+    { path: '/objectives', component: () => import('./views/Objectives.vue') },
     { path: '/progress', component: () => import('./views/Progress.vue') },
     { path: '/settings', component: () => import('./views/Settings.vue') },
     { path: '/login', component: () => import('./views/Login.vue') },

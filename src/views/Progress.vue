@@ -44,7 +44,9 @@ const totals = computed(() => {
   const t = quizzes.value.reduce((s, a) => ({ c: s.c + a.correct, n: s.n + a.total }), { c: 0, n: 0 })
   return { ...t, pct: t.n ? Math.round((100 * t.c) / t.n) : 0 }
 })
-const bestExam = computed(() => Math.max(0, ...exams.value.map((a) => scaled(a.correct, a.total))))
+// Exams built only from missed questions are deliberately your hardest items, so they don't count as a best score.
+const fullExams = computed(() => exams.value.filter((a) => a.domain_breakdown?.source !== 'missed'))
+const bestExam = computed(() => Math.max(0, ...fullExams.value.map((a) => scaled(a.correct, a.total))))
 
 // Domain accuracy from question-based attempts only.
 const domainStats = computed(() =>
@@ -72,7 +74,7 @@ const domainStats = computed(() =>
 
 const label = (a) =>
   a.mode === 'exam'
-    ? `Exam${a.timed ? ' · timed' : ''}`
+    ? `Exam${a.domain_breakdown?.source === 'missed' ? ' · missed questions' : ''}${a.timed ? ' · timed' : ''}`
     : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'acronyms'
       ? 'Flashcards · Acronyms'
       : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'marked'
@@ -100,7 +102,7 @@ function confirmClearMissed() {
         <div class="card"><div class="label">Overall accuracy</div><div class="big">{{ totals.pct }}%</div></div>
         <div class="card">
           <div class="label">Best exam (est.)</div>
-          <div class="big" :class="bestExam >= EXAM.passScaled ? 'good' : ''">{{ exams.length ? bestExam : '—' }}</div>
+          <div class="big" :class="bestExam >= EXAM.passScaled ? 'good' : ''">{{ fullExams.length ? bestExam : '—' }}</div>
         </div>
       </div>
 

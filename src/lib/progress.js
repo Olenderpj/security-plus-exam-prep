@@ -58,8 +58,8 @@ export async function loadAttempts() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200)
-    if (!error) return data
-    console.error(error)
+    if (!error && Array.isArray(data)) return data
+    console.error('Could not load progress', error)
   }
   return readLocal()
 }

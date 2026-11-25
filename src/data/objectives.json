@@ -1,0 +1,3403 @@
+{
+ "source": {
+  "title": "CompTIA Security+ SY0-701 V7 Certification Exam Objectives",
+  "version": "Exam Objectives Document Version 7.0",
+  "copyright": "Copyright © 2023 CompTIA, Inc.",
+  "url": "https://lecbyo.files.cmp.optimizely.com/download/cf25ec24b8a511ef9ecbb69c0f9687be",
+  "linkedFrom": "https://www.comptia.org/en-us/certifications/security/v7/",
+  "retrieved": "2026-11-25"
+ },
+ "domains": [
+  {
+   "num": "1.0",
+   "name": "General Security Concepts",
+   "weight": 12,
+   "objectives": [
+    {
+     "num": "1.1",
+     "title": "Compare and contrast various types of security controls.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Categories"
+      },
+      {
+       "level": 1,
+       "text": "Technical"
+      },
+      {
+       "level": 1,
+       "text": "Managerial"
+      },
+      {
+       "level": 1,
+       "text": "Operational"
+      },
+      {
+       "level": 1,
+       "text": "Physical"
+      },
+      {
+       "level": 0,
+       "text": "Control types"
+      },
+      {
+       "level": 1,
+       "text": "Preventive"
+      },
+      {
+       "level": 1,
+       "text": "Deterrent"
+      },
+      {
+       "level": 1,
+       "text": "Detective"
+      },
+      {
+       "level": 1,
+       "text": "Corrective"
+      },
+      {
+       "level": 1,
+       "text": "Compensating"
+      },
+      {
+       "level": 1,
+       "text": "Directive"
+      }
+     ]
+    },
+    {
+     "num": "1.2",
+     "title": "Summarize fundamental security concepts.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Confidentiality, Integrity, and Availability (CIA)"
+      },
+      {
+       "level": 0,
+       "text": "Non-repudiation"
+      },
+      {
+       "level": 0,
+       "text": "Authentication, Authorization, and Accounting (AAA)"
+      },
+      {
+       "level": 1,
+       "text": "Authenticating people"
+      },
+      {
+       "level": 1,
+       "text": "Authenticating systems"
+      },
+      {
+       "level": 1,
+       "text": "Authorization models"
+      },
+      {
+       "level": 0,
+       "text": "Gap analysis"
+      },
+      {
+       "level": 0,
+       "text": "Zero Trust"
+      },
+      {
+       "level": 1,
+       "text": "Control Plane"
+      },
+      {
+       "level": 2,
+       "text": "Adaptive identity"
+      },
+      {
+       "level": 2,
+       "text": "Threat scope reduction"
+      },
+      {
+       "level": 2,
+       "text": "Policy-driven access control"
+      },
+      {
+       "level": 2,
+       "text": "Policy Administrator"
+      },
+      {
+       "level": 2,
+       "text": "Policy Engine"
+      },
+      {
+       "level": 1,
+       "text": "Data Plane"
+      },
+      {
+       "level": 2,
+       "text": "Implicit trust zones"
+      },
+      {
+       "level": 2,
+       "text": "Subject/System"
+      },
+      {
+       "level": 2,
+       "text": "Policy Enforcement Point"
+      },
+      {
+       "level": 0,
+       "text": "Physical security"
+      },
+      {
+       "level": 1,
+       "text": "Bollards"
+      },
+      {
+       "level": 1,
+       "text": "Access control vestibule"
+      },
+      {
+       "level": 1,
+       "text": "Fencing"
+      },
+      {
+       "level": 1,
+       "text": "Video surveillance"
+      },
+      {
+       "level": 1,
+       "text": "Security guard"
+      },
+      {
+       "level": 1,
+       "text": "Access badge"
+      },
+      {
+       "level": 1,
+       "text": "Lighting"
+      },
+      {
+       "level": 1,
+       "text": "Sensors"
+      },
+      {
+       "level": 2,
+       "text": "Infrared"
+      },
+      {
+       "level": 2,
+       "text": "Pressure"
+      },
+      {
+       "level": 2,
+       "text": "Microwave"
+      },
+      {
+       "level": 2,
+       "text": "Ultrasonic"
+      },
+      {
+       "level": 0,
+       "text": "Deception and disruption technology"
+      },
+      {
+       "level": 1,
+       "text": "Honeypot"
+      },
+      {
+       "level": 1,
+       "text": "Honeynet"
+      },
+      {
+       "level": 1,
+       "text": "Honeyfile"
+      },
+      {
+       "level": 1,
+       "text": "Honeytoken"
+      }
+     ]
+    },
+    {
+     "num": "1.3",
+     "title": "Explain the importance of change management processes and the impact to security.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Business processes impacting security operation"
+      },
+      {
+       "level": 1,
+       "text": "Approval process"
+      },
+      {
+       "level": 1,
+       "text": "Ownership"
+      },
+      {
+       "level": 1,
+       "text": "Stakeholders"
+      },
+      {
+       "level": 1,
+       "text": "Impact analysis"
+      },
+      {
+       "level": 1,
+       "text": "Test results"
+      },
+      {
+       "level": 1,
+       "text": "Backout plan"
+      },
+      {
+       "level": 1,
+       "text": "Maintenance window"
+      },
+      {
+       "level": 1,
+       "text": "Standard operating procedure"
+      },
+      {
+       "level": 0,
+       "text": "Technical implications"
+      },
+      {
+       "level": 1,
+       "text": "Allow lists/deny lists"
+      },
+      {
+       "level": 1,
+       "text": "Restricted activities"
+      },
+      {
+       "level": 1,
+       "text": "Downtime"
+      },
+      {
+       "level": 1,
+       "text": "Service restart"
+      },
+      {
+       "level": 1,
+       "text": "Application restart"
+      },
+      {
+       "level": 1,
+       "text": "Legacy applications"
+      },
+      {
+       "level": 1,
+       "text": "Dependencies"
+      },
+      {
+       "level": 0,
+       "text": "Documentation"
+      },
+      {
+       "level": 1,
+       "text": "Updating diagrams"
+      },
+      {
+       "level": 1,
+       "text": "Updating policies/procedures"
+      },
+      {
+       "level": 0,
+       "text": "Version control"
+      }
+     ]
+    },
+    {
+     "num": "1.4",
+     "title": "Explain the importance of using appropriate cryptographic solutions.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Public key infrastructure (PKI)"
+      },
+      {
+       "level": 1,
+       "text": "Public key"
+      },
+      {
+       "level": 1,
+       "text": "Private key"
+      },
+      {
+       "level": 1,
+       "text": "Key escrow"
+      },
+      {
+       "level": 0,
+       "text": "Encryption"
+      },
+      {
+       "level": 1,
+       "text": "Level"
+      },
+      {
+       "level": 2,
+       "text": "Full-disk"
+      },
+      {
+       "level": 2,
+       "text": "Partition"
+      },
+      {
+       "level": 2,
+       "text": "File"
+      },
+      {
+       "level": 2,
+       "text": "Volume"
+      },
+      {
+       "level": 2,
+       "text": "Database"
+      },
+      {
+       "level": 2,
+       "text": "Record"
+      },
+      {
+       "level": 1,
+       "text": "Transport/communication"
+      },
+      {
+       "level": 1,
+       "text": "Asymmetric"
+      },
+      {
+       "level": 1,
+       "text": "Symmetric"
+      },
+      {
+       "level": 1,
+       "text": "Key exchange"
+      },
+      {
+       "level": 1,
+       "text": "Algorithms"
+      },
+      {
+       "level": 1,
+       "text": "Key length"
+      },
+      {
+       "level": 0,
+       "text": "Tools"
+      },
+      {
+       "level": 1,
+       "text": "Trusted Platform Module (TPM)"
+      },
+      {
+       "level": 1,
+       "text": "Hardware security module (HSM)"
+      },
+      {
+       "level": 1,
+       "text": "Key management system"
+      },
+      {
+       "level": 1,
+       "text": "Secure enclave"
+      },
+      {
+       "level": 0,
+       "text": "Obfuscation"
+      },
+      {
+       "level": 1,
+       "text": "Steganography"
+      },
+      {
+       "level": 1,
+       "text": "Tokenization"
+      },
+      {
+       "level": 1,
+       "text": "Data masking"
+      },
+      {
+       "level": 0,
+       "text": "Hashing"
+      },
+      {
+       "level": 0,
+       "text": "Salting"
+      },
+      {
+       "level": 0,
+       "text": "Digital signatures"
+      },
+      {
+       "level": 0,
+       "text": "Key stretching"
+      },
+      {
+       "level": 0,
+       "text": "Blockchain"
+      },
+      {
+       "level": 0,
+       "text": "Open public ledger"
+      },
+      {
+       "level": 0,
+       "text": "Certificates"
+      },
+      {
+       "level": 1,
+       "text": "Certificate authorities"
+      },
+      {
+       "level": 1,
+       "text": "Certificate revocation lists (CRLs)"
+      },
+      {
+       "level": 1,
+       "text": "Online Certificate Status Protocol (OCSP)"
+      },
+      {
+       "level": 1,
+       "text": "Self-signed"
+      },
+      {
+       "level": 1,
+       "text": "Third-party"
+      },
+      {
+       "level": 1,
+       "text": "Root of trust"
+      },
+      {
+       "level": 1,
+       "text": "Certificate signing request (CSR) generation"
+      },
+      {
+       "level": 1,
+       "text": "Wildcard"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "num": "2.0",
+   "name": "Threats, Vulnerabilities, and Mitigations",
+   "weight": 22,
+   "objectives": [
+    {
+     "num": "2.1",
+     "title": "Compare and contrast common threat actors and motivations.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Threat actors"
+      },
+      {
+       "level": 1,
+       "text": "Nation-state"
+      },
+      {
+       "level": 1,
+       "text": "Unskilled attacker"
+      },
+      {
+       "level": 1,
+       "text": "Hacktivist"
+      },
+      {
+       "level": 1,
+       "text": "Insider threat"
+      },
+      {
+       "level": 1,
+       "text": "Organized crime"
+      },
+      {
+       "level": 1,
+       "text": "Shadow IT"
+      },
+      {
+       "level": 0,
+       "text": "Attributes of actors"
+      },
+      {
+       "level": 1,
+       "text": "Internal/external"
+      },
+      {
+       "level": 1,
+       "text": "Resources/funding"
+      },
+      {
+       "level": 1,
+       "text": "Level of sophistication/capability"
+      },
+      {
+       "level": 0,
+       "text": "Motivations"
+      },
+      {
+       "level": 1,
+       "text": "Data exfiltration"
+      },
+      {
+       "level": 1,
+       "text": "Espionage"
+      },
+      {
+       "level": 1,
+       "text": "Service disruption"
+      },
+      {
+       "level": 1,
+       "text": "Blackmail"
+      },
+      {
+       "level": 1,
+       "text": "Financial gain"
+      },
+      {
+       "level": 1,
+       "text": "Philosophical/political beliefs"
+      },
+      {
+       "level": 1,
+       "text": "Ethical"
+      },
+      {
+       "level": 1,
+       "text": "Revenge"
+      },
+      {
+       "level": 1,
+       "text": "Disruption/chaos"
+      },
+      {
+       "level": 1,
+       "text": "War"
+      }
+     ]
+    },
+    {
+     "num": "2.2",
+     "title": "Explain common threat vectors and attack surfaces.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Message-based"
+      },
+      {
+       "level": 1,
+       "text": "Email"
+      },
+      {
+       "level": 1,
+       "text": "Short Message Service (SMS)"
+      },
+      {
+       "level": 1,
+       "text": "Instant messaging (IM)"
+      },
+      {
+       "level": 0,
+       "text": "Image-based"
+      },
+      {
+       "level": 0,
+       "text": "File-based"
+      },
+      {
+       "level": 0,
+       "text": "Voice call"
+      },
+      {
+       "level": 0,
+       "text": "Removable device"
+      },
+      {
+       "level": 0,
+       "text": "Vulnerable software"
+      },
+      {
+       "level": 1,
+       "text": "Client-based vs. agentless"
+      },
+      {
+       "level": 0,
+       "text": "Unsupported systems and applications"
+      },
+      {
+       "level": 0,
+       "text": "Unsecure networks"
+      },
+      {
+       "level": 1,
+       "text": "Wireless"
+      },
+      {
+       "level": 1,
+       "text": "Wired"
+      },
+      {
+       "level": 1,
+       "text": "Bluetooth"
+      },
+      {
+       "level": 0,
+       "text": "Open service ports"
+      },
+      {
+       "level": 0,
+       "text": "Default credentials"
+      },
+      {
+       "level": 0,
+       "text": "Supply chain"
+      },
+      {
+       "level": 1,
+       "text": "Managed service providers (MSPs)"
+      },
+      {
+       "level": 1,
+       "text": "Vendors"
+      },
+      {
+       "level": 1,
+       "text": "Suppliers"
+      },
+      {
+       "level": 0,
+       "text": "Human vectors/social engineering"
+      },
+      {
+       "level": 1,
+       "text": "Phishing"
+      },
+      {
+       "level": 1,
+       "text": "Vishing"
+      },
+      {
+       "level": 1,
+       "text": "Smishing"
+      },
+      {
+       "level": 1,
+       "text": "Misinformation/disinformation"
+      },
+      {
+       "level": 1,
+       "text": "Impersonation"
+      },
+      {
+       "level": 1,
+       "text": "Business email compromise"
+      },
+      {
+       "level": 1,
+       "text": "Pretexting"
+      },
+      {
+       "level": 1,
+       "text": "Watering hole"
+      },
+      {
+       "level": 1,
+       "text": "Brand impersonation"
+      },
+      {
+       "level": 1,
+       "text": "Typosquatting"
+      }
+     ]
+    },
+    {
+     "num": "2.3",
+     "title": "Explain various types of vulnerabilities.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Application"
+      },
+      {
+       "level": 1,
+       "text": "Memory injection"
+      },
+      {
+       "level": 1,
+       "text": "Buffer overflow"
+      },
+      {
+       "level": 1,
+       "text": "Race conditions"
+      },
+      {
+       "level": 2,
+       "text": "Time-of-check (TOC)"
+      },
+      {
+       "level": 2,
+       "text": "Time-of-use (TOU)"
+      },
+      {
+       "level": 1,
+       "text": "Malicious update"
+      },
+      {
+       "level": 0,
+       "text": "Operating system (OS)-based"
+      },
+      {
+       "level": 0,
+       "text": "Web-based"
+      },
+      {
+       "level": 1,
+       "text": "Structured Query Language injection (SQLi)"
+      },
+      {
+       "level": 1,
+       "text": "Cross-site scripting (XSS)"
+      },
+      {
+       "level": 0,
+       "text": "Hardware"
+      },
+      {
+       "level": 1,
+       "text": "Firmware"
+      },
+      {
+       "level": 1,
+       "text": "End-of-life"
+      },
+      {
+       "level": 1,
+       "text": "Legacy"
+      },
+      {
+       "level": 0,
+       "text": "Virtualization"
+      },
+      {
+       "level": 1,
+       "text": "Virtual machine (VM) escape"
+      },
+      {
+       "level": 1,
+       "text": "Resource reuse"
+      },
+      {
+       "level": 0,
+       "text": "Cloud-specific"
+      },
+      {
+       "level": 0,
+       "text": "Supply chain"
+      },
+      {
+       "level": 1,
+       "text": "Service provider"
+      },
+      {
+       "level": 1,
+       "text": "Hardware provider"
+      },
+      {
+       "level": 1,
+       "text": "Software provider"
+      },
+      {
+       "level": 0,
+       "text": "Cryptographic"
+      },
+      {
+       "level": 0,
+       "text": "Misconfiguration"
+      },
+      {
+       "level": 0,
+       "text": "Mobile device"
+      },
+      {
+       "level": 1,
+       "text": "Side loading"
+      },
+      {
+       "level": 1,
+       "text": "Jailbreaking"
+      },
+      {
+       "level": 0,
+       "text": "Zero-day"
+      }
+     ]
+    },
+    {
+     "num": "2.4",
+     "title": "Given a scenario, analyze indicators of malicious activity.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Malware attacks"
+      },
+      {
+       "level": 1,
+       "text": "Ransomware"
+      },
+      {
+       "level": 1,
+       "text": "Trojan"
+      },
+      {
+       "level": 1,
+       "text": "Worm"
+      },
+      {
+       "level": 1,
+       "text": "Spyware"
+      },
+      {
+       "level": 1,
+       "text": "Bloatware"
+      },
+      {
+       "level": 1,
+       "text": "Virus"
+      },
+      {
+       "level": 1,
+       "text": "Keylogger"
+      },
+      {
+       "level": 1,
+       "text": "Logic bomb"
+      },
+      {
+       "level": 1,
+       "text": "Rootkit"
+      },
+      {
+       "level": 0,
+       "text": "Physical attacks"
+      },
+      {
+       "level": 1,
+       "text": "Brute force"
+      },
+      {
+       "level": 1,
+       "text": "Radio frequency identification (RFID) cloning"
+      },
+      {
+       "level": 1,
+       "text": "Environmental"
+      },
+      {
+       "level": 0,
+       "text": "Network attacks"
+      },
+      {
+       "level": 1,
+       "text": "Distributed denial-of-service (DDoS)"
+      },
+      {
+       "level": 2,
+       "text": "Amplified"
+      },
+      {
+       "level": 2,
+       "text": "Reflected"
+      },
+      {
+       "level": 1,
+       "text": "Domain Name System (DNS) attacks"
+      },
+      {
+       "level": 1,
+       "text": "Wireless"
+      },
+      {
+       "level": 1,
+       "text": "On-path"
+      },
+      {
+       "level": 1,
+       "text": "Credential replay"
+      },
+      {
+       "level": 1,
+       "text": "Malicious code"
+      },
+      {
+       "level": 0,
+       "text": "Application attacks"
+      },
+      {
+       "level": 1,
+       "text": "Injection"
+      },
+      {
+       "level": 1,
+       "text": "Buffer overflow"
+      },
+      {
+       "level": 1,
+       "text": "Replay"
+      },
+      {
+       "level": 1,
+       "text": "Privilege escalation"
+      },
+      {
+       "level": 1,
+       "text": "Forgery"
+      },
+      {
+       "level": 1,
+       "text": "Directory traversal"
+      },
+      {
+       "level": 0,
+       "text": "Cryptographic attacks"
+      },
+      {
+       "level": 1,
+       "text": "Downgrade"
+      },
+      {
+       "level": 1,
+       "text": "Collision"
+      },
+      {
+       "level": 1,
+       "text": "Birthday"
+      },
+      {
+       "level": 0,
+       "text": "Password attacks"
+      },
+      {
+       "level": 1,
+       "text": "Spraying"
+      },
+      {
+       "level": 1,
+       "text": "Brute force"
+      },
+      {
+       "level": 0,
+       "text": "Indicators"
+      },
+      {
+       "level": 1,
+       "text": "Account lockout"
+      },
+      {
+       "level": 1,
+       "text": "Concurrent session usage"
+      },
+      {
+       "level": 1,
+       "text": "Blocked content"
+      },
+      {
+       "level": 1,
+       "text": "Impossible travel"
+      },
+      {
+       "level": 1,
+       "text": "Resource consumption"
+      },
+      {
+       "level": 1,
+       "text": "Resource inaccessibility"
+      },
+      {
+       "level": 1,
+       "text": "Out-of-cycle logging"
+      },
+      {
+       "level": 1,
+       "text": "Published/documented"
+      },
+      {
+       "level": 1,
+       "text": "Missing logs"
+      }
+     ]
+    },
+    {
+     "num": "2.5",
+     "title": "Explain the purpose of mitigation techniques used to secure the enterprise.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Segmentation"
+      },
+      {
+       "level": 0,
+       "text": "Access control"
+      },
+      {
+       "level": 1,
+       "text": "Access control list (ACL)"
+      },
+      {
+       "level": 1,
+       "text": "Permissions"
+      },
+      {
+       "level": 0,
+       "text": "Application allow list"
+      },
+      {
+       "level": 0,
+       "text": "Isolation"
+      },
+      {
+       "level": 0,
+       "text": "Patching"
+      },
+      {
+       "level": 0,
+       "text": "Encryption"
+      },
+      {
+       "level": 0,
+       "text": "Monitoring"
+      },
+      {
+       "level": 0,
+       "text": "Least privilege"
+      },
+      {
+       "level": 0,
+       "text": "Configuration enforcement"
+      },
+      {
+       "level": 0,
+       "text": "Decommissioning"
+      },
+      {
+       "level": 0,
+       "text": "Hardening techniques"
+      },
+      {
+       "level": 1,
+       "text": "Encryption"
+      },
+      {
+       "level": 1,
+       "text": "Installation of endpoint protection"
+      },
+      {
+       "level": 1,
+       "text": "Host-based firewall"
+      },
+      {
+       "level": 1,
+       "text": "Host-based intrusion prevention system (HIPS)"
+      },
+      {
+       "level": 1,
+       "text": "Disabling ports/protocols"
+      },
+      {
+       "level": 1,
+       "text": "Default password changes"
+      },
+      {
+       "level": 1,
+       "text": "Removal of unnecessary software"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "num": "3.0",
+   "name": "Security Architecture",
+   "weight": 18,
+   "objectives": [
+    {
+     "num": "3.1",
+     "title": "Compare and contrast security implications of different architecture models.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Architecture and infrastructure concepts"
+      },
+      {
+       "level": 1,
+       "text": "Cloud"
+      },
+      {
+       "level": 2,
+       "text": "Responsibility matrix"
+      },
+      {
+       "level": 2,
+       "text": "Hybrid considerations"
+      },
+      {
+       "level": 2,
+       "text": "Third-party vendors"
+      },
+      {
+       "level": 1,
+       "text": "Infrastructure as code (IaC)"
+      },
+      {
+       "level": 1,
+       "text": "Serverless"
+      },
+      {
+       "level": 1,
+       "text": "Microservices"
+      },
+      {
+       "level": 1,
+       "text": "Network infrastructure"
+      },
+      {
+       "level": 1,
+       "text": "Physical isolation ը Air-gapped"
+      },
+      {
+       "level": 2,
+       "text": "Logical segmentation"
+      },
+      {
+       "level": 2,
+       "text": "Software-defined networking (SDN)"
+      },
+      {
+       "level": 1,
+       "text": "On-premises"
+      },
+      {
+       "level": 1,
+       "text": "Centralized vs. decentralized"
+      },
+      {
+       "level": 1,
+       "text": "Containerization"
+      },
+      {
+       "level": 1,
+       "text": "Virtualization"
+      },
+      {
+       "level": 1,
+       "text": "IoT"
+      },
+      {
+       "level": 1,
+       "text": "Industrial control systems (ICS)/supervisory control and data acquisition (SCADA)"
+      },
+      {
+       "level": 1,
+       "text": "Real-time operating system (RTOS)"
+      },
+      {
+       "level": 1,
+       "text": "Embedded systems"
+      },
+      {
+       "level": 1,
+       "text": "High availability"
+      },
+      {
+       "level": 0,
+       "text": "Considerations"
+      },
+      {
+       "level": 1,
+       "text": "Availability"
+      },
+      {
+       "level": 1,
+       "text": "Resilience"
+      },
+      {
+       "level": 1,
+       "text": "Cost"
+      },
+      {
+       "level": 1,
+       "text": "Responsiveness"
+      },
+      {
+       "level": 1,
+       "text": "Scalability"
+      },
+      {
+       "level": 1,
+       "text": "Ease of deployment"
+      },
+      {
+       "level": 1,
+       "text": "Risk transference"
+      },
+      {
+       "level": 1,
+       "text": "Ease of recovery"
+      },
+      {
+       "level": 1,
+       "text": "Patch availability"
+      },
+      {
+       "level": 1,
+       "text": "Inability to patch"
+      },
+      {
+       "level": 1,
+       "text": "Power"
+      },
+      {
+       "level": 1,
+       "text": "Compute"
+      }
+     ]
+    },
+    {
+     "num": "3.2",
+     "title": "Given a scenario, apply security principles to secure enterprise infrastructure.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Infrastructure considerations"
+      },
+      {
+       "level": 1,
+       "text": "Device placement"
+      },
+      {
+       "level": 1,
+       "text": "Security zones"
+      },
+      {
+       "level": 1,
+       "text": "Attack surface"
+      },
+      {
+       "level": 1,
+       "text": "Connectivity"
+      },
+      {
+       "level": 1,
+       "text": "Failure modes"
+      },
+      {
+       "level": 2,
+       "text": "Fail-open"
+      },
+      {
+       "level": 2,
+       "text": "Fail-closed"
+      },
+      {
+       "level": 1,
+       "text": "Device attribute"
+      },
+      {
+       "level": 2,
+       "text": "Active vs. passive"
+      },
+      {
+       "level": 2,
+       "text": "Inline vs. tap/monitor"
+      },
+      {
+       "level": 1,
+       "text": "Network appliances"
+      },
+      {
+       "level": 2,
+       "text": "Jump server"
+      },
+      {
+       "level": 2,
+       "text": "Proxy server"
+      },
+      {
+       "level": 2,
+       "text": "Intrusion prevention system (IPS)/intrusion detection system (IDS)"
+      },
+      {
+       "level": 2,
+       "text": "Load balancer"
+      },
+      {
+       "level": 2,
+       "text": "Sensors"
+      },
+      {
+       "level": 1,
+       "text": "Port security"
+      },
+      {
+       "level": 2,
+       "text": "802.1X"
+      },
+      {
+       "level": 2,
+       "text": "Extensible Authentication Protocol (EAP)"
+      },
+      {
+       "level": 1,
+       "text": "Firewall types"
+      },
+      {
+       "level": 2,
+       "text": "Web application firewall (WAF)"
+      },
+      {
+       "level": 2,
+       "text": "Unified threat management (UTM)"
+      },
+      {
+       "level": 2,
+       "text": "Next-generation firewall (NGFW)"
+      },
+      {
+       "level": 2,
+       "text": "Layer 4/Layer 7"
+      },
+      {
+       "level": 0,
+       "text": "Secure communication/access"
+      },
+      {
+       "level": 1,
+       "text": "Virtual private network (VPN)"
+      },
+      {
+       "level": 1,
+       "text": "Remote access"
+      },
+      {
+       "level": 1,
+       "text": "Tunneling"
+      },
+      {
+       "level": 2,
+       "text": "Transport Layer Security (TLS)"
+      },
+      {
+       "level": 2,
+       "text": "Internet protocol security (IPSec)"
+      },
+      {
+       "level": 1,
+       "text": "Software-defined wide area network (SD-WAN)"
+      },
+      {
+       "level": 1,
+       "text": "Secure access service edge (SASE)"
+      },
+      {
+       "level": 0,
+       "text": "Selection of effective controls"
+      }
+     ]
+    },
+    {
+     "num": "3.3",
+     "title": "Compare and contrast concepts and strategies to protect data.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Data types"
+      },
+      {
+       "level": 1,
+       "text": "Regulated"
+      },
+      {
+       "level": 1,
+       "text": "Trade secret"
+      },
+      {
+       "level": 1,
+       "text": "Intellectual property"
+      },
+      {
+       "level": 1,
+       "text": "Legal information"
+      },
+      {
+       "level": 1,
+       "text": "Financial information"
+      },
+      {
+       "level": 1,
+       "text": "Humanand non-human-readable"
+      },
+      {
+       "level": 0,
+       "text": "Data classifications"
+      },
+      {
+       "level": 1,
+       "text": "Sensitive"
+      },
+      {
+       "level": 1,
+       "text": "Confidential"
+      },
+      {
+       "level": 1,
+       "text": "Public"
+      },
+      {
+       "level": 1,
+       "text": "Restricted"
+      },
+      {
+       "level": 1,
+       "text": "Private"
+      },
+      {
+       "level": 1,
+       "text": "Critical"
+      },
+      {
+       "level": 0,
+       "text": "General data considerations"
+      },
+      {
+       "level": 1,
+       "text": "Data states"
+      },
+      {
+       "level": 2,
+       "text": "Data at rest"
+      },
+      {
+       "level": 2,
+       "text": "Data in transit"
+      },
+      {
+       "level": 2,
+       "text": "Data in use"
+      },
+      {
+       "level": 1,
+       "text": "Data sovereignty"
+      },
+      {
+       "level": 1,
+       "text": "Geolocation"
+      },
+      {
+       "level": 0,
+       "text": "Methods to secure data"
+      },
+      {
+       "level": 1,
+       "text": "Geographic restrictions"
+      },
+      {
+       "level": 1,
+       "text": "Encryption"
+      },
+      {
+       "level": 1,
+       "text": "Hashing"
+      },
+      {
+       "level": 1,
+       "text": "Masking"
+      },
+      {
+       "level": 1,
+       "text": "Tokenization"
+      },
+      {
+       "level": 1,
+       "text": "Obfuscation"
+      },
+      {
+       "level": 1,
+       "text": "Segmentation"
+      },
+      {
+       "level": 1,
+       "text": "Permission restrictions"
+      }
+     ]
+    },
+    {
+     "num": "3.4",
+     "title": "Explain the importance of resilience and recovery in security architecture.",
+     "items": [
+      {
+       "level": 0,
+       "text": "High availability"
+      },
+      {
+       "level": 1,
+       "text": "Load balancing vs. clustering"
+      },
+      {
+       "level": 0,
+       "text": "Site considerations"
+      },
+      {
+       "level": 1,
+       "text": "Hot"
+      },
+      {
+       "level": 1,
+       "text": "Cold"
+      },
+      {
+       "level": 1,
+       "text": "Warm"
+      },
+      {
+       "level": 1,
+       "text": "Geographic dispersion"
+      },
+      {
+       "level": 0,
+       "text": "Platform diversity"
+      },
+      {
+       "level": 0,
+       "text": "Multi-cloud systems"
+      },
+      {
+       "level": 0,
+       "text": "Continuity of operations"
+      },
+      {
+       "level": 0,
+       "text": "Capacity planning"
+      },
+      {
+       "level": 1,
+       "text": "People"
+      },
+      {
+       "level": 1,
+       "text": "Technology"
+      },
+      {
+       "level": 1,
+       "text": "Infrastructure"
+      },
+      {
+       "level": 0,
+       "text": "Testing"
+      },
+      {
+       "level": 1,
+       "text": "Tabletop exercises"
+      },
+      {
+       "level": 1,
+       "text": "Fail over"
+      },
+      {
+       "level": 1,
+       "text": "Simulation"
+      },
+      {
+       "level": 1,
+       "text": "Parallel processing"
+      },
+      {
+       "level": 0,
+       "text": "Backups"
+      },
+      {
+       "level": 1,
+       "text": "Onsite/offsite"
+      },
+      {
+       "level": 1,
+       "text": "Frequency"
+      },
+      {
+       "level": 1,
+       "text": "Encryption"
+      },
+      {
+       "level": 1,
+       "text": "Snapshots"
+      },
+      {
+       "level": 1,
+       "text": "Recovery"
+      },
+      {
+       "level": 1,
+       "text": "Replication"
+      },
+      {
+       "level": 1,
+       "text": "Journaling"
+      },
+      {
+       "level": 0,
+       "text": "Power"
+      },
+      {
+       "level": 1,
+       "text": "Generators"
+      },
+      {
+       "level": 1,
+       "text": "Uninterruptible power supply (UPS)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "num": "4.0",
+   "name": "Security Operations",
+   "weight": 28,
+   "objectives": [
+    {
+     "num": "4.1",
+     "title": "Given a scenario, apply common security techniques to computing resources.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Secure baselines"
+      },
+      {
+       "level": 1,
+       "text": "Establish"
+      },
+      {
+       "level": 1,
+       "text": "Deploy"
+      },
+      {
+       "level": 1,
+       "text": "Maintain"
+      },
+      {
+       "level": 0,
+       "text": "Hardening targets"
+      },
+      {
+       "level": 1,
+       "text": "Mobile devices"
+      },
+      {
+       "level": 1,
+       "text": "Workstations"
+      },
+      {
+       "level": 1,
+       "text": "Switches"
+      },
+      {
+       "level": 1,
+       "text": "Routers"
+      },
+      {
+       "level": 1,
+       "text": "Cloud infrastructure"
+      },
+      {
+       "level": 1,
+       "text": "Servers"
+      },
+      {
+       "level": 1,
+       "text": "ICS/SCADA"
+      },
+      {
+       "level": 1,
+       "text": "Embedded systems"
+      },
+      {
+       "level": 1,
+       "text": "RTOS"
+      },
+      {
+       "level": 1,
+       "text": "IoT devices"
+      },
+      {
+       "level": 0,
+       "text": "Wireless devices"
+      },
+      {
+       "level": 1,
+       "text": "Installation considerations"
+      },
+      {
+       "level": 2,
+       "text": "Site surveys"
+      },
+      {
+       "level": 2,
+       "text": "Heat maps"
+      },
+      {
+       "level": 0,
+       "text": "Mobile solutions"
+      },
+      {
+       "level": 1,
+       "text": "Mobile device management (MDM)"
+      },
+      {
+       "level": 1,
+       "text": "Deployment models"
+      },
+      {
+       "level": 2,
+       "text": "Bring your own device (BYOD)"
+      },
+      {
+       "level": 2,
+       "text": "Corporate-owned, personally enabled (COPE)"
+      },
+      {
+       "level": 2,
+       "text": "Choose your own device (CYOD)"
+      },
+      {
+       "level": 1,
+       "text": "Connection methods"
+      },
+      {
+       "level": 2,
+       "text": "Cellular"
+      },
+      {
+       "level": 2,
+       "text": "Wi-Fi"
+      },
+      {
+       "level": 2,
+       "text": "Bluetooth"
+      },
+      {
+       "level": 0,
+       "text": "Wireless security settings"
+      },
+      {
+       "level": 1,
+       "text": "Wi-Fi Protected Access 3 (WPA3)"
+      },
+      {
+       "level": 1,
+       "text": "AAA/Remote Authentication Dial-In User Service (RADIUS)"
+      },
+      {
+       "level": 1,
+       "text": "Cryptographic protocols"
+      },
+      {
+       "level": 1,
+       "text": "Authentication protocols"
+      },
+      {
+       "level": 0,
+       "text": "Application security"
+      },
+      {
+       "level": 1,
+       "text": "Input validation"
+      },
+      {
+       "level": 1,
+       "text": "Secure cookies"
+      },
+      {
+       "level": 1,
+       "text": "Static code analysis"
+      },
+      {
+       "level": 1,
+       "text": "Code signing"
+      },
+      {
+       "level": 0,
+       "text": "Sandboxing"
+      },
+      {
+       "level": 0,
+       "text": "Monitoring"
+      }
+     ]
+    },
+    {
+     "num": "4.2",
+     "title": "Explain the security implications of proper hardware, software, and data asset management.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Acquisition/procurement process"
+      },
+      {
+       "level": 0,
+       "text": "Assignment/accounting"
+      },
+      {
+       "level": 1,
+       "text": "Ownership"
+      },
+      {
+       "level": 1,
+       "text": "Classification"
+      },
+      {
+       "level": 0,
+       "text": "Monitoring/asset tracking"
+      },
+      {
+       "level": 1,
+       "text": "Inventory"
+      },
+      {
+       "level": 1,
+       "text": "Enumeration"
+      },
+      {
+       "level": 0,
+       "text": "Disposal/decommissioning"
+      },
+      {
+       "level": 1,
+       "text": "Sanitization"
+      },
+      {
+       "level": 1,
+       "text": "Destruction"
+      },
+      {
+       "level": 1,
+       "text": "Certification"
+      },
+      {
+       "level": 1,
+       "text": "Data retention"
+      }
+     ]
+    },
+    {
+     "num": "4.3",
+     "title": "Explain various activities associated with vulnerability management.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Identification methods"
+      },
+      {
+       "level": 1,
+       "text": "Vulnerability scan"
+      },
+      {
+       "level": 1,
+       "text": "Application security"
+      },
+      {
+       "level": 2,
+       "text": "Static analysis"
+      },
+      {
+       "level": 2,
+       "text": "Dynamic analysis"
+      },
+      {
+       "level": 2,
+       "text": "Package monitoring"
+      },
+      {
+       "level": 1,
+       "text": "Threat feed"
+      },
+      {
+       "level": 2,
+       "text": "Open-source intelligence (OSINT)"
+      },
+      {
+       "level": 2,
+       "text": "Proprietary/third-party"
+      },
+      {
+       "level": 2,
+       "text": "Information-sharing organization"
+      },
+      {
+       "level": 2,
+       "text": "Dark web"
+      },
+      {
+       "level": 1,
+       "text": "Penetration testing"
+      },
+      {
+       "level": 1,
+       "text": "Responsible disclosure program"
+      },
+      {
+       "level": 2,
+       "text": "Bug bounty program"
+      },
+      {
+       "level": 1,
+       "text": "System/process audit"
+      },
+      {
+       "level": 0,
+       "text": "Analysis"
+      },
+      {
+       "level": 1,
+       "text": "Confirmation"
+      },
+      {
+       "level": 2,
+       "text": "False positive"
+      },
+      {
+       "level": 2,
+       "text": "False negative"
+      },
+      {
+       "level": 1,
+       "text": "Prioritize"
+      },
+      {
+       "level": 1,
+       "text": "Common Vulnerability Scoring System (CVSS)"
+      },
+      {
+       "level": 1,
+       "text": "Common Vulnerability Enumeration (CVE)"
+      },
+      {
+       "level": 1,
+       "text": "Vulnerability classification"
+      },
+      {
+       "level": 1,
+       "text": "Exposure factor"
+      },
+      {
+       "level": 1,
+       "text": "Environmental variables"
+      },
+      {
+       "level": 1,
+       "text": "Industry/organizational impact"
+      },
+      {
+       "level": 1,
+       "text": "Risk tolerance"
+      },
+      {
+       "level": 0,
+       "text": "Vulnerability response and remediation"
+      },
+      {
+       "level": 1,
+       "text": "Patching"
+      },
+      {
+       "level": 1,
+       "text": "Insurance"
+      },
+      {
+       "level": 1,
+       "text": "Segmentation"
+      },
+      {
+       "level": 1,
+       "text": "Compensating controls"
+      },
+      {
+       "level": 1,
+       "text": "Exceptions and exemptions"
+      },
+      {
+       "level": 0,
+       "text": "Validation of remediation"
+      },
+      {
+       "level": 1,
+       "text": "Rescanning"
+      },
+      {
+       "level": 1,
+       "text": "Audit"
+      },
+      {
+       "level": 1,
+       "text": "Verification"
+      },
+      {
+       "level": 0,
+       "text": "Reporting"
+      }
+     ]
+    },
+    {
+     "num": "4.4",
+     "title": "Explain security alerting and monitoring concepts and tools.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Monitoring computing resources"
+      },
+      {
+       "level": 1,
+       "text": "Systems"
+      },
+      {
+       "level": 1,
+       "text": "Applications"
+      },
+      {
+       "level": 1,
+       "text": "Infrastructure"
+      },
+      {
+       "level": 0,
+       "text": "Activities"
+      },
+      {
+       "level": 1,
+       "text": "Log aggregation"
+      },
+      {
+       "level": 1,
+       "text": "Alerting"
+      },
+      {
+       "level": 1,
+       "text": "Scanning"
+      },
+      {
+       "level": 1,
+       "text": "Reporting"
+      },
+      {
+       "level": 1,
+       "text": "Archiving"
+      },
+      {
+       "level": 1,
+       "text": "Alert response and remediation/validation"
+      },
+      {
+       "level": 2,
+       "text": "Quarantine"
+      },
+      {
+       "level": 2,
+       "text": "Alert tuning"
+      },
+      {
+       "level": 0,
+       "text": "Tools"
+      },
+      {
+       "level": 1,
+       "text": "Security Content Automation Protocol (SCAP)"
+      },
+      {
+       "level": 1,
+       "text": "Benchmarks"
+      },
+      {
+       "level": 1,
+       "text": "Agents/agentless"
+      },
+      {
+       "level": 1,
+       "text": "Security information and event management (SIEM)"
+      },
+      {
+       "level": 1,
+       "text": "Antivirus"
+      },
+      {
+       "level": 1,
+       "text": "Data loss prevention (DLP)"
+      },
+      {
+       "level": 1,
+       "text": "Simple Network Management Protocol (SNMP) traps"
+      },
+      {
+       "level": 1,
+       "text": "NetFlow"
+      },
+      {
+       "level": 1,
+       "text": "Vulnerability scanners"
+      }
+     ]
+    },
+    {
+     "num": "4.5",
+     "title": "Given a scenario, modify enterprise capabilities to enhance security.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Firewall"
+      },
+      {
+       "level": 1,
+       "text": "Rules"
+      },
+      {
+       "level": 1,
+       "text": "Access lists"
+      },
+      {
+       "level": 1,
+       "text": "Ports/protocols"
+      },
+      {
+       "level": 1,
+       "text": "Screened subnets"
+      },
+      {
+       "level": 0,
+       "text": "IDS/IPS"
+      },
+      {
+       "level": 1,
+       "text": "Trends"
+      },
+      {
+       "level": 1,
+       "text": "Signatures"
+      },
+      {
+       "level": 0,
+       "text": "Web filter"
+      },
+      {
+       "level": 1,
+       "text": "Agent-based"
+      },
+      {
+       "level": 1,
+       "text": "Centralized proxy"
+      },
+      {
+       "level": 1,
+       "text": "Universal Resource Locator (URL) scanning"
+      },
+      {
+       "level": 1,
+       "text": "Content categorization"
+      },
+      {
+       "level": 1,
+       "text": "Block rules"
+      },
+      {
+       "level": 1,
+       "text": "Reputation"
+      },
+      {
+       "level": 0,
+       "text": "Operating system security"
+      },
+      {
+       "level": 1,
+       "text": "Group Policy"
+      },
+      {
+       "level": 1,
+       "text": "SELinux"
+      },
+      {
+       "level": 0,
+       "text": "Implementation of secure protocols"
+      },
+      {
+       "level": 1,
+       "text": "Protocol selection"
+      },
+      {
+       "level": 1,
+       "text": "Port selection"
+      },
+      {
+       "level": 1,
+       "text": "Transport method"
+      },
+      {
+       "level": 0,
+       "text": "DNS filtering"
+      },
+      {
+       "level": 0,
+       "text": "Email security"
+      },
+      {
+       "level": 1,
+       "text": "Domain-based Message Authentication Reporting and Conformance (DMARC)"
+      },
+      {
+       "level": 1,
+       "text": "DomainKeys Identified Mail (DKIM)"
+      },
+      {
+       "level": 1,
+       "text": "Sender Policy Framework (SPF)"
+      },
+      {
+       "level": 1,
+       "text": "Gateway"
+      },
+      {
+       "level": 0,
+       "text": "File integrity monitoring"
+      },
+      {
+       "level": 0,
+       "text": "DLP"
+      },
+      {
+       "level": 0,
+       "text": "Network access control (NAC)"
+      },
+      {
+       "level": 0,
+       "text": "Endpoint detection and response (EDR)/extended detection and response (XDR)"
+      },
+      {
+       "level": 0,
+       "text": "User behavior analytics"
+      }
+     ]
+    },
+    {
+     "num": "4.6",
+     "title": "Given a scenario, implement and maintain identity and access management.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Provisioning/de-provisioning user accounts"
+      },
+      {
+       "level": 0,
+       "text": "Permission assignments and implications"
+      },
+      {
+       "level": 0,
+       "text": "Identity proofing"
+      },
+      {
+       "level": 0,
+       "text": "Federation"
+      },
+      {
+       "level": 0,
+       "text": "Single sign-on (SSO)"
+      },
+      {
+       "level": 1,
+       "text": "Lightweight Directory Access Protocol (LDAP)"
+      },
+      {
+       "level": 1,
+       "text": "Open authorization (OAuth)"
+      },
+      {
+       "level": 1,
+       "text": "Security Assertions Markup Language (SAML)"
+      },
+      {
+       "level": 0,
+       "text": "Interoperability"
+      },
+      {
+       "level": 0,
+       "text": "Attestation"
+      },
+      {
+       "level": 0,
+       "text": "Access controls"
+      },
+      {
+       "level": 1,
+       "text": "Mandatory"
+      },
+      {
+       "level": 1,
+       "text": "Discretionary"
+      },
+      {
+       "level": 1,
+       "text": "Role-based"
+      },
+      {
+       "level": 1,
+       "text": "Rule-based"
+      },
+      {
+       "level": 1,
+       "text": "Attribute-based"
+      },
+      {
+       "level": 1,
+       "text": "Time-of-day restrictions"
+      },
+      {
+       "level": 1,
+       "text": "Least privilege"
+      },
+      {
+       "level": 0,
+       "text": "Multifactor authentication"
+      },
+      {
+       "level": 1,
+       "text": "Implementations"
+      },
+      {
+       "level": 2,
+       "text": "Biometrics"
+      },
+      {
+       "level": 2,
+       "text": "Hard/soft authentication tokens"
+      },
+      {
+       "level": 2,
+       "text": "Security keys"
+      },
+      {
+       "level": 1,
+       "text": "Factors"
+      },
+      {
+       "level": 2,
+       "text": "Something you know"
+      },
+      {
+       "level": 2,
+       "text": "Something you have"
+      },
+      {
+       "level": 2,
+       "text": "Something you are"
+      },
+      {
+       "level": 2,
+       "text": "Somewhere you are"
+      },
+      {
+       "level": 0,
+       "text": "Password concepts"
+      },
+      {
+       "level": 1,
+       "text": "Password best practices"
+      },
+      {
+       "level": 2,
+       "text": "Length"
+      },
+      {
+       "level": 2,
+       "text": "Complexity"
+      },
+      {
+       "level": 2,
+       "text": "Reuse"
+      },
+      {
+       "level": 2,
+       "text": "Expiration"
+      },
+      {
+       "level": 2,
+       "text": "Age"
+      },
+      {
+       "level": 1,
+       "text": "Password managers"
+      },
+      {
+       "level": 1,
+       "text": "Passwordless"
+      },
+      {
+       "level": 0,
+       "text": "Privileged access management tools"
+      },
+      {
+       "level": 1,
+       "text": "Just-in-time permissions"
+      },
+      {
+       "level": 1,
+       "text": "Password vaulting"
+      },
+      {
+       "level": 1,
+       "text": "Ephemeral credentials"
+      }
+     ]
+    },
+    {
+     "num": "4.7",
+     "title": "Explain the importance of automation and orchestration related to secure operations.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Use cases of automation and scripting"
+      },
+      {
+       "level": 1,
+       "text": "User provisioning"
+      },
+      {
+       "level": 1,
+       "text": "Resource provisioning"
+      },
+      {
+       "level": 1,
+       "text": "Guard rails"
+      },
+      {
+       "level": 1,
+       "text": "Security groups"
+      },
+      {
+       "level": 1,
+       "text": "Ticket creation"
+      },
+      {
+       "level": 1,
+       "text": "Escalation"
+      },
+      {
+       "level": 1,
+       "text": "Enabling/disabling services"
+      },
+      {
+       "level": 1,
+       "text": "and access"
+      },
+      {
+       "level": 1,
+       "text": "Continuous integration and testing"
+      },
+      {
+       "level": 1,
+       "text": "Integrations and Application programming interfaces (APIs)"
+      },
+      {
+       "level": 0,
+       "text": "Benefits"
+      },
+      {
+       "level": 1,
+       "text": "Efficiency/time saving"
+      },
+      {
+       "level": 1,
+       "text": "Enforcing baselines"
+      },
+      {
+       "level": 1,
+       "text": "Standard infrastructure configurations"
+      },
+      {
+       "level": 1,
+       "text": "Scaling in a secure manner"
+      },
+      {
+       "level": 1,
+       "text": "Employee retention"
+      },
+      {
+       "level": 1,
+       "text": "Reaction time"
+      },
+      {
+       "level": 1,
+       "text": "Workforce multiplier"
+      },
+      {
+       "level": 0,
+       "text": "Other considerations"
+      },
+      {
+       "level": 1,
+       "text": "Complexity"
+      },
+      {
+       "level": 1,
+       "text": "Cost"
+      },
+      {
+       "level": 1,
+       "text": "Single point of failure"
+      },
+      {
+       "level": 1,
+       "text": "Technical debt"
+      },
+      {
+       "level": 1,
+       "text": "Ongoing supportability"
+      }
+     ]
+    },
+    {
+     "num": "4.8",
+     "title": "Explain appropriate incident response activities.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Process"
+      },
+      {
+       "level": 1,
+       "text": "Preparation"
+      },
+      {
+       "level": 1,
+       "text": "Detection"
+      },
+      {
+       "level": 1,
+       "text": "Analysis"
+      },
+      {
+       "level": 1,
+       "text": "Containment"
+      },
+      {
+       "level": 1,
+       "text": "Eradication"
+      },
+      {
+       "level": 1,
+       "text": "Recovery"
+      },
+      {
+       "level": 1,
+       "text": "Lessons learned"
+      },
+      {
+       "level": 0,
+       "text": "Training"
+      },
+      {
+       "level": 0,
+       "text": "Testing"
+      },
+      {
+       "level": 1,
+       "text": "Tabletop exercise"
+      },
+      {
+       "level": 1,
+       "text": "Simulation"
+      },
+      {
+       "level": 0,
+       "text": "Root cause analysis"
+      },
+      {
+       "level": 0,
+       "text": "Threat hunting"
+      },
+      {
+       "level": 0,
+       "text": "Digital forensics"
+      },
+      {
+       "level": 1,
+       "text": "Legal hold"
+      },
+      {
+       "level": 1,
+       "text": "Chain of custody"
+      },
+      {
+       "level": 1,
+       "text": "Acquisition"
+      },
+      {
+       "level": 1,
+       "text": "Reporting"
+      },
+      {
+       "level": 1,
+       "text": "Preservation"
+      },
+      {
+       "level": 1,
+       "text": "E-discovery"
+      }
+     ]
+    },
+    {
+     "num": "4.9",
+     "title": "Given a scenario, use data sources to support an investigation.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Log data"
+      },
+      {
+       "level": 1,
+       "text": "Firewall logs"
+      },
+      {
+       "level": 1,
+       "text": "Application logs"
+      },
+      {
+       "level": 1,
+       "text": "Endpoint logs"
+      },
+      {
+       "level": 1,
+       "text": "OS-specific security logs"
+      },
+      {
+       "level": 1,
+       "text": "IPS/IDS logs"
+      },
+      {
+       "level": 1,
+       "text": "Network logs"
+      },
+      {
+       "level": 1,
+       "text": "Metadata"
+      },
+      {
+       "level": 0,
+       "text": "Data sources"
+      },
+      {
+       "level": 1,
+       "text": "Vulnerability scans"
+      },
+      {
+       "level": 1,
+       "text": "Automated reports"
+      },
+      {
+       "level": 1,
+       "text": "Dashboards"
+      },
+      {
+       "level": 1,
+       "text": "Packet captures"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "num": "5.0",
+   "name": "Security Program Management and Oversight",
+   "weight": 20,
+   "objectives": [
+    {
+     "num": "5.1",
+     "title": "Summarize elements of effective security governance.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Guidelines"
+      },
+      {
+       "level": 0,
+       "text": "Policies"
+      },
+      {
+       "level": 1,
+       "text": "Acceptable use policy (AUP)"
+      },
+      {
+       "level": 1,
+       "text": "Information security policies"
+      },
+      {
+       "level": 1,
+       "text": "Business continuity"
+      },
+      {
+       "level": 1,
+       "text": "Disaster recovery"
+      },
+      {
+       "level": 1,
+       "text": "Incident response"
+      },
+      {
+       "level": 1,
+       "text": "Software development lifecycle (SDLC)"
+      },
+      {
+       "level": 1,
+       "text": "Change management"
+      },
+      {
+       "level": 0,
+       "text": "Standards"
+      },
+      {
+       "level": 1,
+       "text": "Password"
+      },
+      {
+       "level": 1,
+       "text": "Access control"
+      },
+      {
+       "level": 1,
+       "text": "Physical security"
+      },
+      {
+       "level": 1,
+       "text": "Encryption"
+      },
+      {
+       "level": 0,
+       "text": "Procedures"
+      },
+      {
+       "level": 1,
+       "text": "Change management"
+      },
+      {
+       "level": 1,
+       "text": "Onboarding/offboarding"
+      },
+      {
+       "level": 1,
+       "text": "Playbooks"
+      },
+      {
+       "level": 0,
+       "text": "External considerations"
+      },
+      {
+       "level": 1,
+       "text": "Regulatory"
+      },
+      {
+       "level": 1,
+       "text": "Legal"
+      },
+      {
+       "level": 1,
+       "text": "Industry"
+      },
+      {
+       "level": 1,
+       "text": "Local/regional"
+      },
+      {
+       "level": 1,
+       "text": "National"
+      },
+      {
+       "level": 1,
+       "text": "Global"
+      },
+      {
+       "level": 0,
+       "text": "Monitoring and revision"
+      },
+      {
+       "level": 0,
+       "text": "Types of governance structures"
+      },
+      {
+       "level": 1,
+       "text": "Boards"
+      },
+      {
+       "level": 1,
+       "text": "Committees"
+      },
+      {
+       "level": 1,
+       "text": "Government entities"
+      },
+      {
+       "level": 1,
+       "text": "Centralized/decentralized"
+      },
+      {
+       "level": 0,
+       "text": "Roles and responsibilities for systems and data"
+      },
+      {
+       "level": 1,
+       "text": "Owners"
+      },
+      {
+       "level": 1,
+       "text": "Controllers"
+      },
+      {
+       "level": 1,
+       "text": "Processors"
+      },
+      {
+       "level": 1,
+       "text": "Custodians/stewards"
+      }
+     ]
+    },
+    {
+     "num": "5.2",
+     "title": "Explain elements of the risk management process.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Risk identification"
+      },
+      {
+       "level": 0,
+       "text": "Risk assessment"
+      },
+      {
+       "level": 1,
+       "text": "Ad hoc"
+      },
+      {
+       "level": 1,
+       "text": "Recurring"
+      },
+      {
+       "level": 1,
+       "text": "One-time"
+      },
+      {
+       "level": 1,
+       "text": "Continuous"
+      },
+      {
+       "level": 0,
+       "text": "Risk analysis"
+      },
+      {
+       "level": 1,
+       "text": "Qualitative"
+      },
+      {
+       "level": 1,
+       "text": "Quantitative"
+      },
+      {
+       "level": 1,
+       "text": "Single loss expectancy (SLE)"
+      },
+      {
+       "level": 1,
+       "text": "Annualized loss expectancy (ALE)"
+      },
+      {
+       "level": 1,
+       "text": "Annualized rate of occurrence (ARO)"
+      },
+      {
+       "level": 1,
+       "text": "Probability"
+      },
+      {
+       "level": 1,
+       "text": "Likelihood"
+      },
+      {
+       "level": 1,
+       "text": "Exposure factor"
+      },
+      {
+       "level": 1,
+       "text": "Impact"
+      },
+      {
+       "level": 0,
+       "text": "Risk register"
+      },
+      {
+       "level": 1,
+       "text": "Key risk indicators"
+      },
+      {
+       "level": 1,
+       "text": "Risk owners"
+      },
+      {
+       "level": 1,
+       "text": "Risk threshold"
+      },
+      {
+       "level": 0,
+       "text": "Risk tolerance"
+      },
+      {
+       "level": 0,
+       "text": "Risk appetite"
+      },
+      {
+       "level": 1,
+       "text": "Expansionary"
+      },
+      {
+       "level": 1,
+       "text": "Conservative"
+      },
+      {
+       "level": 1,
+       "text": "Neutral"
+      },
+      {
+       "level": 0,
+       "text": "Risk management strategies"
+      },
+      {
+       "level": 1,
+       "text": "Transfer"
+      },
+      {
+       "level": 1,
+       "text": "Accept"
+      },
+      {
+       "level": 2,
+       "text": "Exemption"
+      },
+      {
+       "level": 2,
+       "text": "Exception"
+      },
+      {
+       "level": 1,
+       "text": "Avoid"
+      },
+      {
+       "level": 1,
+       "text": "Mitigate"
+      },
+      {
+       "level": 0,
+       "text": "Risk reporting"
+      },
+      {
+       "level": 0,
+       "text": "Business impact analysis"
+      },
+      {
+       "level": 1,
+       "text": "Recovery time objective (RTO)"
+      },
+      {
+       "level": 1,
+       "text": "Recovery point objective (RPO)"
+      },
+      {
+       "level": 1,
+       "text": "Mean time to repair (MTTR)"
+      },
+      {
+       "level": 1,
+       "text": "Mean time between failures (MTBF)"
+      }
+     ]
+    },
+    {
+     "num": "5.3",
+     "title": "Explain the processes associated with third-party risk assessment and management.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Vendor assessment"
+      },
+      {
+       "level": 1,
+       "text": "Penetration testing"
+      },
+      {
+       "level": 1,
+       "text": "Right-to-audit clause"
+      },
+      {
+       "level": 1,
+       "text": "Evidence of internal audits"
+      },
+      {
+       "level": 1,
+       "text": "Independent assessments"
+      },
+      {
+       "level": 1,
+       "text": "Supply chain analysis"
+      },
+      {
+       "level": 0,
+       "text": "Vendor selection"
+      },
+      {
+       "level": 1,
+       "text": "Due diligence"
+      },
+      {
+       "level": 1,
+       "text": "Conflict of interest"
+      },
+      {
+       "level": 0,
+       "text": "Agreement types"
+      },
+      {
+       "level": 1,
+       "text": "Service-level agreement (SLA)"
+      },
+      {
+       "level": 1,
+       "text": "Memorandum of agreement (MOA)"
+      },
+      {
+       "level": 1,
+       "text": "Memorandum of understanding (MOU)"
+      },
+      {
+       "level": 1,
+       "text": "Master service agreement (MSA)"
+      },
+      {
+       "level": 1,
+       "text": "Work order (WO)/statement of work (SOW)"
+      },
+      {
+       "level": 1,
+       "text": "Non-disclosure agreement (NDA)"
+      },
+      {
+       "level": 1,
+       "text": "Business partners agreement (BPA)"
+      },
+      {
+       "level": 0,
+       "text": "Vendor monitoring"
+      },
+      {
+       "level": 0,
+       "text": "Questionnaires"
+      },
+      {
+       "level": 0,
+       "text": "Rules of engagement"
+      }
+     ]
+    },
+    {
+     "num": "5.4",
+     "title": "Summarize elements of effective security compliance.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Compliance reporting"
+      },
+      {
+       "level": 1,
+       "text": "Internal"
+      },
+      {
+       "level": 1,
+       "text": "External"
+      },
+      {
+       "level": 0,
+       "text": "Consequences of non-compliance"
+      },
+      {
+       "level": 1,
+       "text": "Fines"
+      },
+      {
+       "level": 1,
+       "text": "Sanctions"
+      },
+      {
+       "level": 1,
+       "text": "Reputational damage"
+      },
+      {
+       "level": 1,
+       "text": "Loss of license"
+      },
+      {
+       "level": 1,
+       "text": "Contractual impacts"
+      },
+      {
+       "level": 0,
+       "text": "Compliance monitoring"
+      },
+      {
+       "level": 1,
+       "text": "Due diligence/care"
+      },
+      {
+       "level": 1,
+       "text": "Attestation and acknowledgement"
+      },
+      {
+       "level": 1,
+       "text": "Internal and external"
+      },
+      {
+       "level": 1,
+       "text": "Automation"
+      },
+      {
+       "level": 0,
+       "text": "Privacy"
+      },
+      {
+       "level": 1,
+       "text": "Legal implications"
+      },
+      {
+       "level": 2,
+       "text": "Local/regional"
+      },
+      {
+       "level": 2,
+       "text": "National"
+      },
+      {
+       "level": 2,
+       "text": "Global"
+      },
+      {
+       "level": 1,
+       "text": "Data subject"
+      },
+      {
+       "level": 1,
+       "text": "Controller vs. processor"
+      },
+      {
+       "level": 1,
+       "text": "Ownership"
+      },
+      {
+       "level": 1,
+       "text": "Data inventory and retention"
+      },
+      {
+       "level": 1,
+       "text": "Right to be forgotten"
+      }
+     ]
+    },
+    {
+     "num": "5.5",
+     "title": "Explain types and purposes of audits and assessments.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Attestation"
+      },
+      {
+       "level": 0,
+       "text": "Internal"
+      },
+      {
+       "level": 1,
+       "text": "Compliance"
+      },
+      {
+       "level": 1,
+       "text": "Audit committee"
+      },
+      {
+       "level": 1,
+       "text": "Self-assessments"
+      },
+      {
+       "level": 0,
+       "text": "External"
+      },
+      {
+       "level": 1,
+       "text": "Regulatory"
+      },
+      {
+       "level": 1,
+       "text": "Examinations"
+      },
+      {
+       "level": 1,
+       "text": "Assessment"
+      },
+      {
+       "level": 1,
+       "text": "Independent third-party audit"
+      },
+      {
+       "level": 0,
+       "text": "Penetration testing"
+      },
+      {
+       "level": 1,
+       "text": "Physical"
+      },
+      {
+       "level": 1,
+       "text": "Offensive"
+      },
+      {
+       "level": 1,
+       "text": "Defensive"
+      },
+      {
+       "level": 1,
+       "text": "Integrated"
+      },
+      {
+       "level": 1,
+       "text": "Known environment"
+      },
+      {
+       "level": 1,
+       "text": "Partially known environment"
+      },
+      {
+       "level": 1,
+       "text": "Unknown environment"
+      },
+      {
+       "level": 1,
+       "text": "Reconnaissance"
+      },
+      {
+       "level": 2,
+       "text": "Passive"
+      },
+      {
+       "level": 2,
+       "text": "Active"
+      }
+     ]
+    },
+    {
+     "num": "5.6",
+     "title": "Given a scenario, implement security awareness practices.",
+     "items": [
+      {
+       "level": 0,
+       "text": "Phishing"
+      },
+      {
+       "level": 1,
+       "text": "Campaigns"
+      },
+      {
+       "level": 1,
+       "text": "Recognizing a phishing attempt"
+      },
+      {
+       "level": 1,
+       "text": "Responding to reported suspicious messages"
+      },
+      {
+       "level": 0,
+       "text": "Anomalous behavior recognition"
+      },
+      {
+       "level": 1,
+       "text": "Risky"
+      },
+      {
+       "level": 1,
+       "text": "Unexpected"
+      },
+      {
+       "level": 1,
+       "text": "Unintentional"
+      },
+      {
+       "level": 0,
+       "text": "User guidance and training"
+      },
+      {
+       "level": 1,
+       "text": "Policy/handbooks"
+      },
+      {
+       "level": 1,
+       "text": "Situational awareness"
+      },
+      {
+       "level": 1,
+       "text": "Insider threat"
+      },
+      {
+       "level": 1,
+       "text": "Password management"
+      },
+      {
+       "level": 1,
+       "text": "Removable media and cables"
+      },
+      {
+       "level": 1,
+       "text": "Social engineering"
+      },
+      {
+       "level": 1,
+       "text": "Operational security"
+      },
+      {
+       "level": 1,
+       "text": "Hybrid/remote work environments"
+      },
+      {
+       "level": 0,
+       "text": "Reporting and monitoring"
+      },
+      {
+       "level": 1,
+       "text": "Initial"
+      },
+      {
+       "level": 1,
+       "text": "Recurring"
+      },
+      {
+       "level": 0,
+       "text": "Development"
+      },
+      {
+       "level": 0,
+       "text": "Execution"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

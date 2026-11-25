@@ -1,6 +1,7 @@
 import { QUESTIONS, VARIANTS, EXTRA_WORDINGS } from '../src/data/questions/index.js'
 import FLASHCARDS from '../src/data/flashcards.js'
 import ACRONYMS from '../src/data/acronyms.js'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 let bad = 0
 const fail = (msg, q) => { console.log(msg, q.id, q.question.slice(0, 60)); bad++ }
 const seen = new Set()
@@ -45,4 +46,25 @@ const by = {}
 QUESTIONS.forEach((q) => { const k = `${q.domain}:${q.type}`; by[k] = (by[k] || 0) + 1 })
 console.log('questions', QUESTIONS.length, by)
 console.log('exhibits', QUESTIONS.filter((q) => q.exhibit).length, 'flashcards', FLASHCARDS.length, 'acronyms', ACRONYMS.length)
+// IDs are mostly positional (e.g. d1-14 = 15th Domain 1 question, r-3, l-2-5) and are stored in users'
+// missed/flagged lists, review history, wording history and flashcard marks. This lock catches an
+// insertion, removal or reorder that would silently point saved IDs at different content.
+// After appending new content: node scripts/check-data.js --update-lock
+const LOCK = new URL('./ids.lock.json', import.meta.url)
+const current = Object.fromEntries([
+  ...QUESTIONS.map((q) => [q.id, q.question.slice(0, 60)]),
+  ...FLASHCARDS.map((f) => [f.id, f.front]),
+  ...ACRONYMS.map((a) => [a.id, a.front])
+])
+const lock = existsSync(LOCK) ? JSON.parse(readFileSync(LOCK, 'utf8')) : {}
+for (const [id, text] of Object.entries(lock)) {
+  if (current[id] !== text) {
+    console.log(`ID ${id} changed: was "${text}", now "${current[id] ?? '(missing)'}". Append new content at the end instead of inserting or removing it.`)
+    bad++
+  }
+}
+if (!bad && process.argv.includes('--update-lock')) {
+  writeFileSync(LOCK, JSON.stringify({ ...lock, ...current }, null, 0).replace(/","/g, '",\n"') + '\n')
+  console.log('ids.lock.json updated:', Object.keys({ ...lock, ...current }).length, 'ids')
+}
 process.exit(bad ? 1 : 0)

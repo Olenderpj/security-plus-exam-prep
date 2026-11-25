@@ -24,6 +24,23 @@ A minimal Vue 3 study app for the CompTIA Security+ (SY0-701) exam.
 
 Question bank (340 questions) lives in `src/data/questions/d1.js` … `d5.js`, `d1-more.js` … `d5-more.js`, and `pbq.js` (performance-based and exhibit questions); flashcards in `src/data/flashcards.js`. Every question has alternate wordings in `variants-d1.js` … `variants-d5.js` and two more in `variants-extra.js` (all keyed by question ID, so append new questions at the end of a domain file rather than inserting them). `check:data` fails any question with fewer than three wordings. Run `npm run check:data` after editing.
 
+## Exam objectives
+
+The **Objectives** page (desktop sidebar) shows the complete official SY0-701 objectives — CompTIA's *Exam Objectives Document Version 7.0*, 28 objectives and 797 bullets, verbatim — with Google Docs-style comments on any objective or bullet. Comments are stored in the `objective_comments` table (per-user RLS) when signed in, or in the browser when signed out and moved into the account at sign-in.
+
+`src/data/objectives.json` is generated from CompTIA's PDF (URL recorded in the file):
+
+```bash
+pdftotext -bbox-layout sy0-701.pdf sy0-701.bbox.html
+python3 scripts/extract-objectives.py sy0-701.bbox.html objectives.json
+```
+
+Two oddities are printed that way in CompTIA's PDF and kept verbatim: "Humanand non-human-readable" (3.3) and "and access" as its own bullet under "Enabling/disabling services" (4.7).
+
+## Question and flashcard IDs
+
+Most IDs are positional and are saved in users' missed/flagged lists, review history and flashcard marks. `npm run build` runs `scripts/check-data.js`, which fails if an ID in `scripts/ids.lock.json` now points at different content — append new content at the end of a file instead of inserting or removing it, then run `node scripts/check-data.js --update-lock`. IDs of retired questions are dropped from users' lists automatically.
+
 ## Local development
 
 ```bash

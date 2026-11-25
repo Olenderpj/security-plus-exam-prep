@@ -143,7 +143,7 @@ async function finish() {
     correct: questions.value.filter((q, i) => isCorrect(q, answers.value[i] || [])).length,
     timed: timed.value,
     duration_seconds: seconds.value,
-    domain_breakdown: breakdown(questions.value, answers.value)
+    domain_breakdown: { ...breakdown(questions.value, answers.value), ...(source.value === 'missed' ? { source: 'missed' } : {}) }
   })
 }
 

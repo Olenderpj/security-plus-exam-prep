@@ -6,6 +6,9 @@ import { sheetOpen } from './lib/shortcuts.js'
 import { focusMode } from './lib/focus.js'
 import { user, signOut, displayName } from './lib/auth.js'
 import NotesTree from './components/NotesTree.vue'
+import { defineAsyncComponent } from 'vue'
+// Loaded with the Objectives page so the objectives data stays out of the main bundle.
+const ObjectivesTree = defineAsyncComponent(() => import('./components/ObjectivesTree.vue'))
 import { overallLabel, overallLevel, overallTone, state, weakSections } from './lib/level.js'
 import { flagged, missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
@@ -17,6 +20,8 @@ const links = [
   { to: '/exam', label: 'Exam', paths: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M12 6v6l4 2'] },
   { to: '/flashcards', label: 'Flashcards', paths: ['M12 2 2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'] },
   { to: '/notes', label: 'Notes', paths: ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M16 13H8', 'M16 17H8'] },
+  // Desktop only (the phone tab bar keeps five tabs).
+  { to: '/objectives', label: 'Objectives', desktop: true, paths: ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3 6h.01', 'M3 12h.01', 'M3 18h.01'] },
   { to: '/progress', label: 'Progress', paths: ['M18 20V10', 'M12 20V4', 'M6 20v-6'] }
 ]
 const settingsPaths = ['M4 21v-7', 'M4 10V3', 'M12 21v-9', 'M12 8V3', 'M20 21v-5', 'M20 12V3', 'M1 14h6', 'M9 8h6', 'M17 16h6']
@@ -62,11 +67,12 @@ onBeforeUnmount(() => {
 
       <nav class="links" aria-label="Primary">
         <template v-for="l in links" :key="l.to">
-          <RouterLink :to="l.to">
+          <RouterLink :to="l.to" :class="{ deskonly: l.desktop }">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path v-for="d in l.paths" :key="d" :d="d" /></svg>
             <span>{{ l.label }}</span>
           </RouterLink>
           <NotesTree v-if="l.to === '/notes' && $route.path === '/notes'" />
+          <ObjectivesTree v-if="l.to === '/objectives' && $route.path === '/objectives'" />
         </template>
       </nav>
 
@@ -113,7 +119,7 @@ onBeforeUnmount(() => {
   <ShortcutsSheet />
 
   <main class="page">
-    <div class="pagein" :class="{ wide: focusMode }">
+    <div class="pagein" :class="{ wide: focusMode || $route.path === '/objectives' }">
       <SearchBar v-if="!focusMode" />
       <RouterView :key="$route.fullPath" />
     </div>
@@ -171,6 +177,7 @@ onBeforeUnmount(() => {
 
 /* Phones: navigation becomes a bottom tab bar */
 @media (max-width: 959px) {
+  .links a.deskonly { display: none; }
   .brandname .muted { display: none; }
   .name, .caret { display: none; }
   .who { padding: .2rem; }

@@ -17,6 +17,7 @@
   --bad: #b42318;
   --bad-bg: #fdf1ef;
   --warn: #a15c07;
+  --highlight: #fdf1d4;
   --warn-bg: #fdf4e3;
   --info: #2457c5;
   --info-bg: #eef3fd;
@@ -45,6 +46,7 @@
     --bad: #ff8a80;
     --bad-bg: #331c1a;
     --warn: #f0b45a;
+    --highlight: #3d3015;
     --warn-bg: #33270f;
     --info: #8db1ff;
     --info-bg: #1a2640;

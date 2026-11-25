@@ -4,14 +4,29 @@ import { supabase, supabaseEnabled } from './supabase.js'
 export const user = ref(null)
 export const authReady = ref(!supabaseEnabled)
 
+// The saved session holds a copy of the user's profile from sign-in time. Fetch the current one on load
+// and when the tab regains focus, so changes made on another device (missed/flagged questions, marked
+// flashcards, level, review history) show up here instead of being overwritten by the stale copy.
+let lastRefresh = 0
+async function refreshUser() {
+  if (!user.value || Date.now() - lastRefresh < 30_000) return
+  lastRefresh = Date.now()
+  const { data, error } = await supabase.auth.getUser()
+  if (!error && data.user) user.value = data.user
+}
+
 if (supabaseEnabled) {
   supabase.auth.getSession().then(({ data }) => {
     user.value = data.session?.user ?? null
     authReady.value = true
+    refreshUser()
   })
+  // Deferred to the next task: Supabase holds an internal lock while this callback runs, and Supabase
+  // calls made by code reacting to the change would otherwise wait on it and stall.
   supabase.auth.onAuthStateChange((_event, session) => {
-    user.value = session?.user ?? null
+    setTimeout(() => (user.value = session?.user ?? null), 0)
   })
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && refreshUser())
 }
 
 export const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password })
