@@ -1,15 +1,14 @@
 <script setup>
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
-import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
 import { flagged, missed, onReviewList, recordAnswer, toggleFlag } from '../lib/missed.js'
-import { CLEAR_AVG, CLEAR_WINDOW, reviewProgress } from '../lib/reviewHistory.js'
+import { reviewProgress } from '../lib/reviewHistory.js'
 import { objectiveName } from '../data/domains.js'
-import { practiceSet, practiceMixSet, practicePool, minPerCategory, isCorrect, isComplete, breakdown } from '../lib/exam.js'
+import { practiceSet, practiceMixSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt, snapshotQuestions } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
@@ -41,8 +40,6 @@ function poolOf(dom, objs) {
   return [...all.values()]
 }
 const catTotal = (c) => practicePool(null, 'all', catDef(c).onlyIds || null, objectives.value, catDef(c).sections || null).length
-const minShare = computed(() => minPerCategory(count.value === 'all' ? max.value : Math.min(count.value, max.value)))
-const RULE = `It comes off the list once your last ${CLEAR_WINDOW} attempts average ${CLEAR_AVG * 100}% or better.`
 
 // Flag the current question for extra practice (and its section as a weak area). Shown after answering:
 // where a question on a review list stands against the clearing rule.
@@ -274,8 +271,6 @@ onBeforeUnmount(() => {
 <template>
   <div v-if="stage === 'setup'" class="stack">
     <h1>Practice by section</h1>
-    <LevelBadge />
-    <p class="muted">Instant feedback after each question. Questions and answer order are randomized every time.</p>
     <div class="card stack">
       <div>
         <div class="label">Questions <span class="muted small">(pick any number of categories)</span></div>
@@ -283,28 +278,16 @@ onBeforeUnmount(() => {
           <button class="chip" :class="{ on: !cats.length }" @click="cats = []">All questions</button>
           <button class="chip" :class="{ on: has('missed') }" :aria-pressed="has('missed')" @click="toggleCat('missed')">Missed questions · {{ catTotal('missed') }}</button>
           <button class="chip" :class="{ on: has('flagged') }" :aria-pressed="has('flagged')" @click="toggleCat('flagged')">Flagged · {{ catTotal('flagged') }}</button>
-          <button class="chip" :class="{ on: has('weak') }" :aria-pressed="has('weak')" :disabled="!weakList.length" @click="toggleCat('weak')">Weak areas · {{ catTotal('weak') }}</button>
+          <button class="chip" :class="{ on: has('weak') }" :aria-pressed="has('weak')" :disabled="!weakList.length" :title="weakList.length ? '' : 'Answer a few questions to find your weak areas'" @click="toggleCat('weak')">Weak areas · {{ catTotal('weak') }}</button>
         </div>
-        <p v-if="cats.length > 1" class="muted small" style="margin: .5rem 0 0">
-          <template v-if="count === 'all'">Mixed session: every question from the {{ cats.length }} categories.</template>
-          <template v-else>Mixed session: each of the {{ cats.length }} categories gets at least {{ minShare }} question{{ minShare === 1 ? '' : 's' }} (10%) when it has them; the rest are drawn at random from all of them.</template>
-        </p>
-        <p v-if="!weakList.length" class="muted small" style="margin: .5rem 0 0">
-          Weak areas appear once you have answered a few questions in some sections.
-        </p>
-        <div v-else-if="has('weak')" class="small" style="margin: .5rem 0 0">
-          <div class="muted">Weak areas: sections with flagged questions and the sections where your level is lowest:</div>
+        <div v-if="has('weak') && weakList.length" class="small" style="margin: .5rem 0 0">
           <div class="weakchips">
             <span v-for="s in weakList" :key="s.code" class="tag brand wrap">
               <svg v-if="s.flagged" class="fl" viewBox="0 0 24 24" aria-label="Flagged"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ s.code }} {{ s.name }} · {{ s.rating.toFixed(1) }}</span>
           </div>
         </div>
-        <p v-if="has('missed')" class="muted small" style="margin: .5rem 0 0">
-          {{ catTotal('missed') ? `Missed: questions you got wrong in practice or exams. ${RULE}` : 'No missed questions right now — they\'ll collect here as you practice.' }}
-        </p>
-        <p v-if="has('flagged')" class="muted small" style="margin: .5rem 0 0">
-          {{ catTotal('flagged') ? `Flagged: questions you flagged for extra practice; their sections also count as weak areas. ${RULE} You can unflag one at any time.` : 'Nothing flagged yet. While practicing, tap the flag on a question to add it here.' }}
-        </p>
+        <p v-if="has('missed') && !catTotal('missed')" class="muted small" style="margin: .5rem 0 0">No missed questions yet.</p>
+        <p v-if="has('flagged') && !catTotal('flagged')" class="muted small" style="margin: .5rem 0 0">Nothing flagged yet.</p>
       </div>
       <div>
         <div class="label">Question type</div>
@@ -315,10 +298,7 @@ onBeforeUnmount(() => {
       <DomainPicker v-model="domain" :counts="counts" />
       <SubsectionPicker v-model="objectives" :domain="domain" :counts="objCounts" noun="questions" />
       <CountPicker v-model="count" :max="max" />
-      <p class="rangenote small" :class="max ? 'muted' : 'warn'">
-        Questions come from near your level in each section (the range widens when needed so there is always something to study): {{ max }} match this selection.
-        <template v-if="!max">Try another section, question type, or category.</template>
-      </p>
+      <p v-if="!max" class="rangenote small warn">No questions match. Try another section, question type, or category.</p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
   </div>
@@ -347,11 +327,10 @@ onBeforeUnmount(() => {
       <p v-if="reviewNote" class="revnote small">
         On your {{ reviewNote.lists }} list · last {{ reviewNote.n }} attempt{{ reviewNote.n === 1 ? '' : 's' }}:
         <span v-for="(x, i) in reviewNote.scores" :key="i" class="pip" :class="x >= 1 ? 'ok' : x > 0 ? 'part' : 'no'" />
-        <strong>{{ Math.round(reviewNote.avg * 100) }}%</strong>.
-        Needs {{ CLEAR_AVG * 100 }}% or better over {{ CLEAR_WINDOW }} attempts to come off<template v-if="reviewNote.n < CLEAR_WINDOW"> ({{ CLEAR_WINDOW - reviewNote.n }} more to go)</template>.
+        <strong>{{ Math.round(reviewNote.avg * 100) }}%</strong>
       </p>
       <p v-else-if="revealed && cleared.has(current.id)" class="revnote small good">
-        Cleared from your review lists: your last {{ CLEAR_WINDOW }} attempts averaged {{ CLEAR_AVG * 100 }}% or better.
+        Cleared from your review lists.
       </p>
     </div>
     <div class="row between actions">

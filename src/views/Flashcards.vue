@@ -150,7 +150,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 <template>
   <div v-if="stage === 'setup'" class="stack">
     <h1>Flashcards</h1>
-    <p class="muted">Every deck is freshly shuffled. Mark any card for review to build your own deck of weak spots.</p>
     <div class="card stack">
       <div>
         <div class="label">Deck</div>
@@ -174,11 +173,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </p>
       </div>
       <p v-if="deckType === 'marked' && !markedCards.length" class="muted small" style="margin: 0">
-        No cards marked yet. While studying, tap "Mark for review" (or press M) on any card.
-      </p>
-      <p v-else-if="deckType === 'marked'" class="muted small" style="margin: 0">
-        Cards you mark yourself stay until you unmark them.<template v-if="markedCards.some((c) => autoMarked.has(c.id))">
-        Acronyms added automatically from practice lookups ({{ markedCards.filter((c) => autoMarked.has(c.id)).length }}) come off once your last 4 attempts at them average 75% or better.</template>
+        No cards marked yet.
       </p>
       <CountPicker v-if="pool.length" v-model="count" :max="pool.length" />
       <div class="startbar"><button class="btn primary" :disabled="!pool.length" @click="start">Start deck <span class="kbd" aria-hidden="true">↵</span></button></div>

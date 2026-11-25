@@ -4,11 +4,9 @@ import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
-import { tierFor } from '../lib/depth.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
 import StudyCalendar from '../components/StudyCalendar.vue'
 import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
-import { countInRange, servingWindow } from '../lib/serving.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 // ── profile ──
@@ -48,13 +46,6 @@ const sections = computed(() =>
   }))
 )
 const weak = computed(() => new Set(weakSections().map((s) => s.code)))
-// "rated 5.0–6.2 (14 available)", noting when the level is held at the easiest/hardest band the bank can serve.
-function serving(code) {
-  const w = servingWindow(code)
-  const t1 = tierFor(w.lo).name
-  const t2 = tierFor(w.hi).name
-  return `serving ${t1 === t2 ? t1 : `${t1} to ${t2}`} questions, rated ${w.lo.toFixed(1)}–${w.hi.toFixed(1)} (${countInRange(code)} available)${w.widened ? `, range widened to ±${Math.round(w.range * 100)}% to keep enough questions` : ''}${w.clamped ? `, the ${w.level < w.centre ? 'easiest' : 'hardest'} band the bank has` : ''}`
-}
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
 // Level colour: building (amber) → proficient (blue) → strong (green).
 const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
@@ -203,9 +194,10 @@ async function resetDifficulty() {
           <RouterLink v-if="weak.size" to="/practice?weak=1" class="btn small">Practice weak areas</RouterLink>
         </div>
       </div>
+      <!-- The one place that explains how questions are chosen: keep it short. -->
       <p class="muted small" style="margin: 0">
-        Questions are rated 1–10 and served near your level in each sub-section (±10%, widened automatically when a sub-section has too few), so they get harder where you succeed and
-        easier where you struggle. Levels update after every practice session and exam, and from the feedback you give.
+        Questions are picked near your level in each section, so they get harder as you improve. Exams follow the official domain
+        weights. Missed and flagged questions leave their lists once your last 4 tries average 75%.
       </p>
 
       <div class="card row between">
@@ -253,7 +245,6 @@ async function resetDifficulty() {
                 <template v-else-if="o.stat.lookups">{{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }} · no questions answered yet</template>
                 <template v-else>Not started yet. Questions here begin near your overall level ({{ overall.toFixed(1) }}) until you answer some.</template>
               </div>
-              <div class="muted small">{{ serving(o.code) }}</div>
             </div>
           </div>
         </details>

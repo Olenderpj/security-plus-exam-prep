@@ -2,13 +2,12 @@
 import { closeDialog, confirmDialog } from '../lib/dialog.js'
 import { useFocusMode } from '../lib/focus.js'
 import { recordSession } from '../lib/adaptive.js'
-import LevelBadge from '../components/LevelBadge.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
 import { PRACTICE_EXAMS, QUESTIONS, guideRef, isGuide } from '../data/questions/index.js'
-import { DOMAINS, EXAM } from '../data/domains.js'
+import { EXAM } from '../data/domains.js'
 import { examPlan, examSet, guideExamPlan, guideExamSet, practiceExamSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
 import { saveAttempt, snapshotQuestions } from '../lib/progress.js'
 import { flagged, missed, recordResults, toggleFlag } from '../lib/missed.js'
@@ -176,15 +175,6 @@ onBeforeUnmount(() => clearInterval(timer))
 <template>
   <div v-if="stage === 'setup'" class="stack">
     <h1>Practice exam</h1>
-    <LevelBadge />
-    <p class="muted small" style="margin: 0">
-      Questions are weighted like the real exam: {{ DOMAINS.map((d) => `${d.id}.0 ${d.weight}%`).join(' · ') }}.
-    </p>
-    <p class="muted">
-      Questions are drawn from every domain using the official SY0-701 weightings. No feedback until you submit —
-      just like the real exam. Performance-based questions (matching, ordering, simulations) come first, as on test day — you can skip them and come back.
-      Flag any question to revisit it from the navigator before submitting; flags also add it to your Flagged practice list.
-    </p>
     <div class="card stack">
       <div>
         <div class="label">Questions</div>
@@ -197,29 +187,14 @@ onBeforeUnmount(() => clearInterval(timer))
         <div class="row">
           <button v-for="x in PRACTICE_EXAMS" :key="x" class="chip" :class="{ on: source === x }" @click="source = x">Practice exam {{ x }} · {{ originalSize[x] }}</button>
         </div>
-        <p v-if="source === 'guide'" class="muted small" style="margin: .5rem 0 0">
-          Only questions adapted from practice exams A, B and C, mixed together at every difficulty and weighted like the real exam. Wordings and answer order change each time.
-        </p>
-        <p v-else-if="isOriginal" class="muted small" style="margin: .5rem 0 0">
-          Practice exam {{ source }} as written: all {{ originalSize[source] }} questions in their original order (performance-based questions first), with the main wording and answer options in a fixed order.
-        </p>
-        <p v-if="source === 'missed'" class="muted small" style="margin: .5rem 0 0">
-          {{ missedTotal
-            ? `An exam built from questions you've missed${missedTotal < length ? ` (${missedTotal} available)` : ''}. A question comes off the list once your last 4 attempts average 75% or better.`
-            : 'No missed questions yet. Wrong or unanswered exam and practice questions collect here.' }}
-        </p>
+        <p v-if="source === 'missed' && !missedTotal" class="muted small" style="margin: .5rem 0 0">No missed questions yet.</p>
       </div>
       <div v-if="!isOriginal">
         <div class="label">Length</div>
         <div class="row">
           <button v-for="l in LENGTHS" :key="l.n" class="chip" :class="{ on: length === l.n }" @click="length = l.n">{{ l.label }}</button>
         </div>
-        <p class="small muted" style="margin: .5rem 0 0">
-          <template v-if="source === 'guide'">{{ plan.available }} practice-exam questions available, at every difficulty. </template>
-          <template v-else>Questions are drawn from near your level in each section ({{ plan.available }} available). </template>
-          <template v-if="source !== 'missed' && plan.size < length">This exam will have <strong>{{ plan.size }}</strong> questions: the most that fit your range while keeping the official domain mix.</template>
-          <template v-else-if="source !== 'missed'">Enough are available for the full length.</template>
-        </p>
+        <p v-if="source !== 'missed' && plan.size < length" class="small muted" style="margin: .5rem 0 0">This exam will have <strong>{{ plan.size }}</strong> questions.</p>
       </div>
       <div>
         <div class="label">Mode</div>
@@ -235,7 +210,7 @@ onBeforeUnmount(() => clearInterval(timer))
   <div v-else-if="stage === 'run'" class="run">
     <div class="stack main">
       <p v-if="shortened" class="small muted" style="margin: 0">
-        Shortened to {{ questions.length }} questions: that is how many fit near your level while keeping the official domain mix.
+        Shortened to {{ questions.length }} questions.
       </p>
     <div class="row between small">
       <span class="muted">Question {{ idx + 1 }} of {{ questions.length }} · {{ answeredCount }} answered</span>
