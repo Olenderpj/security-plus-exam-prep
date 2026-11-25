@@ -294,10 +294,8 @@ onBeforeUnmount(() => clearInterval(timer))
 <style scoped>
 .run { display: block; }
 .rail { display: block; margin-top: 1rem; }
-.startbar {
-  position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
-  background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
-}
+/* Start sits at the bottom of the setup card (not sticky to the window). */
+.startbar { padding-top: 1rem; border-top: 1px solid var(--border); }
 .label.sub { margin-top: .75rem; }
 .krow { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; }
 .krow .muted { margin-left: auto; }
@@ -306,9 +304,6 @@ onBeforeUnmount(() => clearInterval(timer))
   .run { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 1.5rem; align-items: start; }
   .rail { margin-top: 0; position: sticky; top: 1.5rem; }
   .keys { display: block; }
-}
-@media (max-width: 959px) {
-  .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); }
 }
 .clock { font-weight: 600; font-size: 1.05rem; padding: .15rem .7rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); }
 .clock.low { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }

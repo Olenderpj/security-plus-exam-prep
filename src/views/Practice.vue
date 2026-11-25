@@ -414,10 +414,8 @@ onBeforeUnmount(() => {
 .rail { display: none; }
 .weakchips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
 .tag.wrap { white-space: normal; }
-.startbar {
-  position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
-  background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
-}
+/* Start sits at the bottom of the setup card (not sticky to the window). */
+.startbar { padding-top: 1rem; border-top: 1px solid var(--border); }
 .tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; }
 .tnum { font-size: 1.8rem; font-weight: 500; line-height: 1.2; }
 .dots { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .9rem; }
@@ -431,13 +429,11 @@ onBeforeUnmount(() => {
   .rail { display: block; position: sticky; top: 1.5rem; }
   .main .hint { display: none; }
 }
-@media (max-width: 959px) {
-  .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); }
-}
 .hint { margin: 0; }
 @media (max-width: 959px) {
   .hint { display: none; }
-  .actions { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); z-index: 5; padding: .6rem 0; background: var(--bg); }
+  /* Just above the floating glass tab bar (App.vue: bottom offset + 4.35rem height). */
+  .actions { position: sticky; bottom: calc(max(.75rem, calc(env(safe-area-inset-bottom) - .25rem)) + 4.35rem + .5rem); z-index: 5; padding: .6rem 0; background: var(--bg); }
 }
 .weak { margin: .25rem 0 0; padding-left: 1.1rem; }
 .objective { background: var(--soft); border-radius: 8px; padding: .5rem .75rem; }

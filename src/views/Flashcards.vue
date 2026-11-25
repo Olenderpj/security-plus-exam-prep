@@ -263,11 +263,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   .run { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 1.5rem; align-items: start; }
   .rail { display: block; position: sticky; top: 1.5rem; }
 }
-.startbar {
-  position: sticky; bottom: 0; z-index: 4; margin: 0 -1.25rem -1.25rem; padding: .85rem 1.25rem;
-  background: var(--surface); box-shadow: 0 -14px 14px -12px rgba(0, 0, 0, .14); border-radius: 0 0 var(--radius) var(--radius);
-}
-@media (max-width: 959px) { .startbar { position: sticky; bottom: calc(4.3rem + env(safe-area-inset-bottom)); } }
+/* Start sits at the bottom of the setup card (not sticky to the window). */
+.startbar { padding-top: 1rem; border-top: 1px solid var(--border); }
 .flash {
   min-height: 22rem; width: 100%; display: flex; flex-direction: column; justify-content: center; position: relative;
   align-items: center; text-align: center; gap: 1.25rem; font: inherit; color: var(--text); cursor: pointer; padding: 2.5rem 1.5rem 3rem;
