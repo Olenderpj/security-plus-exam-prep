@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { dayKey, dailyTotals, formatDuration, study } from '../lib/studyTime.js'
 import { loadAttempts } from '../lib/progress.js'
 import { attemptLabel } from '../lib/attemptLabel.js'
+import { scoreStyle } from '../lib/scoreColor.js'
 import { user, authReady } from '../lib/auth.js'
 
 const today = dayKey()
@@ -72,7 +73,7 @@ const detail = computed(() => {
   }
 })
 const time = (s) => new Date(s).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-const score = (a) => `${a.correct}/${a.total} · ${Math.round((100 * a.correct) / Math.max(a.total, 1))}%`
+const pctOf = (a) => Math.round((100 * a.correct) / Math.max(a.total, 1))
 
 // Arrow keys move the selected day.
 function onKey(e, c) {
@@ -140,7 +141,7 @@ function onKey(e, c) {
       <div v-for="a in detail.sessions" :key="a.id || a.created_at" class="srow small">
         <span class="muted stime">{{ time(a.created_at) }}</span>
         <RouterLink :to="`/progress/session/${encodeURIComponent(a.id)}`" class="sname">{{ attemptLabel(a) }}</RouterLink>
-        <span class="num">{{ score(a) }}<template v-if="a.duration_seconds"> · {{ formatDuration(a.duration_seconds) }}</template></span>
+        <span class="num sscore"><span class="muted">{{ a.correct }}/{{ a.total }}<template v-if="a.duration_seconds"> · {{ formatDuration(a.duration_seconds) }}</template></span><span class="pill" :style="scoreStyle(pctOf(a))">{{ pctOf(a) }}%</span></span>
       </div>
     </div>
   </div>
@@ -179,6 +180,8 @@ function onKey(e, c) {
 .daydetail { border-top: 1px solid var(--border); padding-top: .75rem; gap: .5rem; }
 .modes { gap: 1rem; }
 .srow { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: .5rem; align-items: baseline; padding: .35rem 0; border-top: 1px solid var(--border); }
+.sscore { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; white-space: nowrap; }
+.pill { display: inline-block; min-width: 3.4rem; text-align: center; padding: .1rem .5rem; border: 1px solid; border-radius: 999px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .sname { color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sname:hover { text-decoration: underline; }
 @media (max-width: 480px) {

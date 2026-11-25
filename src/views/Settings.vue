@@ -1,4 +1,5 @@
 <script setup>
+import { scoreStyle } from '../lib/scoreColor.js'
 import { confirmDialog } from '../lib/dialog.js'
 import { computed, ref, watchEffect } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
@@ -6,7 +7,7 @@ import { authReady, updateProfile, user } from '../lib/auth.js'
 import { clearAttempts } from '../lib/progress.js'
 import { AREAS, formatDuration, study, summarize } from '../lib/studyTime.js'
 import StudyCalendar from '../components/StudyCalendar.vue'
-import { coverageText, domainStats, estimate, EVIDENCE_MIN, MIN_FOR_ESTIMATE, overallLabel, overallLevel, overallTone, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
+import { coverageText, domainStats, estimate, MIN_FOR_ESTIMATE, overallLabel, overallLevel, reset, sectionBadge, state, stats, weakSections } from '../lib/level.js'
 import { supabaseEnabled } from '../lib/supabase.js'
 
 // ── profile ──
@@ -47,6 +48,22 @@ const sections = computed(() =>
 )
 const weak = computed(() => new Set(weakSections().map((s) => s.code)))
 const barWidth = (rating) => `${Math.round(((rating - 1) / 9) * 100)}%`
+// One look for every level: "6.2 · Proficient", "5.2 · Early" (too few answers to be sure), or "Not started".
+// Colour follows the same red → amber → green scale as scores (level 1 → 10); early/unstarted stay neutral.
+const levelColor = (rating) => scoreStyle(((rating - 1) / 9) * 100)
+function levelPill(stat) {
+  const b = sectionBadge(stat)
+  if (!stat.answered) return { text: 'Not started', style: {} }
+  return { text: `${stat.rating.toFixed(1)} · ${b.text}`, style: b.measured ? levelColor(stat.rating) : {} }
+}
+const levelBar = (stat) => ({
+  width: stat.answered ? barWidth(stat.rating) : '0',
+  background: sectionBadge(stat).measured ? levelColor(stat.rating).color : 'var(--muted)'
+})
+const statText = (stat) => (stat.answered ? `${stat.answered} answered · ${pct(stat.accuracy)}` : '—')
+const overallPill = computed(() =>
+  state.value.n >= MIN_FOR_ESTIMATE ? { text: overallLabel(), style: levelColor(overall.value) } : { text: overallLabel(), style: {} }
+)
 // Level colour: building (amber) → proficient (blue) → strong (green).
 const tone = (r) => (r >= 6.5 ? 'good' : r >= 5 ? 'brand' : 'warn')
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`)
@@ -203,15 +220,15 @@ async function resetDifficulty() {
       <div class="card row between">
         <div>
           <div class="label">Overall level</div>
-          <div class="big num">{{ overall.toFixed(1) }} <span class="tag" :class="overallTone()">{{ overallLabel() }}</span></div>
-          <div class="muted small">{{ state.n }} answers recorded · weighted by each section's share of the exam</div>
+          <div class="overall"><span class="big num">{{ overall.toFixed(1) }}</span><span class="lvl" :style="overallPill.style">{{ overallPill.text }}</span></div>
+          <div class="muted small">{{ state.n }} answers recorded</div>
         </div>
         <div class="rightcol">
           <div class="label">Estimated exam score</div>
           <template v-if="est">
-            <div class="big" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
-            <div class="muted small">likely {{ est.low }}–{{ est.high }} (pass: {{ EXAM.passScaled }})</div>
-            <div v-if="est.coverage < 1" class="muted small">Based on {{ coverageText(est) }}. Sections you have not started are scored as guesses (25%), so the estimate rises as you cover more of the exam.</div>
+            <div class="big num" :class="est.scaled >= EXAM.passScaled ? 'good' : ''">{{ est.scaled }}</div>
+            <div class="muted small">likely {{ est.low }}–{{ est.high }} · pass {{ EXAM.passScaled }}</div>
+            <div v-if="est.coverage < 1" class="muted small">Based on {{ coverageText(est) }}; unstarted sections count as guesses.</div>
           </template>
           <template v-else>
             <div class="big muted">—</div>
@@ -220,31 +237,27 @@ async function resetDifficulty() {
         </div>
       </div>
 
+      <!-- Domains and their sub-sections share one row layout: code · name · bar · level · answered · %. -->
       <div class="card tbl">
         <details v-for="d in sections" :key="d.id" class="drow">
-          <summary>
+          <summary class="lrow">
             <span class="chev" aria-hidden="true">›</span>
-            <span class="dname"><span class="muted num">{{ d.id }}.0</span> {{ d.name }}</span>
-            <span class="tag" :class="sectionBadge(d.stat).tone">{{ d.stat.answered ? `${d.stat.rating.toFixed(1)} · ${sectionBadge(d.stat).text}` : sectionBadge(d.stat).text }}</span>
-            <span class="dstat muted small num">{{ pct(d.stat.accuracy) }} · {{ d.stat.answered }} answered</span>
-            <span class="bar thin dbar" role="img" :aria-label="d.stat.answered ? `Level ${d.stat.rating.toFixed(1)} of 10` : 'Not started'"><span :style="{ width: d.stat.answered ? barWidth(d.stat.rating) : '0' }" /></span>
+            <span class="lcode num">{{ d.id }}.0</span>
+            <span class="lname">{{ d.name }}</span>
+            <span class="lbar" role="img" :aria-label="d.stat.answered ? `Level ${d.stat.rating.toFixed(1)} of 10` : 'Not started'"><span :style="levelBar(d.stat)" /></span>
+            <span class="lpill"><span class="lvl" :style="levelPill(d.stat).style">{{ levelPill(d.stat).text }}</span></span>
+            <span class="lstat muted num">{{ statText(d.stat) }}</span>
           </summary>
           <div class="subs">
-            <div v-for="o in d.objectives" :key="o.code" class="sub">
-              <div class="subhead">
-                <span class="mono muted">{{ o.code }}</span>
-                <span class="grow small">{{ o.name }}</span>
-                <span v-if="weak.has(o.code)" class="tag warn">weak area</span>
-                <span class="tag" :class="sectionBadge(o.stat).tone">{{ o.stat.answered ? o.stat.rating.toFixed(1) : 'Not started' }}</span>
-              </div>
-              <div class="bar thin"><span :style="{ width: o.stat.answered ? barWidth(o.stat.rating) : '0' }" /></div>
-              <div class="muted small">
-                <template v-if="o.stat.answered">
-                  <template v-if="o.stat.answered < EVIDENCE_MIN">Early: only {{ o.stat.answered }} answered, so this level is still mostly your overall level · </template>{{ pct(o.stat.accuracy) }} correct · {{ o.stat.answered }} answered<template v-if="o.stat.lookups"> · {{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }}</template>
-                </template>
-                <template v-else-if="o.stat.lookups">{{ o.stat.lookups }} acronym lookup{{ o.stat.lookups === 1 ? '' : 's' }} · no questions answered yet</template>
-                <template v-else>Not started yet. Questions here begin near your overall level ({{ overall.toFixed(1) }}) until you answer some.</template>
-              </div>
+            <div v-for="o in d.objectives" :key="o.code" class="lrow sub">
+              <span />
+              <span class="lcode num muted">{{ o.code }}</span>
+              <span class="lname">
+                <svg v-if="weak.has(o.code)" class="weakmark" viewBox="0 0 24 24" role="img" aria-label="Weak area"><title>Weak area</title><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>{{ o.name }}
+              </span>
+              <span class="lbar" role="img" :aria-label="o.stat.answered ? `Level ${o.stat.rating.toFixed(1)} of 10` : 'Not started'"><span :style="levelBar(o.stat)" /></span>
+              <span class="lpill"><span class="lvl" :style="levelPill(o.stat).style">{{ levelPill(o.stat).text }}</span></span>
+              <span class="lstat muted num">{{ statText(o.stat) }}</span>
             </div>
           </div>
         </details>
@@ -261,7 +274,7 @@ async function resetDifficulty() {
         </div>
         <div class="resetact">
           <span v-if="progressCleared" class="good small" role="status">Done</span>
-          <button type="button" class="btn danger" @click="resetProgress">Reset progress</button>
+          <button type="button" class="btn danger-soft" @click="resetProgress">Reset progress</button>
         </div>
       </div>
       <div class="resetrow">
@@ -271,7 +284,7 @@ async function resetDifficulty() {
         </div>
         <div class="resetact">
           <span v-if="levelsCleared" class="good small" role="status">Done</span>
-          <button type="button" class="btn danger" @click="resetDifficulty">Reset levels</button>
+          <button type="button" class="btn danger-soft" @click="resetDifficulty">Reset levels</button>
         </div>
       </div>
     </section>
@@ -281,33 +294,45 @@ async function resetDifficulty() {
 <style scoped>
 .big { font-size: 1.7rem; font-weight: 500; letter-spacing: -.02em; }
 .fields { max-width: 28rem; }
-.tbl { padding: .25rem 0; overflow: hidden; }
+.tbl { padding: 0; overflow: hidden; }
 .drow { border-top: 1px solid var(--border); }
 .drow:first-child { border-top: 0; }
-.drow summary {
-  display: grid; grid-template-columns: 1rem minmax(0, 1fr) auto auto 5.5rem; align-items: center; gap: .75rem; padding: .85rem 1.1rem;
-  cursor: pointer; list-style: none; transition: background .15s;
-}
 .drow summary::-webkit-details-marker { display: none; }
+.drow summary { list-style: none; cursor: pointer; transition: background .15s; }
 .drow summary:hover { background: var(--soft); }
 .chev { color: var(--muted); transition: transform .15s var(--ease); font-size: 1.1rem; line-height: 1; }
 .drow[open] .chev { transform: rotate(90deg); }
-.dname { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dbar { margin: 0; height: 5px; }
-.subs { display: grid; gap: .9rem; padding: .25rem 1.1rem 1.1rem 2.85rem; }
-.sub { display: grid; gap: .3rem; }
-.subhead { display: flex; align-items: center; gap: .6rem; }
-.grow { flex: 1; min-width: 0; }
+/* Shared row: chevron · code · name · bar · level · answered + % (percentage last). */
+.lrow {
+  display: grid; grid-template-columns: 1rem 2.4rem minmax(0, 1fr) 5.5rem 8.6rem 9.4rem; align-items: center;
+  gap: .75rem; padding: .8rem 1.1rem;
+}
+.lcode { font-variant-numeric: tabular-nums; }
+.lname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+summary .lname { font-weight: 500; }
+.sub { padding-top: .5rem; padding-bottom: .5rem; }
+.sub .lname, .sub .lstat, .sub .lcode { font-size: .93rem; }
+.subs { padding: .1rem 0 .6rem; background: color-mix(in srgb, var(--soft) 45%, transparent); }
+.lbar { height: 5px; border-radius: 999px; background: var(--soft); overflow: hidden; }
+.lbar > span { display: block; height: 100%; border-radius: inherit; }
+.lpill { display: flex; justify-content: flex-start; }
+.lvl {
+  display: inline-block; padding: .1rem .55rem; border: 1px solid var(--border); border-radius: 999px; white-space: nowrap;
+  font-size: .86rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--soft);
+}
+.lstat { text-align: right; white-space: nowrap; font-size: .9rem; }
+.weakmark { width: .85rem; height: .85rem; margin-right: .35rem; vertical-align: -1px; fill: var(--warn); stroke: var(--warn); stroke-width: 2; stroke-linejoin: round; }
+.overall { display: flex; align-items: center; gap: .6rem; }
+@media (max-width: 720px) {
+  .lrow { grid-template-columns: 1rem 2.2rem minmax(0, 1fr) auto; row-gap: .25rem; }
+  .lbar { display: none; }
+  .lstat { grid-column: 3 / -1; text-align: left; }
+  .lname { white-space: normal; }
+}
 .bar.thin { height: 4px; }
 .rightcol { text-align: right; }
 @media (max-width: 720px) { .rightcol { text-align: left; } }
 .stats { text-align: right; display: grid; gap: .15rem; margin-left: auto; }
-@media (max-width: 720px) {
-  .drow summary { grid-template-columns: 1rem minmax(0, 1fr) auto; }
-  .dstat, .dbar { display: none; }
-  .dname { white-space: normal; }
-  .subs { padding-left: 1.1rem; }
-}
 @media (max-width: 480px) { .stats { text-align: left; margin-left: 0; } }
 .studyhead { align-items: center; }
 .resets { gap: 0; }

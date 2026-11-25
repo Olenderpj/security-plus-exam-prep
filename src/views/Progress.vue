@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { loadAttempts } from '../lib/progress.js'
 import { attemptLabel } from '../lib/attemptLabel.js'
+import { scoreStyle } from '../lib/scoreColor.js'
 import { scaled } from '../lib/exam.js'
 import { user, authReady } from '../lib/auth.js'
 import { supabaseEnabled } from '../lib/supabase.js'
@@ -75,6 +76,7 @@ const domainStats = computed(() =>
 )
 
 const label = attemptLabel
+const pctOf = (a) => Math.round((100 * a.correct) / Math.max(a.total, 1))
 
 // Recent activity: 15 rows visible; the rest scroll inside the list, rendering only the rows in view.
 const ROW = 44 // px, fixed row height
@@ -137,7 +139,8 @@ function confirmClearMissed() {
               <span><span class="chev" :class="{ open: expanded.has(d.id) }">›</span> {{ d.id }}.0 {{ d.name }}</span>
               <span>
                 <span v-if="missedByDomain[d.id]" class="muted missed-link">{{ missedByDomain[d.id] }} missed</span>
-                <span :class="pctClass(d.pct)">{{ d.pct === null ? 'No data' : `${d.pct}% · ${d.n} answered` }}</span>
+                <span v-if="d.pct === null" class="muted">No data</span>
+                <span v-else><span class="muted">{{ d.n }} answered · </span><strong class="pctv" :class="pctClass(d.pct)">{{ d.pct }}%</strong></span>
               </span>
             </span>
             <span class="bar" :class="pctClass(d.pct)"><span :style="{ width: (d.pct || 0) + '%' }" /></span>
@@ -150,7 +153,8 @@ function confirmClearMissed() {
                   {{ o.code }} {{ o.name }}
                   <span v-if="o.code === d.weakest" class="tag">Weakest</span>
                 </span>
-                <span :class="pctClass(o.pct)">{{ o.pct === null ? 'No data' : `${o.pct}% · ${o.n}` }}</span>
+                <span v-if="o.pct === null" class="muted">No data</span>
+                <span v-else><span class="muted">{{ o.n }} answered · </span><strong class="pctv" :class="pctClass(o.pct)">{{ o.pct }}%</strong></span>
               </div>
               <div class="bar thin" :class="pctClass(o.pct)"><span :style="{ width: (o.pct || 0) + '%' }" /></div>
               <div class="row small links">
@@ -179,14 +183,14 @@ function confirmClearMissed() {
           @scroll.passive="onListScroll"
         >
         <div :style="{ height: win.before + 'px' }" aria-hidden="true" />
-        <div v-for="a in win.rows" :key="a.id || a.created_at" class="row between small item" role="listitem" :style="{ height: ROW + 'px' }">
+        <div v-for="a in win.rows" :key="a.id || a.created_at" class="small item" role="listitem" :style="{ height: ROW + 'px' }">
           <RouterLink :to="`/progress/session/${encodeURIComponent(a.id)}`" class="act" :title="a.dv ? 'Open results' : 'Open summary'">
             <i class="mdot" :class="a.mode" /> <span class="actname">{{ label(a) }}</span>
           </RouterLink>
-          <span class="num">
-            {{ a.correct }}/{{ a.total }} · {{ Math.round((100 * a.correct) / a.total) }}%
-            <template v-if="a.mode === 'exam'"> · {{ scaled(a.correct, a.total) }}</template>
-            <span class="muted"> · {{ date(a.created_at) }}</span>
+          <span class="adate muted">{{ date(a.created_at) }}</span>
+          <span class="ascore num">
+            <span class="muted">{{ a.correct }}/{{ a.total }}<template v-if="a.mode === 'exam'"> · {{ scaled(a.correct, a.total) }}</template></span>
+            <span class="pill" :style="scoreStyle(pctOf(a))">{{ pctOf(a) }}%</span>
           </span>
         </div>
         <div :style="{ height: win.after + 'px' }" aria-hidden="true" />
@@ -231,6 +235,16 @@ function confirmClearMissed() {
 .tag { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bad); border: 1px solid var(--bad); border-radius: 4px; padding: 0 .3rem; margin-left: .35rem; }
 .stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .vlist { overflow-y: auto; overscroll-behavior: contain; margin: 0 -.25rem; padding: 0 .25rem; }
-.item { box-sizing: border-box; flex-wrap: nowrap; gap: .75rem; border-top: 1px solid var(--border); }
-.item > .num { flex: none; white-space: nowrap; }
+.item {
+  box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  gap: .75rem; border-top: 1px solid var(--border);
+}
+.adate { text-align: center; white-space: nowrap; }
+.ascore { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; white-space: nowrap; }
+.pill {
+  display: inline-block; min-width: 3.4rem; text-align: center; padding: .1rem .5rem; border: 1px solid; border-radius: 999px;
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.pctv { font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .item { grid-template-columns: minmax(0, 1fr) auto auto; gap: .5rem; } .adate { text-align: right; } }
 </style>
