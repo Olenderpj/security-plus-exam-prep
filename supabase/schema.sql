@@ -14,6 +14,10 @@ create table if not exists public.attempts (
   created_at timestamptz not null default now()
 );
 
+-- Questions as presented and the answers given, so a past session's results can be reopened.
+-- Fetched only when a session is opened (the activity list selects summary columns only).
+alter table public.attempts add column if not exists details jsonb;
+
 create index if not exists attempts_user_created_idx on public.attempts (user_id, created_at desc);
 
 alter table public.attempts enable row level security;

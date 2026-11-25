@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { DOMAINS, EXAM, objectivesOf } from '../data/domains.js'
 import { loadAttempts } from '../lib/progress.js'
+import { attemptLabel } from '../lib/attemptLabel.js'
 import { scaled } from '../lib/exam.js'
 import { user, authReady } from '../lib/auth.js'
 import { supabaseEnabled } from '../lib/supabase.js'
@@ -72,14 +73,19 @@ const domainStats = computed(() =>
   })
 )
 
-const label = (a) =>
-  a.mode === 'exam'
-    ? `Exam${a.domain_breakdown?.source === 'missed' ? ' · missed questions' : ''}${a.timed ? ' · timed' : ''}`
-    : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'acronyms'
-      ? 'Flashcards · Acronyms'
-      : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'marked'
-        ? 'Flashcards · Marked'
-        : `${a.mode === 'practice' ? 'Practice' : 'Flashcards'} · ${a.domain ? `Domain ${a.domain}` : 'All'}`
+const label = attemptLabel
+
+// Recent activity: 15 rows visible; the rest scroll inside the list, rendering only the rows in view.
+const ROW = 44 // px, fixed row height
+const VISIBLE = 15
+const listTop = ref(0)
+const onListScroll = (e) => (listTop.value = e.target.scrollTop)
+const win = computed(() => {
+  const n = attempts.value.length
+  const start = Math.max(0, Math.floor(listTop.value / ROW) - 5)
+  const end = Math.min(n, start + VISIBLE + 10)
+  return { start, rows: attempts.value.slice(start, end), before: start * ROW, after: (n - end) * ROW }
+})
 const date = (s) => new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 
 function confirmClearMissed() {
@@ -163,14 +169,28 @@ function confirmClearMissed() {
       <div class="card">
         <div class="label">Recent activity</div>
         <p v-if="!attempts.length" class="muted" style="margin: 0">No sessions yet. <RouterLink to="/practice">Start practicing</RouterLink>.</p>
-        <div v-for="a in attempts.slice(0, 25)" :key="a.id || a.created_at" class="row between small item">
-          <span class="act"><i class="mdot" :class="a.mode" /> {{ label(a) }}</span>
+        <div
+          v-if="attempts.length"
+          class="vlist"
+          :style="{ height: Math.min(attempts.length, VISIBLE) * ROW + 'px' }"
+          role="list"
+          :aria-label="`${attempts.length} sessions`"
+          @scroll.passive="onListScroll"
+        >
+        <div :style="{ height: win.before + 'px' }" aria-hidden="true" />
+        <div v-for="a in win.rows" :key="a.id || a.created_at" class="row between small item" role="listitem" :style="{ height: ROW + 'px' }">
+          <RouterLink :to="`/progress/session/${encodeURIComponent(a.id)}`" class="act" :title="a.dv ? 'Open results' : 'Open summary'">
+            <i class="mdot" :class="a.mode" /> <span class="actname">{{ label(a) }}</span>
+          </RouterLink>
           <span class="num">
             {{ a.correct }}/{{ a.total }} · {{ Math.round((100 * a.correct) / a.total) }}%
             <template v-if="a.mode === 'exam'"> · {{ scaled(a.correct, a.total) }}</template>
             <span class="muted"> · {{ date(a.created_at) }}</span>
           </span>
         </div>
+        <div :style="{ height: win.after + 'px' }" aria-hidden="true" />
+        </div>
+        <p v-if="attempts.length > VISIBLE" class="muted small" style="margin: .5rem 0 0">{{ attempts.length }} sessions · scroll for more</p>
       </div>
 
     </template>
@@ -182,7 +202,9 @@ function confirmClearMissed() {
 .sw { width: .6rem; height: .6rem; border-radius: 50%; display: inline-block; }
 .sw.g { background: var(--good); }
 .sw.r { background: var(--bad); }
-.act { display: inline-flex; align-items: center; gap: .5rem; }
+.act { display: inline-flex; align-items: center; gap: .5rem; min-width: 0; color: var(--text); text-decoration: none; }
+.act:hover .actname { text-decoration: underline; }
+.actname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mdot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--muted); flex: none; }
 .mdot.practice { background: var(--brand); }
 .mdot.exam { background: var(--text); }
@@ -207,6 +229,7 @@ function confirmClearMissed() {
 .links a.bad { color: var(--bad); }
 .tag { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--bad); border: 1px solid var(--bad); border-radius: 4px; padding: 0 .3rem; margin-left: .35rem; }
 .stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-.item { padding: .5rem 0; border-top: 1px solid var(--border); }
-.item:first-of-type { border-top: 0; }
+.vlist { overflow-y: auto; overscroll-behavior: contain; margin: 0 -.25rem; padding: 0 .25rem; }
+.item { box-sizing: border-box; flex-wrap: nowrap; gap: .75rem; border-top: 1px solid var(--border); }
+.item > .num { flex: none; white-space: nowrap; }
 </style>

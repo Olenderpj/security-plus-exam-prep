@@ -125,7 +125,9 @@ async function mark(gotIt) {
     correct: known.value,
     timed: false,
     duration_seconds: Math.round((Date.now() - startedAt.value) / 1000),
-    domain_breakdown: { deck: deckType.value, ...(deckType.value === 'concepts' && objectives.value.length ? { objectives: objectives.value } : {}) }
+    domain_breakdown: { deck: deckType.value, ...(deckType.value === 'concepts' && objectives.value.length ? { objectives: objectives.value } : {}) },
+    // For reopening this deck's results later from Progress → Recent activity.
+    details: { v: 1, cards: deck.value.map((c) => ({ id: c.id, front: c.front, back: c.back, known: !missed.value.includes(c) })) }
   })
 }
 

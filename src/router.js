@@ -15,6 +15,7 @@ export default createRouter({
     { path: '/notes', component: () => import('./views/Notes.vue') },
     { path: '/objectives', component: () => import('./views/Objectives.vue') },
     { path: '/progress', component: () => import('./views/Progress.vue') },
+    { path: '/progress/session/:id', component: () => import('./views/SessionView.vue') },
     { path: '/settings', component: () => import('./views/Settings.vue') },
     { path: '/login', component: () => import('./views/Login.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' }

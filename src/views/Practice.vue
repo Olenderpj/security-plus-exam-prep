@@ -10,7 +10,7 @@ import { flagged, missed, onReviewList, recordAnswer, toggleFlag } from '../lib/
 import { CLEAR_AVG, CLEAR_WINDOW, reviewProgress } from '../lib/reviewHistory.js'
 import { objectiveName } from '../data/domains.js'
 import { practiceSet, practiceMixSet, practicePool, minPerCategory, isCorrect, isComplete, breakdown } from '../lib/exam.js'
-import { saveAttempt } from '../lib/progress.js'
+import { saveAttempt, snapshotQuestions } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
@@ -205,7 +205,9 @@ async function commit(n, show) {
     correct: qs.filter((q, i) => isCorrect(q, ans[i] || [])).length,
     timed: false,
     duration_seconds: secs,
-    domain_breakdown: breakdown(qs, ans)
+    domain_breakdown: breakdown(qs, ans),
+    // For reopening these results later from Progress → Recent activity.
+    details: { v: 1, questions: snapshotQuestions(qs), answers: ans, endedEarly: n < questions.value.length ? questions.value.length : 0 }
   })
 }
 

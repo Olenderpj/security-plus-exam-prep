@@ -9,7 +9,7 @@ import { useRoute } from 'vue-router'
 import { PRACTICE_EXAMS, QUESTIONS, guideRef, isGuide } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { examPlan, examSet, guideExamPlan, guideExamSet, practiceExamSet, isCorrect, isComplete, isStarted, breakdown } from '../lib/exam.js'
-import { saveAttempt } from '../lib/progress.js'
+import { saveAttempt, snapshotQuestions } from '../lib/progress.js'
 import { flagged, missed, recordResults, toggleFlag } from '../lib/missed.js'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
@@ -149,7 +149,9 @@ async function finish() {
     correct: questions.value.filter((q, i) => isCorrect(q, answers.value[i] || [])).length,
     timed: timed.value,
     duration_seconds: seconds.value,
-    domain_breakdown: { ...breakdown(questions.value, answers.value), ...(source.value === 'missed' ? { source: 'missed' } : {}) }
+    domain_breakdown: { ...breakdown(questions.value, answers.value), ...(source.value === 'missed' ? { source: 'missed' } : {}) },
+    // For reopening these results later from Progress → Recent activity.
+    details: { v: 1, questions: snapshotQuestions(questions.value), answers: answers.value }
   })
 }
 

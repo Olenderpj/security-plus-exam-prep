@@ -12,7 +12,9 @@ const props = defineProps({
   exam: { type: Boolean, default: false },
   seconds: { type: Number, default: null },
   adaptive: { type: Object, default: null },
-  endedEarly: { type: Number, default: 0 } // planned question count, when the session was ended early
+  endedEarly: { type: Number, default: 0 }, // planned question count, when the session was ended early
+  // Reopened from Progress → Recent activity: read-only, without end-of-session notes and actions.
+  history: { type: Boolean, default: false }
 })
 defineEmits(['restart'])
 
@@ -90,14 +92,14 @@ function rate(kind) {
           <div class="bar"><span :style="{ width: (100 * byDomain[d.id].correct) / byDomain[d.id].total + '%' }" /></div>
         </div>
       </div>
-      <p v-if="correct < questions.length" class="muted small" style="margin: 0">
+      <p v-if="correct < questions.length && !history" class="muted small" style="margin: 0">
         {{ questions.length - correct }} question{{ questions.length - correct === 1 ? '' : 's' }} added to your missed list.
       </p>
       <p v-if="exam" class="muted small" style="margin: 0">
         Scaled score = 100 + 800 × your share of points, with partial credit on performance-based questions. CompTIA does not
         publish its exact scoring formula, so treat this as a close estimate, not an official result.
       </p>
-      <div class="row">
+      <div v-if="!history" class="row">
         <RouterLink v-if="correct < questions.length" class="btn primary" to="/practice?missed=1">Retest missed</RouterLink>
         <button class="btn" :class="{ primary: correct === questions.length }" @click="$emit('restart')">Start another</button>
         <RouterLink class="btn" to="/progress">View progress</RouterLink>
