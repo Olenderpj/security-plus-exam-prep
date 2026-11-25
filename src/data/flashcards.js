@@ -1,4 +1,5 @@
 // Flashcards: [domain, sub-section (exam objective), front, back]
+import { PORTS, portByKey } from './ports.js'
 const raw = [
   // Domain 1
   [1, '1.1', 'Control categories (4)', 'Technical, Managerial, Operational, Physical'],
@@ -143,4 +144,22 @@ const raw = [
   [5, '5.6', 'Phishing campaigns', 'Simulated phishing used to measure and improve user awareness.']
 ]
 
-export default raw.map(([domain, objective, front, back], i) => ({ id: `f${i}`, domain, objective, front, back }))
+// Ports deck (4.5): one card per well-known port, plus a few cards that tie them together. Ids start with "pt".
+const cap = (t) => t[0].toUpperCase() + t.slice(1)
+const portCards = [
+  ...PORTS.filter((p) => p.card !== false).map((p) => {
+    const alt = p.alt && portByKey[p.alt]
+    const full = p.full === p.name ? '' : ` (${p.full})`
+    return {
+      front: `Port ${p.port} · ${p.proto}${p.split ? ` (${p.split})` : ''}`,
+      back: `${p.name}${full}: ${cap(p.use)}.${alt ? ` Secure alternative: ${alt.name} on ${alt.proto} ${alt.port}.` : ''}`
+    }
+  }),
+  { front: 'Insecure → secure port pairs', back: 'Telnet 23 → SSH 22 · HTTP 80 → HTTPS 443 · FTP 20/21 → SFTP 22 or FTPS 989/990 · LDAP 389 → LDAPS 636 · POP3 110 → POP3S 995 · IMAP 143 → IMAPS 993 · SMTP 25 → 465/587 · Syslog 514 → 6514 · SNMPv1/v2c → SNMPv3 (same 161/162).' },
+  { front: 'RADIUS vs. TACACS+ ports', back: 'RADIUS: UDP 1812 (authentication) and 1813 (accounting); encrypts only the password. TACACS+: TCP 49; encrypts the whole payload and separates authorization.' },
+  { front: 'Port ranges', back: 'Well-known 0–1023 (services) · registered 1024–49151 · dynamic/ephemeral 49152–65535 (temporary client-side ports, e.g. the source port of a web request).' },
+  { front: 'Ports that should never face the internet', back: 'Telnet 23, NetBIOS 137–139, SMB 445, RDP 3389 (use a VPN or bastion), databases such as SQL Server 1433 and MySQL 3306, SNMP 161. Exposed, they are top targets for brute force, worms and ransomware.' }
+].map((c, i) => ({ id: `pt${i}`, domain: 4, objective: '4.5', ...c }))
+export const isPortCard = (c) => c.id.startsWith('pt')
+
+export default [...raw.map(([domain, objective, front, back], i) => ({ id: `f${i}`, domain, objective, front, back })), ...portCards]

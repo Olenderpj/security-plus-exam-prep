@@ -3,7 +3,7 @@ import { useFocusMode } from '../lib/focus.js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useStudySession } from '../lib/studyTime.js'
 import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
-import FLASHCARDS from '../data/flashcards.js'
+import ALL_CARDS, { isPortCard } from '../data/flashcards.js'
 import ACRONYMS from '../data/acronyms.js'
 import { domainById } from '../data/domains.js'
 import { shuffle } from '../lib/random.js'
@@ -13,8 +13,11 @@ import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
 import CountPicker from '../components/CountPicker.vue'
 
-const ALL = [...FLASHCARDS, ...ACRONYMS]
-const deckType = ref('concepts') // concepts | acronyms | marked
+// Concept cards and the Ports deck are separate decks; marked/search see both.
+const FLASHCARDS = ALL_CARDS.filter((c) => !isPortCard(c))
+const PORTS = ALL_CARDS.filter(isPortCard)
+const ALL = [...ALL_CARDS, ...ACRONYMS]
+const deckType = ref('concepts') // concepts | ports | acronyms | marked
 const domain = ref(null)
 const objectives = ref([]) // optional sub-sections within the concept deck
 const count = ref(10)
@@ -72,6 +75,7 @@ watch(domain, (d) => {
 const markedCards = computed(() => ALL.filter((c) => marked.value.has(c.id)))
 const pool = computed(() => {
   if (deckType.value === 'acronyms') return ACRONYMS
+  if (deckType.value === 'ports') return PORTS
   if (deckType.value === 'marked') return markedCards.value
   return FLASHCARDS.filter((f) => (!domain.value || f.domain === domain.value) && (!objectives.value.length || objectives.value.includes(f.objective)))
 })
@@ -80,9 +84,12 @@ const isAcronym = (c) => c.id.startsWith('a')
 // Each card in a deck carries `flip` (true = show its back side first).
 const frontText = (c) => (c.flip ? c.back : c.front)
 const backText = (c) => (c.flip ? c.front : c.back)
+const isPortNumber = (c) => isPortCard(c) && c.front.startsWith('Port ')
 const sideLabel = (c, showingAnswer) =>
-  (c.flip !== showingAnswer) ? (isAcronym(c) ? 'Meaning' : 'Definition') : isAcronym(c) ? 'Acronym' : 'Term'
-const cardLabel = (c) => (isAcronym(c) ? 'Acronym' : `${c.domain}.0 ${domainById(c.domain).name}`)
+  (c.flip !== showingAnswer)
+    ? (isAcronym(c) ? 'Meaning' : isPortNumber(c) ? 'Protocol' : 'Definition')
+    : isAcronym(c) ? 'Acronym' : isPortNumber(c) ? 'Port' : 'Term'
+const cardLabel = (c) => (isAcronym(c) ? 'Acronym' : isPortCard(c) ? 'Ports · 4.5' : `${c.domain}.0 ${domainById(c.domain).name}`)
 
 function begin(cards) {
   // "Mixed" re-rolls the side for every card, every time a deck starts.
@@ -147,6 +154,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <div class="label">Deck</div>
         <div class="row">
           <button class="chip" :class="{ on: deckType === 'concepts' }" @click="deckType = 'concepts'">Concepts · {{ FLASHCARDS.length }}</button>
+          <button class="chip" :class="{ on: deckType === 'ports' }" @click="deckType = 'ports'">Ports · {{ PORTS.length }}</button>
           <button class="chip" :class="{ on: deckType === 'acronyms' }" @click="deckType = 'acronyms'">Acronyms · {{ ACRONYMS.length }}</button>
           <button class="chip" :class="{ on: deckType === 'marked' }" @click="deckType = 'marked'">Marked for review · {{ markedCards.length }}</button>
         </div>
@@ -159,7 +167,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <button v-for="o in SIDES" :key="o.id" class="chip" :class="{ on: side === o.id }" @click="side = o.id">{{ o.label }}</button>
         </div>
         <p class="muted small" style="margin: .5rem 0 0">
-          {{ side === 'front' ? 'See the term or acronym, recall the meaning.'
+          {{ deckType === 'ports'
+            ? side === 'front' ? 'See the port, recall the protocol and what it does.'
+              : side === 'back' ? 'See the protocol, recall its port and TCP/UDP.'
+              : 'Each card randomly shows the port or the protocol — different every deck.'
+            : side === 'front' ? 'See the term or acronym, recall the meaning.'
             : side === 'back' ? 'See the definition, recall the term or acronym.'
             : 'Each card randomly shows its front or back — different every deck.' }}
         </p>

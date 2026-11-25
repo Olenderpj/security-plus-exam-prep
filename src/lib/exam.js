@@ -1,4 +1,4 @@
-import { QUESTIONS, guideRef, isGuide, isPBQ } from '../data/questions/index.js'
+import { QUESTIONS, guideRef, isGuide, isPBQ, isPortQuestion } from '../data/questions/index.js'
 import { DOMAINS, EXAM } from '../data/domains.js'
 import { shuffle, shuffleQuestion } from './random.js'
 import { difficultyOf } from './difficulty.js'
@@ -69,9 +69,9 @@ function pickAdaptive(pool, n, mode, seen, boost = null) {
     }, [])
 }
 
-// kind: 'all' | 'mc' | 'pbq' (performance-based + exhibit questions)
+// kind: 'all' | 'mc' | 'pbq' (performance-based + exhibit questions) | 'ports' (port-number drill)
 export const matchesKind = (q, kind) =>
-  kind === 'all' || (kind === 'pbq' ? isPBQ(q) || Boolean(q.exhibit) : !isPBQ(q) && !q.exhibit)
+  kind === 'all' || (kind === 'ports' ? isPortQuestion(q) : kind === 'pbq' ? isPBQ(q) || Boolean(q.exhibit) : !isPBQ(q) && !q.exhibit)
 
 // Practice pool. domain: one domain id, or null. kind: question type. onlyIds: restrict to a set of question ids
 // (e.g. missed questions). objective: one sub-section code, or several (array/Set). sections: restrict to a set

@@ -8,8 +8,9 @@ import { backup } from './resilience.js'
 import { entropy, keys } from './crypto.js'
 import cvss from './vuln.js'
 import logs from './logs.js'
+import ports from './ports.js'
 
-export const FAMILIES = [risk, cidr, fwrules, backup, keys, entropy, cvss, logs]
+export const FAMILIES = [risk, cidr, fwrules, backup, keys, entropy, cvss, logs, ports]
 const VARIANTS_PER_LEVEL = 3
 
 const used = new Set() // generated questions must not repeat one another
@@ -44,4 +45,4 @@ function build(fam, L, k) {
   throw new Error(`generator ${fam.key} could not produce level ${L} variant ${k}`)
 }
 
-export default FAMILIES.flatMap((fam) => fam.levels.flatMap((L) => Array.from({ length: VARIANTS_PER_LEVEL }, (_, k) => build(fam, L, k))))
+export default FAMILIES.flatMap((fam) => fam.levels.flatMap((L) => Array.from({ length: fam.variants || VARIANTS_PER_LEVEL }, (_, k) => build(fam, L, k))))

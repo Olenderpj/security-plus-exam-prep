@@ -35,7 +35,8 @@ const weakTotal = computed(() => practicePool(null, 'all', null, objectives.valu
 const KINDS = [
   { id: 'all', label: 'All types' },
   { id: 'mc', label: 'Multiple choice' },
-  { id: 'pbq', label: 'Performance-based & exhibits' }
+  { id: 'pbq', label: 'Performance-based & exhibits' },
+  { id: 'ports', label: 'Port drill' }
 ]
 // ── acronym lookups (practice only) ──
 // Clicking an acronym asks first; only when the learner chooses to see the definition does it count

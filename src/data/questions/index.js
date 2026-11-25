@@ -95,3 +95,5 @@ export function guideRef(q) {
   const p = /^mp-(\d+)$/.exec(q.id)
   return p ? { exam: PRACTICE_EXAMS[Math.floor(p[1] / 5)], n: (p[1] % 5) + 1 } : null
 }
+// Questions that drill port numbers: the generated port family plus hand-written ones that ask for default ports.
+export const isPortQuestion = (q) => q.id.startsWith('g-ports-') || /\bdefault ports?\b/i.test(q.wordings?.[0] || q.question)
