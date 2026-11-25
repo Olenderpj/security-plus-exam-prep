@@ -33,6 +33,11 @@ function buildIndex() {
   }
 }
 
+import { ref } from 'vue'
+
+// Incremented to ask the search popup to open (e.g. from the phone tab bar's search button).
+export const searchRequest = ref(0)
+
 export const termsOf = (query) => low(query).split(/\s+/).filter(Boolean)
 
 function rank(entries, terms) {

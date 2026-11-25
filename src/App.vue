@@ -12,6 +12,7 @@ const ObjectivesTree = defineAsyncComponent(() => import('./components/Objective
 import { overallLabel, overallLevel, overallTone, state, weakSections } from './lib/level.js'
 import { flagged, missed } from './lib/missed.js'
 import { supabaseEnabled } from './lib/supabase.js'
+import { searchRequest } from './lib/search.js'
 import { formatDuration, study, summarize } from './lib/studyTime.js'
 
 // Primary navigation. Icons are 24px outline paths (stroke); a left sidebar on desktop, a bottom tab bar on phones.
@@ -116,6 +117,11 @@ onBeforeUnmount(() => {
     </div>
   </header>
 
+  <!-- Phones: round glass search button beside the tab bar (hidden during sessions, like the search box). -->
+  <button v-if="!focusMode" type="button" class="gsearch" aria-label="Search" @click="searchRequest++">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" /><path d="m20 20-4-4" /></svg>
+  </button>
+
   <ShortcutsSheet />
 
   <main class="page">
@@ -171,7 +177,7 @@ onBeforeUnmount(() => {
 }
 .menu-item:hover { background: var(--soft); }
 
-.page { padding: 1.25rem 1rem calc(6rem + env(safe-area-inset-bottom)); }
+.page { padding: 1.25rem 1rem calc(7.5rem + env(safe-area-inset-bottom)); }
 .pagein { max-width: 860px; margin: 0 auto; }
 .pagein.wide { max-width: 1080px; }
 
@@ -181,17 +187,45 @@ onBeforeUnmount(() => {
   .brandname .muted { display: none; }
   .name, .caret { display: none; }
   .who { padding: .2rem; }
-  .links {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; padding: .3rem .4rem calc(.3rem + env(safe-area-inset-bottom));
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-top: 1px solid var(--border);
-    background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  /* iOS-style "liquid glass": a floating frosted capsule inset from the edges, with a round search button beside it. */
+  .links, .gsearch {
+    position: fixed; z-index: 30; bottom: max(.75rem, calc(env(safe-area-inset-bottom) - .25rem)); height: 4.35rem;
+    background: color-mix(in srgb, var(--surface) 58%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .08), inset 0 1px 0 rgba(255, 255, 255, .45);
   }
-  .links a { flex-direction: column; gap: .15rem; padding: .35rem .2rem; margin: 0 .15rem; font-size: .76rem; text-align: center; border-radius: 12px; }
-  .links .ico { width: 1.3rem; height: 1.3rem; }
+  .links {
+    left: .85rem; right: calc(.85rem + 4.35rem + .6rem); margin: 0; padding: .3rem;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-radius: 999px;
+  }
+  .links a {
+    flex-direction: column; justify-content: center; gap: .1rem; padding: 0 .1rem; margin: 0; height: 100%;
+    font-size: .76rem; font-weight: 500; text-align: center; border-radius: 999px; color: var(--muted);
+  }
+  .links a:hover { background: none; }
+  .links .ico { width: 1.45rem; height: 1.45rem; }
+  /* Selected tab: its own lighter pill, in the brand colour. */
+  .links a.router-link-active { background: color-mix(in srgb, var(--text) 9%, transparent); color: var(--brand); }
+  .links a.router-link-active .ico { color: var(--brand); }
+  .gsearch {
+    display: grid; place-items: center; right: .85rem; width: 4.35rem; padding: 0; border-radius: 50%;
+    color: var(--muted); cursor: pointer;
+  }
+  .gsearch:active { transform: scale(.96); }
+  .gsearch .ico { width: 1.6rem; height: 1.6rem; }
+  /* No blur support, or iOS "Reduce Transparency": a solid version of the same shape. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .links, .gsearch { background: var(--surface); }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .links, .gsearch { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  }
 }
 
 /* Desktop: left sidebar */
 @media (min-width: 960px) {
+  .gsearch { display: none; }
   .top { position: fixed; inset: 0 auto 0 0; width: 256px; border-bottom: 0; border-right: 1px solid var(--border); overflow-y: auto; background: var(--sidebar); }
   .nav { flex-direction: column; align-items: stretch; gap: .35rem; min-height: 100%; padding: 1rem .75rem; }
   .brand { padding: .2rem .5rem .8rem; }

@@ -6,7 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { objectiveName } from '../data/domains.js'
 import { markExternalOpen } from '../lib/notes.js'
-import { search } from '../lib/search.js'
+import { search, searchRequest } from '../lib/search.js'
 import Hl from './Hl.vue'
 
 const route = useRoute()
@@ -124,6 +124,8 @@ watch(query, () => {
   shown.value = { questions: STEP, cards: STEP, acronyms: STEP }
   activeIdx.value = 0
 })
+// The phone tab bar's search button asks for the popup.
+watch(searchRequest, () => show())
 // Opening a result navigates; the popup closes itself (and remembers the search).
 watch(() => route.fullPath, close)
 </script>
