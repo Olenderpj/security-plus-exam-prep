@@ -253,16 +253,17 @@ onBeforeUnmount(() => clearInterval(timer))
       </button>
       <QuestionBody v-model:selected="sel" :question="current" hide-meta />
     </div>
-    <div class="row between">
+    <!-- Same layout as practice: end the session on the left, move between questions on the right. -->
+    <div class="row between actions">
+      <div class="row">
+        <button class="btn ghost" @click="quit">Quit</button>
+        <button class="btn" :class="{ primary: idx === questions.length - 1 }" @click="confirmFinish">Submit exam</button>
+      </div>
       <div class="row">
         <button class="btn" :disabled="idx === 0" @click="idx--"><span class="kbd" aria-hidden="true">←</span> Previous</button>
-        <button class="btn" :disabled="idx === questions.length - 1" @click="idx++">Next <span class="kbd" aria-hidden="true">→</span></button>
-      </div>
-      <div class="row">
-        <button class="btn primary" @click="confirmFinish">Submit exam</button>
+        <button class="btn" :class="{ primary: idx < questions.length - 1 }" :disabled="idx === questions.length - 1" @click="idx++">Next <span class="kbd" aria-hidden="true">→</span></button>
       </div>
     </div>
-    <div><button class="btn ghost small" @click="quit">Quit exam</button></div>
     </div>
 
     <aside class="rail stack" aria-label="Exam navigator">
@@ -297,6 +298,15 @@ onBeforeUnmount(() => clearInterval(timer))
 </template>
 
 <style scoped>
+/* One row on phones too: keyboard hints hidden and buttons a little tighter. */
+.actions { flex-wrap: nowrap; }
+.actions .row { flex-wrap: nowrap; }
+@media (max-width: 520px) {
+  .actions .kbd { display: none; }
+  .actions { gap: .35rem; }
+  .actions .row { gap: .35rem; }
+  .actions .btn { padding-left: .8rem; padding-right: .8rem; }
+}
 .run { display: block; }
 .rail { display: block; margin-top: 1rem; }
 /* Start sits at the bottom of the setup card (not sticky to the window). */
