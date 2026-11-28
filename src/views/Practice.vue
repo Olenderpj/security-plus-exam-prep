@@ -7,13 +7,14 @@ import { clearSession, loadSession, saveSession } from '../lib/sessionStore.js'
 import { useRoute } from 'vue-router'
 import { flagged, missed, onReviewList, recordAnswer, toggleFlag } from '../lib/missed.js'
 import { reviewProgress } from '../lib/reviewHistory.js'
-import { objectiveName } from '../data/domains.js'
+import { DOMAINS, objectiveName } from '../data/domains.js'
 import { QUESTIONS } from '../data/questions/index.js'
 import { practiceSet, practiceMixSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt, snapshotQuestions } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
 import SubsectionPicker from '../components/SubsectionPicker.vue'
-import CountPicker from '../components/CountPicker.vue'
+import CountSlider from '../components/CountSlider.vue'
+import { shuffle } from '../lib/random.js'
 import QuestionBody from '../components/QuestionBody.vue'
 import Results from '../components/Results.vue'
 import AcronymModal from '../components/AcronymModal.vue'
@@ -152,10 +153,42 @@ watch(domains, (ds) => {
   if (ds.length) objectives.value = objectives.value.filter((c) => ds.includes(Number(c.split('.')[0])))
 })
 const max = computed(() => poolOf(null, scope.value).length)
-// If fewer questions are in range than the chosen count, switch to "all" so the chip matches what will be served.
+// Keep the slider within what is available (it reads "All" at the top).
 watch(max, (m) => {
-  if (count.value !== 'all' && count.value > m) count.value = 'all'
+  if (count.value > m) count.value = Math.max(1, m)
 }, { immediate: true })
+
+// With several sections, a session's questions are split between them by each section's share of the real exam
+// (e.g. 1.0 at 12% and 4.0 at 28%), rounded fairly. A section with too few questions gives its leftover share to
+// the others, in the same proportions.
+const weightOf = (id) => DOMAINS.find((d) => d.id === id)?.weight || 1
+function weightedTargets(ids, n, avail) {
+  const t = Object.fromEntries(ids.map((id) => [id, 0]))
+  let left = n
+  let open = ids.filter((id) => avail[id] > 0)
+  while (left > 0 && open.length) {
+    const w = open.reduce((sum, id) => sum + weightOf(id), 0)
+    const raw = open.map((id) => ({ id, x: (left * weightOf(id)) / w }))
+    let given = 0
+    raw.forEach((r) => {
+      const k = Math.min(Math.floor(r.x), avail[r.id] - t[r.id])
+      t[r.id] += k
+      given += k
+    })
+    raw.sort((a, b) => (b.x % 1) - (a.x % 1)).forEach((r) => {
+      if (given < left && t[r.id] < avail[r.id]) { t[r.id]++; given++ }
+    })
+    if (!given) break
+    left -= given
+    open = open.filter((id) => t[id] < avail[id])
+  }
+  return t
+}
+const sectionAvail = computed(() => Object.fromEntries(domains.value.map((id) => [id, poolOf(null, scopeOf([id], objectives.value)).length])))
+// Planned questions per section, when several sections are chosen and the session is smaller than everything.
+const split = computed(() =>
+  domains.value.length > 1 && count.value < max.value ? weightedTargets(domains.value, count.value, sectionAvail.value) : null
+)
 const current = computed(() => questions.value[idx.value])
 const sel = computed({
   get: () => answers.value[idx.value] || [],
@@ -166,10 +199,13 @@ const runningCorrect = computed(() => questions.value.slice(0, idx.value + (reve
 function start() {
   // Snapshot the lists so questions cleared mid-session stay in this session.
   const defs = cats.value.map(catDef).map((c) => ({ onlyIds: c.onlyIds ? new Set(c.onlyIds) : null, sections: c.sections || null }))
-  const n = count.value === 'all' || count.value <= max.value ? count.value : 'all'
-  questions.value = defs.length > 1
-    ? practiceMixSet(defs, null, n, kind.value, scope.value)
-    : practiceSet(null, n, kind.value, defs[0]?.onlyIds || null, scope.value, defs[0]?.sections || null)
+  const pickFrom = (n, objs) => defs.length > 1
+    ? practiceMixSet(defs, null, n, kind.value, objs)
+    : practiceSet(null, n, kind.value, defs[0]?.onlyIds || null, objs, defs[0]?.sections || null)
+  const plan = split.value
+  questions.value = plan
+    ? shuffle(Object.entries(plan).filter(([, k]) => k > 0).flatMap(([id, k]) => pickFrom(k, scopeOf([Number(id)], objectives.value))))
+    : pickFrom(count.value >= max.value ? 'all' : count.value, scope.value)
   counted.clear()
   cleared.value = new Set()
   committed = false
@@ -324,7 +360,13 @@ onBeforeUnmount(() => {
           Sections with no sub-sections picked include all of theirs.
         </p>
       </div>
-      <CountPicker v-model="count" :max="max" />
+      <div>
+        <CountSlider v-model="count" :max="max" />
+        <p v-if="split" class="muted small" style="margin: .5rem 0 0">
+          Split by exam weight:
+          <template v-for="(id, i) in domains" :key="id">{{ i ? ' · ' : ' ' }}{{ id }}.0 × {{ split[id] }}</template>
+        </p>
+      </div>
       <p v-if="!max" class="rangenote small warn">No questions match. Try another section, question type, or category.</p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
