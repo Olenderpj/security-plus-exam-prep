@@ -360,13 +360,7 @@ onBeforeUnmount(() => {
           Sections with no sub-sections picked include all of theirs.
         </p>
       </div>
-      <div>
-        <CountSlider v-model="count" :max="max" />
-        <p v-if="split" class="muted small" style="margin: .5rem 0 0">
-          Split by exam weight:
-          <template v-for="(id, i) in domains" :key="id">{{ i ? ' · ' : ' ' }}{{ id }}.0 × {{ split[id] }}</template>
-        </p>
-      </div>
+      <CountSlider v-model="count" :max="max" />
       <p v-if="!max" class="rangenote small warn">No questions match. Try another section, question type, or category.</p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>
     </div>
