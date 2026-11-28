@@ -10,4 +10,4 @@ const baseLabel = (a) =>
       ? 'Flashcards · Acronyms'
       : a.mode === 'flashcards' && a.domain_breakdown?.deck === 'marked'
         ? 'Flashcards · Marked'
-        : `${a.mode === 'practice' ? 'Practice' : 'Flashcards'} · ${a.domain ? `Domain ${a.domain}` : 'All'}`
+        : `${a.mode === 'practice' ? 'Practice' : 'Flashcards'} · ${a.domain ? `Domain ${a.domain}` : a.domain_breakdown?.domains?.length > 1 ? `Domains ${a.domain_breakdown.domains.join(', ')}` : 'All'}`

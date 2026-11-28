@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import { flagged, missed, onReviewList, recordAnswer, toggleFlag } from '../lib/missed.js'
 import { reviewProgress } from '../lib/reviewHistory.js'
 import { objectiveName } from '../data/domains.js'
+import { QUESTIONS } from '../data/questions/index.js'
 import { practiceSet, practiceMixSet, practicePool, isCorrect, isComplete, breakdown } from '../lib/exam.js'
 import { saveAttempt, snapshotQuestions } from '../lib/progress.js'
 import DomainPicker from '../components/DomainPicker.vue'
@@ -20,7 +21,22 @@ import { applyLookup, weakSections } from '../lib/level.js'
 import { markAuto } from '../lib/marked.js'
 
 const route = useRoute()
-const domain = ref(route.query.domain ? Number(route.query.domain) : null)
+// Sections (domains) to practice: any number, [] = all. Each one includes all of its sub-sections unless some of
+// that section's sub-sections are picked below, in which case only those.
+const domains = ref(String(route.query.domain || '').split(',').map(Number).filter(Boolean))
+const QUESTIONS_OBJ = {} // domain id → every sub-section code with questions
+QUESTIONS.forEach((q) => (QUESTIONS_OBJ[Number(q.objective.split('.')[0])] ||= new Set()).add(q.objective))
+// The sub-sections a session draws from, or null for everything.
+function scopeOf(doms, objs) {
+  if (!doms.length) return objs.length ? objs : null
+  return doms.flatMap((id) => {
+    const picked = objs.filter((c) => Number(c.split('.')[0]) === id)
+    return picked.length ? picked : [...(QUESTIONS_OBJ[id] || [])]
+  })
+}
+const scope = computed(() => scopeOf(domains.value, objectives.value))
+// Saved with the session: one section's id, or null for all / several (then listed in domain_breakdown.domains).
+const savedDomain = () => (domains.value.length === 1 ? domains.value[0] : null)
 const count = ref(10)
 const objectives = ref(route.query.objective ? [].concat(route.query.objective) : []) // optional sub-sections
 const kind = ref('all')
@@ -39,7 +55,7 @@ function poolOf(dom, objs) {
   cats.value.map(catDef).forEach((c) => practicePool(dom, kind.value, c.onlyIds || null, objs, c.sections || null).forEach((q) => all.set(q.id, q)))
   return [...all.values()]
 }
-const catTotal = (c) => practicePool(null, 'all', catDef(c).onlyIds || null, objectives.value, catDef(c).sections || null).length
+const catTotal = (c) => practicePool(null, 'all', catDef(c).onlyIds || null, scope.value, catDef(c).sections || null).length
 
 // Flag the current question for extra practice (and its section as a weak area). Shown after answering:
 // where a question on a review list stands against the clearing rule.
@@ -104,32 +120,38 @@ if (saved) {
   idx.value = Math.min(saved.idx || 0, saved.questions.length - 1)
   revealed.value = Boolean(saved.revealed)
   startedAt.value = saved.startedAt || Date.now()
-  domain.value = saved.domain ?? null
+  domains.value = saved.domains ?? (saved.domain ? [saved.domain] : [])
   saved.counted?.forEach((c) => counted.add(c))
   stage.value = 'run'
 }
 const persist = () => {
-  if (stage.value === 'run') saveSession('practice', { questions: questions.value, answers: answers.value, idx: idx.value, revealed: revealed.value, startedAt: startedAt.value, domain: domain.value, counted: [...counted] })
+  if (stage.value === 'run') saveSession('practice', { questions: questions.value, answers: answers.value, idx: idx.value, revealed: revealed.value, startedAt: startedAt.value, domain: savedDomain(), domains: domains.value, counted: [...counted] })
   else clearSession('practice')
 }
 watch([stage, questions, answers, idx, revealed], persist, { deep: true })
 
+// Questions per section card: each section with its own picked sub-sections (or all of them).
 const counts = computed(() => {
-  const pool = poolOf(null, objectives.value)
-  const c = { all: pool.length }
-  pool.forEach((q) => (c[q.domain] = (c[q.domain] || 0) + 1))
+  const pool = poolOf(null, null)
+  const picked = (id) => objectives.value.filter((c) => Number(c.split('.')[0]) === id)
+  const c = { all: objectives.value.length && !domains.value.length ? poolOf(null, objectives.value).length : pool.length }
+  pool.forEach((q) => {
+    const p = picked(q.domain)
+    if (!p.length || p.includes(q.objective)) c[q.domain] = (c[q.domain] || 0) + 1
+  })
   return c
 })
 // Questions available per sub-section (within the chosen domain, type and source), for the optional sub-section picker.
 const objCounts = computed(() => {
   const c = {}
-  poolOf(domain.value, null).forEach((q) => (c[q.objective] = (c[q.objective] || 0) + 1))
+  poolOf(null, null).forEach((q) => (c[q.objective] = (c[q.objective] || 0) + 1))
   return c
 })
-watch(domain, (d) => {
-  if (d) objectives.value = objectives.value.filter((c) => Number(c.split('.')[0]) === d)
+// Sub-sections of sections that are no longer chosen are dropped.
+watch(domains, (ds) => {
+  if (ds.length) objectives.value = objectives.value.filter((c) => ds.includes(Number(c.split('.')[0])))
 })
-const max = computed(() => poolOf(domain.value, objectives.value).length)
+const max = computed(() => poolOf(null, scope.value).length)
 // If fewer questions are in range than the chosen count, switch to "all" so the chip matches what will be served.
 watch(max, (m) => {
   if (count.value !== 'all' && count.value > m) count.value = 'all'
@@ -146,8 +168,8 @@ function start() {
   const defs = cats.value.map(catDef).map((c) => ({ onlyIds: c.onlyIds ? new Set(c.onlyIds) : null, sections: c.sections || null }))
   const n = count.value === 'all' || count.value <= max.value ? count.value : 'all'
   questions.value = defs.length > 1
-    ? practiceMixSet(defs, domain.value, n, kind.value, objectives.value)
-    : practiceSet(domain.value, n, kind.value, defs[0]?.onlyIds || null, objectives.value, defs[0]?.sections || null)
+    ? practiceMixSet(defs, null, n, kind.value, scope.value)
+    : practiceSet(null, n, kind.value, defs[0]?.onlyIds || null, scope.value, defs[0]?.sections || null)
   counted.clear()
   cleared.value = new Set()
   committed = false
@@ -197,12 +219,12 @@ async function commit(n, show) {
   }
   await saveAttempt({
     mode: 'practice',
-    domain: domain.value,
+    domain: savedDomain(),
     total: qs.length,
     correct: qs.filter((q, i) => isCorrect(q, ans[i] || [])).length,
     timed: false,
     duration_seconds: secs,
-    domain_breakdown: breakdown(qs, ans),
+    domain_breakdown: { ...breakdown(qs, ans), ...(domains.value.length > 1 ? { domains: domains.value } : {}) },
     // For reopening these results later from Progress → Recent activity.
     details: { v: 1, questions: snapshotQuestions(qs), answers: ans, endedEarly: n < questions.value.length ? questions.value.length : 0 }
   })
@@ -295,8 +317,13 @@ onBeforeUnmount(() => {
           <button v-for="k in KINDS" :key="k.id" class="chip" :class="{ on: kind === k.id }" @click="kind = k.id">{{ k.label }}</button>
         </div>
       </div>
-      <DomainPicker v-model="domain" :counts="counts" />
-      <SubsectionPicker v-model="objectives" :domain="domain" :counts="objCounts" noun="questions" />
+      <DomainPicker v-model="domains" multiple :counts="counts" />
+      <div>
+        <SubsectionPicker v-model="objectives" :domain="domains" :counts="objCounts" noun="questions" />
+        <p v-if="domains.length > 1 && objectives.length" class="muted small" style="margin: .4rem 0 0">
+          Sections with no sub-sections picked include all of theirs.
+        </p>
+      </div>
       <CountPicker v-model="count" :max="max" />
       <p v-if="!max" class="rangenote small warn">No questions match. Try another section, question type, or category.</p>
       <div class="startbar"><button class="btn primary" :disabled="!max" @click="start">Start <span class="kbd" aria-hidden="true">↵</span></button></div>

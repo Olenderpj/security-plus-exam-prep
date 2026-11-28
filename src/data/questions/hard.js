@@ -59,7 +59,7 @@ export default [
     e: 'Resolving an external entity in a DTD to read a local file is the signature of XXE. SSRF makes the server issue requests (usually HTTP to internal hosts) on the attacker\'s behalf, and the other options do not involve entity expansion.'
   },
   {
-    d: 2, o: '3.2', lv: 8,
+    d: 3, o: '3.2', lv: 8,
     q: 'Which TWO controls on an access-layer switch BEST mitigate ARP spoofing from a compromised host? (Select TWO).',
     a: ['Dynamic ARP inspection', 'BPDU guard', 'DHCP snooping', 'Increasing the ARP cache timeout', 'Disabling CDP'],
     c: [0, 2],

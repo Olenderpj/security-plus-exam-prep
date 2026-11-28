@@ -51,7 +51,7 @@ export async function sweepStaleSessions() {
     correct: qs.filter((q, i) => isCorrect(q, ans[i] || [])).length,
     timed: false,
     duration_seconds: Math.round(((s.t || Date.now()) - (s.startedAt || s.t)) / 1000),
-    domain_breakdown: breakdown(qs, ans)
+    domain_breakdown: { ...breakdown(qs, ans), ...(s.domains?.length > 1 ? { domains: s.domains } : {}) }
   })
 }
 function clearIfStale(kind) {

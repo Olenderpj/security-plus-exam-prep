@@ -7,7 +7,7 @@ import { DOMAINS, objectivesOf } from '../data/domains.js'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
-  domain: { type: Number, default: null },
+  domain: { type: [Number, Array], default: null }, // one id, several ids, or null / [] for all
   counts: { type: Object, default: () => ({}) },
   noun: { type: String, default: 'items' }
 })
@@ -20,9 +20,13 @@ const root = ref(null)
 const search = ref(null)
 const list = ref(null)
 
+const inScope = (d) => {
+  const ids = [].concat(props.domain ?? [])
+  return !ids.length || ids.includes(d.id)
+}
 const groups = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return DOMAINS.filter((d) => props.domain === null || d.id === props.domain)
+  return DOMAINS.filter(inScope)
     .map((d) => ({
       id: d.id,
       name: `${d.id}.0 ${d.name}`,
@@ -32,7 +36,7 @@ const groups = computed(() => {
 })
 const flat = computed(() => groups.value.flatMap((g) => g.items))
 const selected = computed(() => new Set(props.modelValue))
-const total = computed(() => DOMAINS.filter((d) => props.domain === null || d.id === props.domain).reduce((s, d) => s + objectivesOf(d).reduce((t, o) => t + (props.counts[o.code] || 0), 0), 0))
+const total = computed(() => DOMAINS.filter(inScope).reduce((s, d) => s + objectivesOf(d).reduce((t, o) => t + (props.counts[o.code] || 0), 0), 0))
 const selectedCount = computed(() => [...selected.value].reduce((s, c) => s + (props.counts[c] || 0), 0))
 
 function toggle(code) {
