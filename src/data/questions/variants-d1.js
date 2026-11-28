@@ -24,7 +24,7 @@ export default {
   'd1-20': 'BitLocker on a company laptop stores its keys in a chip soldered to the motherboard that also records boot integrity measurements. What is this chip?',
   'd1-21': 'A browser needs to check, at the moment of connection, whether a website\'s certificate has been revoked rather than downloading a large list. Which mechanism allows this?',
   'd1-22': 'A company runs dozens of subdomains such as portal.corp.com, vpn.corp.com, and hr.corp.com and wants to manage as few certificates as possible. Which certificate type should it obtain?',
-  'd1-23': 'An employee wants to encrypt a file so that only a specific coworker can decrypt it, using asymmetric cryptography. Which key should be used to encrypt the file?',
+  'd1-23': 'Using asymmetric cryptography, Alice wants to encrypt a file so that only her coworker Bob can decrypt it. Which key should she use to encrypt the file?',
   'd1-24': 'A retailer stores a random surrogate value instead of each customer\'s card number, and the real number is kept only in a secure vault. Which technique is this?',
   'd1-25': 'A security engineer wants each password guess against stolen hashes to require significantly more computation. Which algorithms should be used to store passwords? (Select TWO).',
   'd1-26': 'An IT technician checks that the checksum of a downloaded ISO matches the one listed on the vendor\'s site before installing it. What property is being confirmed?',

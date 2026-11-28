@@ -1447,7 +1447,7 @@ export default {
   ],
   "h-21": [
     "A vulnerability scan has two findings. Finding 1: CVSS 9.8 on an internal file server with no inbound access from outside the data center and no known exploit. Finding 2: CVSS 6.5 on an internet-facing web server being actively exploited in the wild. Which should be remediated FIRST?",
-    "Which of these two vulnerabilities should be fixed first? One is a CVSS 9.8 on an isolated internal file server with no known exploit; the other is a CVSS 6.5 on an internet-facing web server that attackers are actively exploiting."
+    "Which of these two vulnerabilities should be fixed first? Finding 1 is a CVSS 9.8 on an isolated internal file server with no known exploit; Finding 2 is a CVSS 6.5 on an internet-facing web server that attackers are actively exploiting."
   ],
   "h-22": [
     "Attackers send phishing emails whose visible From address is ceo@example.com, and the messages pass SPF because they come from a domain the attacker controls. Which measure would help the organization detect and block this spoofing of its visible From domain?",

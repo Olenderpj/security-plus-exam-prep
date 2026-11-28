@@ -1439,8 +1439,8 @@ export default [
   ],
   "e": "The detail shows a script value embedded in JSON data, which is what triggered the XSS alert. The arrow shows the flow from 222.43.112.74 (the source, the attacker) to the web server at 64.235.145.35 on port 80. The User-Agent and the client port are normal.",
   "w": [
-   "From an IPS alert showing a <script> value in JSON sent from 222.43.112.74 to 64.235.145.35:80, which TWO statements are correct? (Select TWO).",
-   "Which TWO facts can be determined from this cross-site scripting alert in the IPS log? (Select TWO)."
+   "An IPS alert reads: 'Cross-Site Scripting in JSON Data, 222.43.112.74:3332 -> 64.235.145.35:80, POST /index.html, User Agent: curl/7.21.3, token=\"<script>\" value=\"<script>alert(2)</script>\"'. Which TWO statements are correct? (Select TWO).",
+   "Which TWO facts can be determined from this IPS log entry? 'ALERT Cross-Site Scripting in JSON Data 222.43.112.74:3332 -> 64.235.145.35:80 URL/index.html Method POST User Agent: curl/7.21.3 Detail: token=\"<script>\" value=\"<script>alert(2)</script>\"' (Select TWO)."
   ]
  },
  {
@@ -3758,8 +3758,8 @@ export default [
   "c": 0,
   "e": "A sender signs with their own private key, and anyone can verify the signature with the sender's public key. Sam does not have Jack's private key, and public keys cannot create signatures.",
   "w": [
-   "How does a sender let the recipient verify who sent a message?",
-   "Which key does a sender use to sign a message so others can verify its origin?"
+   "Sam is sending Jack a message and wants Jack to be able to verify that it came from Sam. Which key should Sam sign it with?",
+   "So that Jack can confirm a message truly came from Sam, how should Sam sign it?"
   ]
  },
  {
